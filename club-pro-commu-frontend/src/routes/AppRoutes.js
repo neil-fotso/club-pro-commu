@@ -7,7 +7,6 @@ import PlayerSearchPage from '../pages/PlayerSearchPage';
 import ClubSearchPage from '../pages/ClubSearchPage';
 import PlayerProfilePage from '../pages/PlayerProfilePage';
 import ClubProfilePage from '../pages/ClubProfilePage';
-import AccountPage from '../pages/AccountPage';
 import DiscussionsPage from '../pages/DiscussionsPage';
 import CompetitionPage from '../pages/CompetitionPage';
 import CreateClubPage from '../pages/CreateClubPage';
