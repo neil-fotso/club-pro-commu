@@ -2,16 +2,34 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clubAPI } from '../services/api';
+import Avatar from '../components/Avatar';
 
 export default function ClubSearchPage() {
   const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [platformFilter, setPlatformFilter] = useState('');
-  const [onlyRecruiting, setOnlyRecruiting] = useState(false);
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [userClub, setUserClub] = useState(null);
+  const [filters, setFilters] = useState({
+    pays: '',
+    plateforme: '',
+    niveau: '',
+    recrute: ''
+  });
+
+  const loadClubs = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await clubAPI.getClubs(filters);
+      setClubs(data);
+      setError('');
+    } catch (err) {
+      setError('Erreur lors du chargement des clubs');
+      console.error('Erreur chargement clubs:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
 
   const loadUserClub = useCallback(async () => {
     if (!user) return;
@@ -29,47 +47,43 @@ export default function ClubSearchPage() {
     }
   }, [user]);
 
-  const loadClubs = async (filters = {}) => {
-    try {
-      setLoading(true);
-      const data = await clubAPI.getClubs(filters);
-      setClubs(data);
-      setError('');
-    } catch (err) {
-      setError('Erreur lors du chargement des clubs');
-      console.error('Erreur chargement clubs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadClubs();
     loadUserClub();
-  }, [loadUserClub]);
+  }, [loadClubs, loadUserClub]);
 
-  const handleSearch = () => {
-    const filters = {};
-    if (searchTerm) filters.search = searchTerm;
-    if (platformFilter) filters.plateforme = platformFilter;
-    if (onlyRecruiting) filters.recrute = 'true';
-    
-    loadClubs(filters);
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleJoinRequest = async (clubId) => {
+  const handleFilterSubmit = (e) => {
+    e.preventDefault();
+    loadClubs();
+  };
+
+  const handleJoinRequest = async (clubId, clubName) => {
     if (!user) {
-      alert('Vous devez être connecté pour demander à rejoindre un club');
+      alert('Vous devez être connecté pour rejoindre un club');
       return;
     }
 
-    // Vérifier si l'utilisateur est déjà membre d'un autre club
-    if (userClub && userClub._id !== clubId) {
-      alert(`Vous êtes déjà membre du club "${userClub.nom}". Vous devez d'abord quitter ce club avant de rejoindre un autre.`);
+    if (userClub) {
+      alert('Vous êtes déjà membre d\'un club. Vous devez le quitter avant de rejoindre un autre club.');
       return;
     }
-    
-    alert('Demande envoyée au club !');
+
+    try {
+      const token = localStorage.getItem('token');
+      await clubAPI.joinClub(clubId, token);
+      alert(`Demande d'adhésion envoyée au club ${clubName} !`);
+      loadUserClub(); // Recharger le club de l'utilisateur
+    } catch (err) {
+      alert(err.message || 'Erreur lors de la demande d\'adhésion');
+    }
   };
 
   const getPlatformIcon = (platform) => {
@@ -81,312 +95,261 @@ export default function ClubSearchPage() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Actif': return 'success';
-      case 'Inactif': return 'secondary';
-      case 'En construction': return 'warning';
-      default: return 'info';
-    }
+  const getStatusBadge = (status) => {
+    const badges = {
+      'Actif': 'bg-success',
+      'Inactif': 'bg-secondary',
+      'En construction': 'bg-warning'
+    };
+    return badges[status] || 'bg-secondary';
   };
 
-  const getRecruitmentStatus = (recrute, effectifActuel, effectifMax) => {
-    if (!recrute) return { text: 'Complet', color: 'secondary' };
-    if (effectifActuel >= effectifMax) return { text: 'Complet', color: 'secondary' };
-    return { text: 'Recrute', color: 'success' };
-  };
-
-  if (!user) {
+  if (loading) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-           style={{
-             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-           }}>
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6">
-              <div className="card border-0 shadow-lg" 
-                   style={{
-                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                     color: 'white'
-                   }}>
-                <div className="card-body text-center p-5">
-                  <div className="mb-4">
-                    <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
-                      <i className="fas fa-lock text-white" style={{fontSize: '2.5rem'}}></i>
-                    </div>
-                    <h2 className="card-title mb-3">Connexion requise</h2>
-                    <p className="text-white-90">Vous devez être connecté pour voir la liste des clubs.</p>
-                  </div>
-                  <Link to="/login" className="btn btn-light btn-lg">
-                    <i className="fas fa-sign-in-alt me-2"></i>
-                    Se connecter
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="container mt-4 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Chargement...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mt-4">
+        <div className="alert alert-danger">
+          <h4>Erreur</h4>
+          <p>{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-vh-100" 
-         style={{
-           background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-         }}>
-      <div className="container py-5">
-        {/* Header */}
-        <div className="text-center mb-5">
-          <h1 className="display-5 fw-bold mb-3">🏆 Rechercher un Club</h1>
-          <p className="lead text-muted">Trouvez le club parfait pour votre carrière FIFA Pro Clubs</p>
-          
+    <div className="container mt-4">
+      <div className="row">
+        <div className="col-lg-3">
+          <div className="card shadow-lg border-0">
+            <div className="card-header bg-gradient-primary text-white">
+              <h5 className="mb-0">
+                <i className="fas fa-filter me-2"></i>
+                Filtres
+              </h5>
+            </div>
+            <div className="card-body">
+              <form onSubmit={handleFilterSubmit}>
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    <i className="fas fa-flag me-1"></i>
+                    Pays
+                  </label>
+                  <select
+                    className="form-select"
+                    name="pays"
+                    value={filters.pays}
+                    onChange={handleFilterChange}
+                  >
+                    <option value="">Tous les pays</option>
+                    <option value="France">🇫🇷 France</option>
+                    <option value="Espagne">🇪🇸 Espagne</option>
+                    <option value="Angleterre">🇬🇧 Angleterre</option>
+                    <option value="Allemagne">🇩🇪 Allemagne</option>
+                    <option value="Italie">🇮🇹 Italie</option>
+                    <option value="Portugal">🇵🇹 Portugal</option>
+                    <option value="Pays-Bas">🇳🇱 Pays-Bas</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    <i className="fas fa-gamepad me-1"></i>
+                    Plateforme
+                  </label>
+                  <select
+                    className="form-select"
+                    name="plateforme"
+                    value={filters.plateforme}
+                    onChange={handleFilterChange}
+                  >
+                    <option value="">Toutes les plateformes</option>
+                    <option value="PS5">PlayStation 5</option>
+                    <option value="Xbox">Xbox</option>
+                    <option value="PC">PC</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    <i className="fas fa-trophy me-1"></i>
+                    Niveau
+                  </label>
+                  <select
+                    className="form-select"
+                    name="niveau"
+                    value={filters.niveau}
+                    onChange={handleFilterChange}
+                  >
+                    <option value="">Tous les niveaux</option>
+                    <option value="Débutant">🥉 Débutant</option>
+                    <option value="Intermédiaire">🥈 Intermédiaire</option>
+                    <option value="Avancé">🥇 Avancé</option>
+                    <option value="Expert">👑 Expert</option>
+                  </select>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    <i className="fas fa-search me-1"></i>
+                    Recrutement
+                  </label>
+                  <select
+                    className="form-select"
+                    name="recrute"
+                    value={filters.recrute}
+                    onChange={handleFilterChange}
+                  >
+                    <option value="">Tous</option>
+                    <option value="true">Recrutent</option>
+                    <option value="false">Ne recrutent pas</option>
+                  </select>
+                </div>
+
+                <div className="d-grid">
+                  <button type="submit" className="btn btn-primary">
+                    <i className="fas fa-search me-1"></i>
+                    Filtrer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
           {userClub && (
-            <div className="alert alert-info border-0 bg-info bg-opacity-10 mt-3">
-              <i className="fas fa-info-circle me-2"></i>
-              Vous êtes actuellement membre du club <strong>"{userClub.nom}"</strong>
+            <div className="card shadow-lg border-0 mt-3">
+              <div className="card-header bg-gradient-warning text-white">
+                <h6 className="mb-0">
+                  <i className="fas fa-info-circle me-2"></i>
+                  Votre club
+                </h6>
+              </div>
+              <div className="card-body">
+                <div className="d-flex align-items-center mb-2">
+                  <Avatar
+                    src={userClub.photoProfil}
+                    name={userClub.nom}
+                    size="sm"
+                    type="club"
+                    className="me-2"
+                  />
+                  <div>
+                    <strong>{userClub.nom}</strong>
+                    <br />
+                    <small className="text-muted">
+                      {userClub.membres?.length || 0}/{userClub.effectifMax} membres
+                    </small>
+                  </div>
+                </div>
+                <Link to={`/club/${userClub._id}`} className="btn btn-outline-primary btn-sm w-100">
+                  <i className="fas fa-eye me-1"></i>
+                  Voir mon club
+                </Link>
+              </div>
             </div>
           )}
         </div>
-        
-        {/* Filtres */}
-        <div className="card border-0 shadow-lg mb-5" 
-             style={{
-               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-               color: 'white'
-             }}>
-          <div className="card-body p-4">
-            <div className="row g-3">
-              <div className="col-lg-4">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-search me-2"></i>
-                  Recherche
-                </label>
-                <input
-                  type="text"
-                  className="form-control form-control-lg"
-                  placeholder="Nom du club..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="col-lg-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-gamepad me-2"></i>
-                  Plateforme
-                </label>
-                <select
-                  className="form-select form-select-lg"
-                  value={platformFilter}
-                  onChange={(e) => setPlatformFilter(e.target.value)}
-                >
-                  <option value="">Toutes les plateformes</option>
-                  <option value="PS5">🎮 PlayStation 5</option>
-                  <option value="Xbox">🎮 Xbox Series X/S</option>
-                  <option value="PC">💻 PC</option>
-                </select>
-              </div>
-              <div className="col-lg-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-filter me-2"></i>
-                  Statut
-                </label>
-                <div className="form-check mt-3">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="onlyRecruiting"
-                    checked={onlyRecruiting}
-                    onChange={(e) => setOnlyRecruiting(e.target.checked)}
-                  />
-                  <label className="form-check-label" htmlFor="onlyRecruiting">
-                    Recrute des joueurs
-                  </label>
-                </div>
-              </div>
-              <div className="col-lg-2">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-search me-2"></i>
-                  Action
-                </label>
-                <button className="btn btn-light btn-lg w-100" onClick={handleSearch}>
-                  <i className="fas fa-search me-2"></i>
-                  Rechercher
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {error && (
-          <div className="alert alert-danger border-0 bg-danger bg-opacity-10 mb-4">
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status" style={{width: '3rem', height: '3rem'}}>
-              <span className="visually-hidden">Chargement...</span>
+        <div className="col-lg-9">
+          <div className="card shadow-lg border-0">
+            <div className="card-header bg-gradient-success text-white d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">
+                <i className="fas fa-shield-alt me-2"></i>
+                Clubs disponibles ({clubs.length})
+              </h5>
+              <Link to="/creer-club" className="btn btn-light btn-sm">
+                <i className="fas fa-plus me-1"></i>
+                Créer un club
+              </Link>
             </div>
-            <p className="mt-3 text-muted">Chargement des clubs...</p>
-          </div>
-        ) : (
-          <>
-            {/* Statistiques */}
-            <div className="row mb-4">
-              <div className="col-md-3">
-                <div className="card border-0 shadow-sm text-center">
-                  <div className="card-body">
-                    <div className="h4 text-primary mb-1">{clubs.length}</div>
-                    <small className="text-muted">Clubs trouvés</small>
-                  </div>
+            <div className="card-body">
+              {clubs.length === 0 ? (
+                <div className="text-center py-5">
+                  <i className="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+                  <h5 className="text-muted">Aucun club trouvé</h5>
+                  <p className="text-muted">Essayez de modifier vos filtres</p>
                 </div>
-              </div>
-              <div className="col-md-3">
-                <div className="card border-0 shadow-sm text-center">
-                  <div className="card-body">
-                    <div className="h4 text-success mb-1">
-                      {clubs.filter(c => c.recrute && c.effectifActuel < c.effectifMax).length}
-                    </div>
-                    <small className="text-muted">Recrutent</small>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="card border-0 shadow-sm text-center">
-                  <div className="card-body">
-                    <div className="h4 text-info mb-1">
-                      {clubs.filter(c => c.plateforme === 'PS5').length}
-                    </div>
-                    <small className="text-muted">Sur PS5</small>
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="card border-0 shadow-sm text-center">
-                  <div className="card-body">
-                    <div className="h4 text-warning mb-1">
-                      {clubs.filter(c => c.statut === 'Actif').length}
-                    </div>
-                    <small className="text-muted">Clubs actifs</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Liste des clubs */}
-            {clubs.length === 0 ? (
-              <div className="text-center py-5">
-                <div className="mb-4" style={{fontSize: '4rem'}}>🏆</div>
-                <h3 className="text-muted">Aucun club trouvé</h3>
-                <p className="text-muted">Essayez de modifier vos critères de recherche</p>
-              </div>
-            ) : (
-              <div className="row g-4">
-                {clubs.map((club) => {
-                  const recruitmentStatus = getRecruitmentStatus(club.recrute, club.effectifActuel, club.effectifMax);
-                  return (
-                    <div key={club._id} className="col-lg-6 col-xl-4">
-                      <div className="card border-0 shadow-sm hover-shadow h-100" 
-                           style={{
-                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                             color: 'white'
-                           }}>
-                        <div className="card-body p-4">
-                          <div className="d-flex align-items-center mb-3">
-                            <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px'}}>
-                              <i className="fas fa-shield-alt text-white" style={{fontSize: '1.5rem'}}></i>
-                            </div>
-                            <div className="flex-grow-1">
-                              <h5 className="mb-1">
-                                <Link to={`/club/${club._id}`} className="text-decoration-none text-white">
-                                  {club.nom}
-                                </Link>
-                              </h5>
-                              <small className="text-white-75">
-                                {getPlatformIcon(club.plateforme)} {club.plateforme} • {club.pays}
-                              </small>
-                            </div>
-                            <div className="text-end">
-                              <span className={`badge bg-${getStatusColor(club.statut)}`}>
-                                {club.statut}
-                              </span>
-                            </div>
+              ) : (
+                <div className="row">
+                  {clubs.map((club) => (
+                    <div key={club._id} className="col-md-6 col-lg-4 mb-4">
+                      <div className="card h-100 shadow-sm border-0 hover-lift">
+                        <div className="card-body text-center p-4">
+                          <div className="mb-3">
+                            <Avatar
+                              src={club.photoProfil}
+                              name={club.nom}
+                              size="xl"
+                              type="club"
+                            />
                           </div>
                           
-                          <div className="row mb-3">
-                            <div className="col-6">
-                              <small className="text-white-75">Effectif</small>
-                              <div className="fw-bold">{club.effectifActuel}/{club.effectifMax}</div>
-                            </div>
-                            <div className="col-6">
-                              <small className="text-white-75">Recrutement</small>
-                              <div className="fw-bold">
-                                <span className={`badge bg-${recruitmentStatus.color}`}>
-                                  {recruitmentStatus.text}
-                                </span>
-                              </div>
-                            </div>
+                          <h5 className="card-title mb-2">{club.nom}</h5>
+                          
+                          <div className="mb-3">
+                            <span className="badge bg-primary me-1">
+                              {getPlatformIcon(club.plateforme)} {club.plateforme}
+                            </span>
+                            <span className={`badge ${getStatusBadge(club.statut)} me-1`}>
+                              {club.statut}
+                            </span>
+                            <span className="badge bg-info">
+                              {club.pays}
+                            </span>
                           </div>
                           
-                          <div className="row mb-3">
-                            <div className="col-6">
-                              <small className="text-white-75">Pays</small>
-                              <div className="fw-bold">{club.pays}</div>
-                            </div>
-                            <div className="col-6">
-                              <small className="text-white-75">Langues</small>
-                              <div className="fw-bold">{club.langues?.join(', ') || 'Non spécifié'}</div>
-                            </div>
+                          <div className="mb-3">
+                            <small className="text-muted">
+                              <i className="fas fa-users me-1"></i>
+                              {club.membres?.length || 0}/{club.effectifMax} membres
+                            </small>
                           </div>
                           
                           {club.description && (
-                            <p className="text-white-90 mb-3" style={{fontSize: '0.9rem'}}>
-                              {club.description}
+                            <p className="card-text small text-muted mb-3">
+                              {club.description.length > 100 
+                                ? `${club.description.substring(0, 100)}...` 
+                                : club.description
+                              }
                             </p>
                           )}
                           
-                          <div className="d-flex gap-2">
-                            <Link to={`/club/${club._id}`} className="btn btn-outline-light btn-sm flex-grow-1">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <Link 
+                              to={`/club/${club._id}`} 
+                              className="btn btn-outline-primary btn-sm"
+                            >
                               <i className="fas fa-eye me-1"></i>
                               Voir profil
                             </Link>
-                            {recruitmentStatus.color === 'success' && (
-                              userClub ? (
-                                userClub._id === club._id ? (
-                                  <span className="badge bg-success">Déjà membre</span>
-                                ) : (
-                                  <button
-                                    className="btn btn-outline-warning btn-sm"
-                                    onClick={() => handleJoinRequest(club._id)}
-                                    title={`Vous êtes déjà membre de ${userClub.nom}`}
-                                  >
-                                    <i className="fas fa-exclamation-triangle"></i>
-                                  </button>
-                                )
-                              ) : (
-                                <button
-                                  className="btn btn-light btn-sm"
-                                  onClick={() => handleJoinRequest(club._id)}
-                                >
-                                  <i className="fas fa-user-plus me-1"></i>
-                                  Rejoindre
-                                </button>
-                              )
+                            
+                            {club.recrute && (
+                              <button 
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleJoinRequest(club._id, club.nom)}
+                              >
+                                <i className="fas fa-user-plus me-1"></i>
+                                Rejoindre
+                              </button>
                             )}
                           </div>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

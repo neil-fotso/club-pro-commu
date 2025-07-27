@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const playerRoutes = require('./routes/players');
 const clubRoutes = require('./routes/clubs');
+const updateActivity = require('./middleware/updateActivity');
 
 const app = express();
 
@@ -32,9 +33,19 @@ app.use((req, res, next) => {
       }
     } catch (error) {
       console.log('Erreur parsing JSON:', error);
+      // Si le parsing échoue, essayer de récupérer les données brutes
+      if (req.body && typeof req.body === 'string') {
+        try {
+          // Essayer de parser comme JSON même si le Content-Type est text/plain
+          req.body = JSON.parse(req.body);
+        } catch (parseError) {
+          console.log('Impossible de parser le body comme JSON:', parseError);
+        }
+      }
     }
   }
   
+  // Log pour debug
   console.log(`${req.method} ${req.path}`, {
     body: req.body,
     headers: req.headers['content-type'],
@@ -44,11 +55,30 @@ app.use((req, res, next) => {
   next();
 });
 
+// Middleware pour forcer le parsing JSON pour les requêtes PUT
+app.use((req, res, next) => {
+  if (req.method === 'PUT' && req.headers['content-type']?.includes('text/plain')) {
+    // Si req.body est undefined ou une chaîne, essayer de le parser
+    if (req.body && typeof req.body === 'string') {
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (error) {
+        console.log('Erreur parsing JSON dans middleware PUT:', error);
+      }
+    }
+  }
+  next();
+});
+
+
+
+
+
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
-app.use('/api/players', playerRoutes);
-app.use('/api/clubs', clubRoutes);
+app.use('/api/user', updateActivity, userRoutes);
+app.use('/api/players', updateActivity, playerRoutes);
+app.use('/api/clubs', updateActivity, clubRoutes);
 
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu', {

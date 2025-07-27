@@ -2,6 +2,7 @@ const express = require('express');
 const Club = require('../models/Club');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const { updatePlayerAvailability } = require('../utils/playerUtils');
 
 const router = express.Router();
 
@@ -223,6 +224,9 @@ router.post('/:id/join', auth, async (req, res) => {
     
     await club.save();
     
+    // Mettre à jour la disponibilité du joueur
+    await updatePlayerAvailability(req.user.id, require('../models/Player'));
+    
     res.json({ message: 'Vous avez rejoint le club avec succès !' });
   } catch (error) {
     console.error('Erreur rejoindre club:', error);
@@ -261,6 +265,9 @@ router.post('/:id/leave', auth, async (req, res) => {
     club.effectifActuel -= 1;
     
     await club.save();
+    
+    // Mettre à jour la disponibilité du joueur
+    await updatePlayerAvailability(req.user.id, require('../models/Player'));
     
     res.json({ message: 'Vous avez quitté le club.' });
   } catch (error) {

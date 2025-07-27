@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clubAPI } from '../services/api';
+import Avatar from '../components/Avatar';
 
 export default function ClubProfilePage() {
   const { id } = useParams();
@@ -49,35 +50,23 @@ export default function ClubProfilePage() {
 
   const handleJoinRequest = async () => {
     if (!user) {
-      alert('Vous devez être connecté pour demander à rejoindre un club');
+      alert('Vous devez être connecté pour rejoindre un club');
       return;
     }
-    
-    // Vérifier si l'utilisateur est déjà membre d'un autre club
-    if (userClub && userClub._id !== id) {
-      alert(`Vous êtes déjà membre du club "${userClub.nom}". Vous devez d'abord quitter ce club avant de rejoindre un autre.`);
-      return;
-    }
-    
-    setJoining(true);
-    try {
-      // Récupérer le token depuis localStorage
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Token d\'authentification manquant');
-      }
 
-      // Appel à l'API pour rejoindre le club
-      const response = await clubAPI.joinClub(id, token);
-      
-      // Recharger les données du club et du club utilisateur
-      await loadClub();
-      await loadUserClub();
-      
-      alert(response.message || 'Vous avez rejoint le club avec succès !');
+    if (userClub) {
+      alert('Vous êtes déjà membre d\'un club. Vous devez le quitter avant de rejoindre un autre club.');
+      return;
+    }
+
+    try {
+      setJoining(true);
+      const token = localStorage.getItem('token');
+      await clubAPI.joinClub(club._id, token);
+      alert('Demande d\'adhésion envoyée au club !');
+      loadUserClub(); // Recharger le club de l'utilisateur
     } catch (err) {
-      console.error('Erreur demande:', err);
-      alert(err.message || 'Erreur lors de la demande de rejoindre le club');
+      alert(err.message || 'Erreur lors de la demande d\'adhésion');
     } finally {
       setJoining(false);
     }
@@ -92,35 +81,20 @@ export default function ClubProfilePage() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Actif': return 'success';
-      case 'Inactif': return 'secondary';
-      case 'En construction': return 'warning';
-      default: return 'info';
-    }
-  };
-
-  const getRoleBadgeColor = (role) => {
-    switch(role) {
-      case 'Admin': return 'danger';
-      case 'Capitaine': return 'warning';
-      case 'Joueur': return 'primary';
-      default: return 'secondary';
-    }
+  const getStatusBadge = (status) => {
+    const badges = {
+      'Actif': 'bg-success',
+      'Inactif': 'bg-secondary',
+      'En construction': 'bg-warning'
+    };
+    return badges[status] || 'bg-secondary';
   };
 
   if (loading) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-           style={{
-             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-           }}>
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status" style={{width: '3rem', height: '3rem'}}>
-            <span className="visually-hidden">Chargement...</span>
-          </div>
-          <p className="mt-3 text-muted">Chargement du club...</p>
+      <div className="container mt-4 text-center">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Chargement...</span>
         </div>
       </div>
     );
@@ -128,34 +102,11 @@ export default function ClubProfilePage() {
 
   if (error) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-           style={{
-             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-           }}>
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6">
-              <div className="card border-0 shadow-lg" 
-                   style={{
-                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                     color: 'white'
-                   }}>
-                <div className="card-body text-center p-5">
-                  <div className="mb-4">
-                    <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
-                      <i className="fas fa-exclamation-triangle text-white" style={{fontSize: '2.5rem'}}></i>
-                    </div>
-                    <h2 className="card-title mb-3">Erreur</h2>
-                    <p className="text-white-90">{error}</p>
-                  </div>
-                  <Link to="/clubs" className="btn btn-light btn-lg">
-                    <i className="fas fa-arrow-left me-2"></i>
-                    Retour à la recherche
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="container mt-4">
+        <div className="alert alert-danger">
+          <h4>Erreur</h4>
+          <p>{error}</p>
+          <Link to="/clubs" className="btn btn-primary">Retour à la recherche</Link>
         </div>
       </div>
     );
@@ -163,312 +114,231 @@ export default function ClubProfilePage() {
 
   if (!club) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-           style={{
-             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-           }}>
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6">
-              <div className="card border-0 shadow-lg" 
-                   style={{
-                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                     color: 'white'
-                   }}>
-                <div className="card-body text-center p-5">
-                  <div className="mb-4">
-                    <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
-                      <i className="fas fa-question-circle text-white" style={{fontSize: '2.5rem'}}></i>
-                    </div>
-                    <h2 className="card-title mb-3">Club non trouvé</h2>
-                    <p className="text-white-90">Le club demandé n'existe pas.</p>
-                  </div>
-                  <Link to="/clubs" className="btn btn-light btn-lg">
-                    <i className="fas fa-arrow-left me-2"></i>
-                    Retour à la recherche
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-           style={{
-             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-           }}>
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-6">
-              <div className="card border-0 shadow-lg" 
-                   style={{
-                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                     color: 'white'
-                   }}>
-                <div className="card-body text-center p-5">
-                  <div className="mb-4">
-                    <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
-                      <i className="fas fa-lock text-white" style={{fontSize: '2.5rem'}}></i>
-                    </div>
-                    <h2 className="card-title mb-3">Connexion requise</h2>
-                    <p className="text-white-90">Vous devez être connecté pour voir les profils des clubs.</p>
-                  </div>
-                  <Link to="/login" className="btn btn-light btn-lg">
-                    <i className="fas fa-sign-in-alt me-2"></i>
-                    Se connecter
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="container mt-4">
+        <div className="alert alert-warning">
+          <h4>Club non trouvé</h4>
+          <p>Le club demandé n'existe pas.</p>
+          <Link to="/clubs" className="btn btn-primary">Retour à la recherche</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-vh-100" 
-         style={{
-           background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-         }}>
-      <div className="container py-5">
-        <div className="row">
-          {/* Informations principales */}
-          <div className="col-lg-8">
-            <div className="card border-0 shadow-lg mb-4" 
-                 style={{
-                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                   color: 'white'
-                 }}>
-              <div className="card-body p-4">
-                <div className="d-flex align-items-center mb-4">
-                  <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-4" style={{width: '80px', height: '80px'}}>
-                    <i className="fas fa-shield-alt text-white" style={{fontSize: '2.5rem'}}></i>
-                  </div>
-                  <div className="flex-grow-1">
-                    <h1 className="mb-2">{club.nom}</h1>
-                    <div className="d-flex align-items-center gap-3">
-                      <span className="badge bg-light text-dark">
-                        {getPlatformIcon(club.plateforme)} {club.plateforme}
-                      </span>
-                      <span className={`badge bg-${getStatusColor(club.statut)}`}>
-                        {club.statut}
-                      </span>
-                      <span className="badge bg-info">
-                        {club.effectifActuel}/{club.effectifMax} membres
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Statistiques rapides */}
-                <div className="row mb-4">
-                  <div className="col-md-3">
-                    <div className="text-center">
-                      <div className="h4 mb-1">{club.effectifActuel}</div>
-                      <small className="text-white-75">Membres actuels</small>
-                    </div>
-                  </div>
-                  <div className="col-md-3">
-                    <div className="text-center">
-                      <div className="h4 mb-1">{club.effectifMax - club.effectifActuel}</div>
-                      <small className="text-white-75">Places libres</small>
-                    </div>
-                  </div>
-                  <div className="col-md-3">
-                    <div className="text-center">
-                      <div className="h4 mb-1">{club.pays}</div>
-                      <small className="text-white-75">Pays</small>
-                    </div>
-                  </div>
-                  <div className="col-md-3">
-                    <div className="text-center">
-                      <div className="h4 mb-1">
-                        {club.recrute ? (
-                          <span className="badge bg-success">Oui</span>
-                        ) : (
-                          <span className="badge bg-secondary">Non</span>
-                        )}
-                      </div>
-                      <small className="text-white-75">Recrute</small>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Description */}
-                {club.description && (
-                  <div className="mb-4">
-                    <h5 className="mb-3">
-                      <i className="fas fa-align-left me-2"></i>
-                      Description
-                    </h5>
-                    <p className="text-white-90">{club.description}</p>
-                  </div>
-                )}
-
-                {/* Informations détaillées */}
-                <div className="row">
-                  <div className="col-md-6">
-                    <h5 className="mb-3">
-                      <i className="fas fa-info-circle me-2"></i>
-                      Informations
-                    </h5>
-                    <ul className="list-unstyled">
-                      <li className="mb-2">
-                        <i className="fas fa-user me-2 text-primary"></i>
-                        <strong>Créateur:</strong> {club.createurId?.pseudo}
-                      </li>
-                      <li className="mb-2">
-                        <i className="fas fa-flag me-2 text-primary"></i>
-                        <strong>Pays:</strong> {club.pays}
-                      </li>
-                      <li className="mb-2">
-                        <i className="fas fa-calendar me-2 text-primary"></i>
-                        <strong>Créé le:</strong> {new Date(club.dateCreation).toLocaleDateString('fr-FR')}
-                      </li>
-                      {club.horaires && (
-                        <li className="mb-2">
-                          <i className="fas fa-clock me-2 text-primary"></i>
-                          <strong>Horaires:</strong> {club.horaires}
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                  <div className="col-md-6">
-                    <h5 className="mb-3">
-                      <i className="fas fa-search me-2"></i>
-                      Recrutement
-                    </h5>
-                    <ul className="list-unstyled">
-                      {club.niveauRecherche && (
-                        <li className="mb-2">
-                          <i className="fas fa-star me-2 text-warning"></i>
-                          <strong>Niveau:</strong> {club.niveauRecherche}
-                        </li>
-                      )}
-                      {club.postesRecherches && club.postesRecherches.length > 0 && (
-                        <li className="mb-2">
-                          <i className="fas fa-users me-2 text-info"></i>
-                          <strong>Postes:</strong> {club.postesRecherches.join(', ')}
-                        </li>
-                      )}
-                      {club.langues && club.langues.length > 0 && (
-                        <li className="mb-2">
-                          <i className="fas fa-language me-2 text-success"></i>
-                          <strong>Langues:</strong> {club.langues.join(', ')}
-                        </li>
-                      )}
-                    </ul>
-                  </div>
+    <div className="container mt-4">
+      <div className="row">
+        <div className="col-lg-8">
+          <div className="card shadow-lg border-0">
+            <div className="card-header bg-gradient-primary text-white">
+              <div className="d-flex align-items-center">
+                <Avatar
+                  src={club.photoProfil}
+                  name={club.nom}
+                  size="lg"
+                  type="club"
+                  className="me-3"
+                />
+                <div>
+                  <h2 className="mb-0">{club.nom}</h2>
+                  <small className="text-light">
+                    {club.pays} • {getPlatformIcon(club.plateforme)} {club.plateforme}
+                  </small>
                 </div>
               </div>
             </div>
-
-            {/* Membres du club */}
-            {club.membres && club.membres.length > 0 && (
-              <div className="card border-0 shadow-lg" 
-                   style={{
-                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                     color: 'white'
-                   }}>
-                <div className="card-body p-4">
-                  <h5 className="mb-4">
-                    <i className="fas fa-users me-2"></i>
-                    Membres du club ({club.membres.length})
+            
+            <div className="card-body p-4">
+              <div className="row">
+                <div className="col-md-6">
+                  <h5 className="text-primary mb-3">
+                    <i className="fas fa-info-circle me-2"></i>
+                    Informations générales
                   </h5>
-                  <div className="row g-3">
-                    {club.membres.map((membre, index) => (
-                      <div key={index} className="col-md-6 col-lg-4">
-                        <div className="bg-white bg-opacity-10 rounded p-3">
-                          <div className="d-flex align-items-center">
-                            <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px'}}>
-                              <i className="fas fa-user text-white"></i>
-                            </div>
-                            <div className="flex-grow-1">
-                              <div className="fw-bold">{membre.userId?.pseudo || 'Membre'}</div>
-                              <small className="text-white-75">
-                                {new Date(membre.dateAdhesion).toLocaleDateString('fr-FR')}
-                              </small>
-                            </div>
-                            <span className={`badge bg-${getRoleBadgeColor(membre.role)}`}>
-                              {membre.role}
-                            </span>
-                          </div>
+                  <ul className="list-unstyled">
+                    <li className="mb-2">
+                      <strong>Nom:</strong> 
+                      <span className="badge bg-primary ms-2">{club.nom}</span>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Pays:</strong> 
+                      <span className="badge bg-info ms-2">{club.pays}</span>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Plateforme:</strong> 
+                      <span className="badge bg-dark ms-2">
+                        {getPlatformIcon(club.plateforme)} {club.plateforme}
+                      </span>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Statut:</strong> 
+                      <span className={`badge ${getStatusBadge(club.statut)} ms-2`}>
+                        {club.statut}
+                      </span>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Effectif:</strong> 
+                      <span className="badge bg-success ms-2">
+                        {club.membres?.length || 0}/{club.effectifMax} membres
+                      </span>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Recrutement:</strong> 
+                      {club.recrute ? (
+                        <span className="badge bg-success ms-2">✅ Ouvert</span>
+                      ) : (
+                        <span className="badge bg-secondary ms-2">❌ Fermé</span>
+                      )}
+                    </li>
+                  </ul>
+                </div>
+                
+                <div className="col-md-6">
+                  <h5 className="text-primary mb-3">
+                    <i className="fas fa-users me-2"></i>
+                    Détails du club
+                  </h5>
+                  <ul className="list-unstyled">
+                    <li className="mb-2">
+                      <strong>Niveau:</strong> 
+                      <span className="badge bg-warning ms-2">{club.niveau || 'Non spécifié'}</span>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Langues:</strong> 
+                      <div className="mt-1">
+                        {club.langues?.map((langue, index) => (
+                          <span key={index} className="badge bg-info me-1">
+                            {langue}
+                          </span>
+                        )) || <span className="text-muted">Non spécifié</span>}
+                      </div>
+                    </li>
+                    <li className="mb-2">
+                      <strong>Créé le:</strong> 
+                      <span className="badge bg-secondary ms-2">
+                        {new Date(club.dateCreation).toLocaleDateString()}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              {club.description && (
+                <div className="mt-4">
+                  <h5 className="text-primary mb-3">
+                    <i className="fas fa-comment me-2"></i>
+                    Description
+                  </h5>
+                  <div className="card bg-light">
+                    <div className="card-body">
+                      <p className="mb-0">{club.description}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {club.membres && club.membres.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="text-primary mb-3">
+                    <i className="fas fa-users me-2"></i>
+                    Membres ({club.membres.length})
+                  </h5>
+                  <div className="row">
+                    {club.membres.slice(0, 6).map((membre, index) => (
+                      <div key={index} className="col-md-2 col-sm-3 col-4 mb-2">
+                        <div className="text-center">
+                          <Avatar
+                            src={membre.photoProfil}
+                            name={membre.pseudo}
+                            size="sm"
+                            type="player"
+                          />
+                          <small className="d-block text-muted mt-1">
+                            {membre.pseudo}
+                          </small>
                         </div>
                       </div>
                     ))}
+                    {club.membres.length > 6 && (
+                      <div className="col-md-2 col-sm-3 col-4 mb-2">
+                        <div className="text-center">
+                          <div className="w-8 h-8 rounded-full bg-secondary d-flex align-items-center justify-content-center mx-auto">
+                            <small className="text-white">+{club.membres.length - 6}</small>
+                          </div>
+                          <small className="d-block text-muted mt-1">
+                            Autres
+                          </small>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-lg-4">
+          <div className="card shadow-lg border-0 mb-4">
+            <div className="card-header bg-gradient-success text-white">
+              <h5 className="mb-0">
+                <i className="fas fa-chart-line me-2"></i>
+                Actions
+              </h5>
+            </div>
+            <div className="card-body">
+              {userClub ? (
+                <div className="alert alert-info">
+                  <i className="fas fa-info-circle me-2"></i>
+                  Vous êtes déjà membre du club <strong>{userClub.nom}</strong>
+                </div>
+              ) : (
+                <button 
+                  className="btn btn-primary w-100 mb-2"
+                  onClick={handleJoinRequest}
+                  disabled={joining}
+                >
+                  {joining ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-user-plus me-1"></i>
+                      Demander à rejoindre
+                    </>
+                  )}
+                </button>
+              )}
+              
+              <Link to="/clubs" className="btn btn-outline-secondary w-100">
+                <i className="fas fa-arrow-left me-1"></i>
+                Retour à la recherche
+              </Link>
+            </div>
           </div>
 
-          {/* Actions */}
-          <div className="col-lg-4">
-            <div className="card border-0 shadow-lg" 
-                 style={{
-                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                   color: 'white'
-                 }}>
-              <div className="card-body p-4">
-                <h5 className="mb-4">
-                  <i className="fas fa-cogs me-2"></i>
-                  Actions
-                </h5>
-                
-                {club.recrute && club.effectifActuel < club.effectifMax ? (
-                  userClub ? (
-                    userClub._id === id ? (
-                      <div className="alert alert-success bg-success bg-opacity-20 border-0 mb-3">
-                        <i className="fas fa-check-circle me-2"></i>
-                        Vous êtes déjà membre de ce club
-                      </div>
-                    ) : (
-                      <div className="alert alert-warning bg-warning bg-opacity-20 border-0 mb-3">
-                        <i className="fas fa-exclamation-triangle me-2"></i>
-                        Vous êtes déjà membre du club "{userClub.nom}"
-                      </div>
-                    )
-                  ) : (
-                    <button 
-                      className="btn btn-light btn-lg w-100 mb-3"
-                      onClick={handleJoinRequest}
-                      disabled={joining}
-                    >
-                      {joining ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Envoi en cours...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-user-plus me-2"></i>
-                          Demander à rejoindre
-                        </>
-                      )}
-                    </button>
-                  )
-                ) : (
-                  <div className="alert alert-light bg-white bg-opacity-20 border-0 mb-3">
-                    <i className="fas fa-info-circle me-2"></i>
-                    Ce club ne recrute pas actuellement
+          <div className="card shadow-lg border-0">
+            <div className="card-header bg-gradient-info text-white">
+              <h5 className="mb-0">
+                <i className="fas fa-chart-bar me-2"></i>
+                Statistiques
+              </h5>
+            </div>
+            <div className="card-body">
+              <div className="row text-center">
+                <div className="col-6">
+                  <div className="stat-item">
+                    <h3 className="text-primary mb-0">{club.membres?.length || 0}</h3>
+                    <small className="text-muted">Membres</small>
                   </div>
-                )}
-
-                <Link to="/clubs" className="btn btn-outline-light btn-lg w-100 mb-3">
-                  <i className="fas fa-arrow-left me-2"></i>
-                  Retour à la recherche
-                </Link>
-
-                <Link to="/" className="btn btn-outline-light btn-sm w-100">
-                  <i className="fas fa-home me-2"></i>
-                  Accueil
-                </Link>
+                </div>
+                <div className="col-6">
+                  <div className="stat-item">
+                    <h3 className="text-success mb-0">{club.effectifMax}</h3>
+                    <small className="text-muted">Effectif max</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

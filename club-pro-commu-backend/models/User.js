@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema({
   plateforme: { 
     type: String, 
     required: true,
-    enum: ['PS5', 'Xbox', 'PC'],
+    enum: ['PS5', 'PS4', 'Xbox Series X/S', 'Xbox One', 'PC'],
     default: 'PS5'
   },
   postePrincipal: { type: String },

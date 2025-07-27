@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Avatar from './Avatar';
 
 export default function Navbar() {
   const { user, logout, loginTest } = useAuth();
@@ -123,16 +124,20 @@ export default function Navbar() {
                     data-bs-toggle="dropdown"
                     style={{color: 'rgba(255,255,255,0.8)'}}
                   >
-                    <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-2" style={{width: '32px', height: '32px'}}>
-                      <i className="fas fa-user text-white" style={{fontSize: '0.9rem'}}></i>
-                    </div>
+                    <Avatar
+                      src={user.photoProfil}
+                      name={user.pseudo}
+                      size="sm"
+                      type="player"
+                      className="me-2"
+                    />
                     {user.pseudo}
                   </button>
                   <ul className="dropdown-menu shadow-lg border-0" style={{background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(10px)'}}>
                     <li>
-                      <Link className="dropdown-item d-flex align-items-center" to="/compte">
-                        <i className="fas fa-cog me-2 text-primary"></i>
-                        Mon compte
+                      <Link className="dropdown-item d-flex align-items-center" to="/mon-profil">
+                        <i className="fas fa-user me-2 text-primary"></i>
+                        Mon profil
                       </Link>
                     </li>
                     <li><hr className="dropdown-divider" /></li>

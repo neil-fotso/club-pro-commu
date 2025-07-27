@@ -1,6 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { playerAPI } from '../services/api';
+import { getAllCountries, getCountryDisplay } from '../utils/countryUtils';
+import { getAllPositions, getPositionDisplay } from '../utils/positionUtils';
+
+// Liste des langues disponibles
+const availableLanguages = [
+  'Français',
+  'Anglais',
+  'Espagnol',
+  'Allemand',
+  'Italien',
+  'Portugais',
+  'Néerlandais',
+  'Suédois',
+  'Norvégien',
+  'Danois',
+  'Finnois',
+  'Polonais',
+  'Tchèque',
+  'Slovaque',
+  'Hongrois',
+  'Roumain',
+  'Bulgare',
+  'Grec',
+  'Turc',
+  'Russe',
+  'Ukrainien',
+  'Biélorusse',
+  'Serbe',
+  'Croate',
+  'Bosniaque',
+  'Monténégrin',
+  'Macédonien',
+  'Albanais',
+  'Estonien',
+  'Letton',
+  'Lituanien',
+  'Arabe',
+  'Hébreu',
+  'Persan',
+  'Hindi',
+  'Bengali',
+  'Ourdou',
+  'Chinois',
+  'Japonais',
+  'Coréen',
+  'Thaï',
+  'Vietnamien',
+  'Indonésien',
+  'Malais',
+  'Tagalog',
+  'Swahili',
+  'Zoulou',
+  'Afrikaans',
+  'Autre'
+];
 
 export default function MyProfilePage() {
   const { user } = useAuth();
@@ -23,12 +78,14 @@ export default function MyProfilePage() {
       const data = await playerAPI.getMyProfile(token);
       setPlayer(data);
       setFormData({
-        postePrincipal: data.postePrincipal,
-        age: data.age,
-        pays: data.pays,
+        postePrincipal: data.postePrincipal || '',
+        postesSecondaires: data.postesSecondaires || [],
+        age: data.age || '',
+        pays: data.pays || '',
         description: data.description || '',
-        niveau: data.niveau,
-        rechercheClub: data.rechercheClub
+        rechercheClub: data.rechercheClub !== undefined ? data.rechercheClub : true,
+        disponibilite: data.disponibilite || 'Disponible',
+        langues: data.langues || ['Français']
       });
       setError('');
     } catch (err) {
@@ -54,14 +111,45 @@ export default function MyProfilePage() {
 
     try {
       const token = localStorage.getItem('token');
-      const updatedPlayer = await playerAPI.updatePlayer(player._id, formData, token);
+      
+      // Préparer les données en s'assurant qu'elles sont correctement formatées
+      const updateData = {
+        ...formData,
+        // S'assurer que les champs optionnels sont bien gérés
+        age: formData.age ? parseInt(formData.age) : undefined,
+        pays: formData.pays || undefined,
+        postesSecondaires: Array.isArray(formData.postesSecondaires) ? formData.postesSecondaires : [],
+        langues: Array.isArray(formData.langues) ? formData.langues : []
+      };
+
+      console.log('Données envoyées:', updateData);
+      
+      const updatedPlayer = await playerAPI.updatePlayer(player._id, updateData, token);
       setPlayer(updatedPlayer);
       setEditing(false);
+      alert('Profil mis à jour avec succès !');
+      
+      // Recharger le profil pour s'assurer que tout est à jour
+      await loadMyProfile();
     } catch (err) {
       setError(err.message || 'Erreur lors de la mise à jour');
+      console.error('Erreur mise à jour:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+
+
+
+
+  const getAvailabilityBadge = (availability) => {
+    const badges = {
+      'Disponible': 'bg-success',
+      'Occupé': 'bg-danger',
+      'Partiellement disponible': 'bg-warning'
+    };
+    return badges[availability] || 'bg-secondary';
   };
 
   if (!user) {
@@ -78,7 +166,7 @@ export default function MyProfilePage() {
   if (loading) {
     return (
       <div className="container mt-4 text-center">
-        <div className="spinner-border" role="status">
+        <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Chargement...</span>
         </div>
       </div>
@@ -99,177 +187,364 @@ export default function MyProfilePage() {
   return (
     <div className="container mt-4">
       <div className="row">
-        <div className="col-md-8">
-          <div className="card">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <h2 className="mb-0">Mon profil joueur</h2>
+        {/* Colonne principale */}
+        <div className="col-lg-8">
+          <div className="card shadow-lg border-0">
+            <div className="card-header text-white d-flex justify-content-between align-items-center" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+              <h2 className="mb-0">
+                <i className="fas fa-user-circle me-2"></i>
+                Mon Profil Joueur
+              </h2>
               <button 
-                className="btn btn-outline-primary btn-sm"
+                className="btn btn-light btn-sm"
                 onClick={() => setEditing(!editing)}
               >
+                <i className={`fas ${editing ? 'fa-times' : 'fa-edit'} me-1`}></i>
                 {editing ? 'Annuler' : 'Modifier'}
               </button>
             </div>
-            <div className="card-body">
+            
+            <div className="card-body p-4">
               {editing ? (
                 <form onSubmit={handleSubmit}>
                   <div className="row">
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Poste principal *</label>
+                      <label className="form-label fw-bold">
+                        <i className="fas fa-futbol me-1"></i>
+                        Poste principal *
+                      </label>
                       <select
-                        className="form-select"
+                        className="form-select form-select-lg"
                         name="postePrincipal"
                         value={formData.postePrincipal}
                         onChange={handleChange}
                         required
                       >
-                        <option value="Attaquant">Attaquant</option>
-                        <option value="Milieu">Milieu</option>
-                        <option value="Défenseur">Défenseur</option>
-                        <option value="Gardien">Gardien</option>
+                        {getAllPositions().map(position => (
+                          <option key={position.code} value={position.code}>
+                            {position.icon} {position.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
+                    
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Âge *</label>
+                      <label className="form-label fw-bold">
+                        <i className="fas fa-birthday-cake me-1"></i>
+                        Âge (optionnel)
+                      </label>
                       <input
                         type="number"
-                        className="form-control"
+                        className="form-control form-control-lg"
                         name="age"
                         value={formData.age}
                         onChange={handleChange}
                         min="16"
                         max="100"
-                        required
+                        placeholder="Votre âge"
                       />
                     </div>
                   </div>
+
                   <div className="row">
                     <div className="col-md-6 mb-3">
-                      <label className="form-label">Pays *</label>
-                      <input
-                        type="text"
-                        className="form-control"
+                      <label className="form-label fw-bold">
+                        <i className="fas fa-flag me-1"></i>
+                        Nationalité (optionnel)
+                      </label>
+                      <select
+                        className="form-select form-select-lg"
                         name="pays"
                         value={formData.pays}
                         onChange={handleChange}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">Niveau</label>
-                      <select
-                        className="form-select"
-                        name="niveau"
-                        value={formData.niveau}
-                        onChange={handleChange}
                       >
-                        <option value="Débutant">Débutant</option>
-                        <option value="Intermédiaire">Intermédiaire</option>
-                        <option value="Avancé">Avancé</option>
-                        <option value="Expert">Expert</option>
+                        <option value="">Sélectionnez votre nationalité</option>
+                        {getAllCountries().map(country => (
+                          <option key={country.code} value={country.code}>
+                            {country.flag} {country.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
+                    
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold">
+                        <i className="fas fa-futbol me-1"></i>
+                        Postes secondaires (optionnel)
+                      </label>
+                      <select
+                        className="form-select form-select-lg"
+                        name="postesSecondaires"
+                        value={formData.postesSecondaires}
+                        onChange={(e) => {
+                          const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                          setFormData(prev => ({
+                            ...prev,
+                            postesSecondaires: selectedOptions
+                          }));
+                        }}
+                        multiple
+                        size="3"
+                      >
+                        {getAllPositions().map(position => (
+                          <option key={position.code} value={position.code}>
+                            {position.icon} {position.name}
+                          </option>
+                        ))}
+                      </select>
+                      <small className="text-muted">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs postes</small>
+                    </div>
                   </div>
+
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold">
+                        <i className="fas fa-clock me-1"></i>
+                        Disponibilité
+                      </label>
+                      <select
+                        className="form-select form-select-lg"
+                        name="disponibilite"
+                        value={formData.disponibilite}
+                        onChange={handleChange}
+                      >
+                        <option value="Disponible">✅ Disponible</option>
+                        <option value="Partiellement disponible">⚠️ Partiellement disponible</option>
+                        <option value="Occupé">❌ Occupé</option>
+                      </select>
+                    </div>
+                    
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label fw-bold">
+                        <i className="fas fa-search me-1"></i>
+                        Recherche un club
+                      </label>
+                      <div className="form-check form-switch mt-2">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          name="rechercheClub"
+                          checked={formData.rechercheClub}
+                          onChange={handleChange}
+                          id="rechercheClub"
+                        />
+                        <label className="form-check-label" htmlFor="rechercheClub">
+                          {formData.rechercheClub ? 'Oui' : 'Non'}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="mb-3">
-                    <label className="form-label">Description</label>
+                    <label className="form-label fw-bold">
+                      <i className="fas fa-comment me-1"></i>
+                      Description
+                    </label>
                     <textarea
                       className="form-control"
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
-                      rows="3"
-                      maxLength="500"
-                    />
+                      rows="4"
+                      placeholder="Parlez-nous de vous, de votre style de jeu, de vos objectifs..."
+                    ></textarea>
                   </div>
+
                   <div className="mb-3">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        name="rechercheClub"
-                        checked={formData.rechercheClub}
-                        onChange={handleChange}
-                      />
-                      <label className="form-check-label">
-                        Je recherche un club
-                      </label>
-                    </div>
-                  </div>
-                  <div className="d-grid gap-2">
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={loading}
+                    <label className="form-label fw-bold">
+                      <i className="fas fa-language me-1"></i>
+                      Langues parlées
+                    </label>
+                    <select
+                      className="form-select form-select-lg"
+                      name="langues"
+                      value={formData.langues}
+                      onChange={(e) => {
+                        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                        setFormData(prev => ({
+                          ...prev,
+                          langues: selectedOptions
+                        }));
+                      }}
+                      multiple
+                      size="4"
                     >
-                      {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+                      {availableLanguages.map(langue => (
+                        <option key={langue} value={langue}>
+                          {langue}
+                        </option>
+                      ))}
+                    </select>
+                    <small className="text-muted">Maintenez Ctrl (ou Cmd) pour sélectionner plusieurs langues</small>
+                  </div>
+
+                  <div className="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="button" className="btn btn-secondary me-md-2" onClick={() => setEditing(false)}>
+                      <i className="fas fa-times me-1"></i>
+                      Annuler
+                    </button>
+                    <button type="submit" className="btn btn-primary" disabled={loading}>
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                          Sauvegarde...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-save me-1"></i>
+                          Sauvegarder
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
               ) : (
                 <div className="row">
                   <div className="col-md-6">
-                    <h5>Informations générales</h5>
+                    <h5 className="text-primary mb-3">
+                      <i className="fas fa-info-circle me-2"></i>
+                      Informations générales
+                    </h5>
                     <ul className="list-unstyled">
-                      <li><strong>Pseudo:</strong> {player.pseudo}</li>
-                      <li><strong>Âge:</strong> {player.age} ans</li>
-                      <li><strong>Pays:</strong> {player.pays}</li>
-                      <li><strong>Plateforme:</strong> {player.plateforme}</li>
-                      <li><strong>Niveau:</strong> {player.niveau}</li>
-                      <li><strong>Expérience:</strong> {player.experience} matchs</li>
+                      <li className="mb-2">
+                        <strong>Pseudo:</strong> 
+                        <span className="text-muted ms-2">{player.pseudo}</span>
+                      </li>
+                      <li className="mb-2">
+                        <strong>Âge:</strong> 
+                        <span className="text-muted ms-2">
+                          {player.age ? `${player.age} ans` : 'Non renseigné'}
+                        </span>
+                      </li>
+                      <li className="mb-2">
+                        <strong>Nationalité:</strong> 
+                        <span className="text-muted ms-2">
+                          {player.pays ? getCountryDisplay(player.pays) : 'Non renseignée'}
+                        </span>
+                      </li>
+                      <li className="mb-2">
+                        <strong>Plateforme:</strong> 
+                        <span className="text-muted ms-2">{player.plateforme}</span>
+                      </li>
+                      <li className="mb-2">
+                        <strong>Expérience:</strong> 
+                        <span className="text-muted ms-2">
+                          {player.experience ? `${player.experience} matchs` : 'Non renseigné'}
+                        </span>
+                      </li>
                     </ul>
                   </div>
+                  
                   <div className="col-md-6">
-                    <h5>Postes</h5>
+                    <h5 className="text-primary mb-3">
+                      <i className="fas fa-futbol me-2"></i>
+                      Postes & Disponibilité
+                    </h5>
                     <ul className="list-unstyled">
-                      <li><strong>Poste principal:</strong> {player.postePrincipal}</li>
+                      <li className="mb-2">
+                        <strong>Poste principal:</strong> 
+                        <span className="badge bg-primary ms-2">
+                          {getPositionDisplay(player.postePrincipal)}
+                        </span>
+                      </li>
                       {player.postesSecondaires && player.postesSecondaires.length > 0 && (
-                        <li><strong>Postes secondaires:</strong> {player.postesSecondaires.join(', ')}</li>
+                        <li className="mb-2">
+                          <strong>Postes secondaires:</strong> 
+                          <div className="mt-1">
+                            {player.postesSecondaires.map((poste, index) => (
+                              <span key={index} className="badge bg-secondary me-1">
+                                {getPositionDisplay(poste)}
+                              </span>
+                            ))}
+                          </div>
+                        </li>
                       )}
-                    </ul>
-                    
-                    <h5>Disponibilité</h5>
-                    <ul className="list-unstyled">
-                      <li><strong>Statut:</strong> {player.disponibilite}</li>
-                      <li>
+                      <li className="mb-2">
+                        <strong>Disponibilité:</strong> 
+                        <span className={`badge ${getAvailabilityBadge(player.disponibilite)} ms-2`}>
+                          {player.disponibilite ? player.disponibilite : 'Non renseigné'}
+                        </span>
+                      </li>
+                      <li className="mb-2">
                         <strong>Recherche un club:</strong> 
-                        {player.rechercheClub ? (
-                          <span className="badge bg-success ms-2">Oui</span>
+                        {player.rechercheClub !== undefined ? (
+                          player.rechercheClub ? (
+                            <span className="badge bg-success ms-2">✅ Oui</span>
+                          ) : (
+                            <span className="badge bg-secondary ms-2">❌ Non</span>
+                          )
                         ) : (
-                          <span className="badge bg-secondary ms-2">Non</span>
+                          <span className="badge bg-secondary ms-2">Non renseigné</span>
                         )}
                       </li>
                     </ul>
                   </div>
                   
-                  {player.description && (
-                    <div className="col-12 mt-3">
-                      <h5>Description</h5>
-                      <p>{player.description}</p>
+                  <div className="col-12 mt-4">
+                    <h5 className="text-primary mb-3">
+                      <i className="fas fa-comment me-2"></i>
+                      Description
+                    </h5>
+                    <div className="card bg-light">
+                      <div className="card-body">
+                        <p className="mb-0">
+                          {player.description ? player.description : 'Aucune description renseignée'}
+                        </p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                   
-                  {player.langues && player.langues.length > 0 && (
-                    <div className="col-12 mt-3">
-                      <h5>Langues parlées</h5>
-                      <p>{player.langues.join(', ')}</p>
+                  <div className="col-12 mt-4">
+                    <h5 className="text-primary mb-3">
+                      <i className="fas fa-language me-2"></i>
+                      Langues parlées
+                    </h5>
+                    <div>
+                      {player.langues && player.langues.length > 0 ? (
+                        player.langues.map((langue, index) => (
+                          <span key={index} className="badge bg-info me-2">
+                            {langue}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="badge bg-secondary">Aucune langue renseignée</span>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
         
-        <div className="col-md-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">Actions</h5>
+        {/* Sidebar avec statistiques */}
+        <div className="col-lg-4">
+          <div className="card shadow-lg border-0">
+            <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+              <h5 className="mb-0">
+                <i className="fas fa-chart-line me-2"></i>
+                Statistiques
+              </h5>
             </div>
             <div className="card-body">
-              <p className="text-muted">
-                Votre profil joueur a été créé automatiquement lors de votre inscription.
-                Vous pouvez le personnaliser en cliquant sur "Modifier".
-              </p>
+              <div className="row text-center">
+                <div className="col-6">
+                  <div className="stat-item">
+                    <h3 className="text-primary mb-0">{player.experience || 0}</h3>
+                    <small className="text-muted">Matchs joués</small>
+                  </div>
+                </div>
+                <div className="col-6">
+                  <div className="stat-item">
+                    <h3 className="text-success mb-0">
+                      {player.age ? player.age : 'N/A'}
+                    </h3>
+                    <small className="text-muted">Âge</small>
+                  </div>
+                </div>
+              </div>
+              
+
             </div>
           </div>
         </div>

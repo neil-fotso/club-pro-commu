@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clubAPI } from '../services/api';
+import Avatar from '../components/Avatar';
 
 export default function MyClubsPage() {
   const { user } = useAuth();
@@ -178,9 +179,13 @@ export default function MyClubsPage() {
                            }}>
                         <div className="card-body p-4">
                           <div className="d-flex align-items-center mb-3">
-                            <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px'}}>
-                              <i className="fas fa-shield-alt text-white" style={{fontSize: '1.5rem'}}></i>
-                            </div>
+                            <Avatar
+                              src={club.photoProfil}
+                              name={club.nom}
+                              size="md"
+                              type="club"
+                              className="me-3"
+                            />
                             <div className="flex-grow-1">
                               <h5 className="mb-1">
                                 <Link to={`/club/${club._id}`} className="text-decoration-none text-white">

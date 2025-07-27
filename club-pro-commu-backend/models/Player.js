@@ -4,36 +4,46 @@ const playerSchema = new mongoose.Schema({
   pseudo: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    trim: true
+  },
+  pseudoPlateforme: {
+    type: String,
+    required: true,
+    trim: true
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
+  photoProfil: {
+    type: String,
+    default: null // URL de l'image ou null si pas de photo
+  },
   postePrincipal: {
     type: String,
     required: true,
-    enum: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien']
+    enum: ['BU', 'AG', 'AD', 'MOC', 'MG', 'MD', 'MC', 'MDC', 'DD', 'DG', 'DC', 'DLD', 'DLG']
   },
   postesSecondaires: [{
     type: String,
-    enum: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien']
+    enum: ['BU', 'AG', 'AD', 'MOC', 'MG', 'MD', 'MC', 'MDC', 'DD', 'DG', 'DC', 'DLD', 'DLG']
   }],
   age: {
     type: Number,
-    required: true,
     min: 16,
     max: 100
   },
   pays: {
     type: String,
-    required: true
+    minlength: 2,
+    maxlength: 3
   },
   plateforme: {
     type: String,
     required: true,
-    enum: ['PS5', 'Xbox', 'PC']
+    enum: ['PS5', 'PS4', 'Xbox Series X/S', 'Xbox One', 'PC']
   },
   langues: [{
     type: String
@@ -51,14 +61,14 @@ const playerSchema = new mongoose.Schema({
     type: String,
     maxlength: 500
   },
-  niveau: {
-    type: String,
-    enum: ['Débutant', 'Intermédiaire', 'Avancé', 'Expert'],
-    default: 'Intermédiaire'
-  },
+
   experience: {
     type: Number,
     default: 0
+  },
+  lastActivity: {
+    type: Date,
+    default: Date.now
   },
   dateCreation: {
     type: Date,

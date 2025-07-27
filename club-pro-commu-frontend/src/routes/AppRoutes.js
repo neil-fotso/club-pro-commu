@@ -26,7 +26,7 @@ export default function AppRoutes() {
       <Route path="/clubs" element={<ClubSearchPage />} />
       <Route path="/joueur/:id" element={<PlayerProfilePage />} />
       <Route path="/club/:id" element={<ClubProfilePage />} />
-      <Route path="/compte" element={<AccountPage />} />
+      <Route path="/compte" element={<MyProfilePage />} />
       <Route path="/discussions" element={<DiscussionsPage />} />
       <Route path="/competition" element={<CompetitionPage />} />
       <Route path="/creer-club" element={<CreateClubPage />} />

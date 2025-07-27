@@ -125,7 +125,12 @@ export default function LoginPage() {
 
                   <button 
                     type="submit" 
-                    className="btn btn-light btn-lg w-100 mb-3"
+                    className="btn btn-primary btn-lg w-100 mb-3"
+                    style={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      border: 'none',
+                      color: 'white'
+                    }}
                     disabled={loading}
                   >
                     {loading ? (

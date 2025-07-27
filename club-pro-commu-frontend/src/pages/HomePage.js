@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { playerAPI, clubAPI } from '../services/api';
+import Avatar from '../components/Avatar';
 import bgHeader from '../assets/bg-header.jpg';
 
 const HomePage = () => {
@@ -68,9 +69,15 @@ const HomePage = () => {
                   </Link>
                 </div>
               ) : (
-                <div className="alert alert-success mb-0 bg-white bg-opacity-20 border-0">
-                  <h5 className="mb-2 text-white">Bienvenue, {user.pseudo} ! 🎮</h5>
-                  <p className="mb-0 text-white-90">Prêt à rejoindre la communauté ?</p>
+                <div className="d-flex gap-3">
+                  <Link to="/joueurs" className="btn btn-light btn-lg px-4 fw-bold">
+                    <i className="fas fa-users me-2"></i>
+                    Voir les joueurs
+                  </Link>
+                  <Link to="/clubs" className="btn btn-outline-light btn-lg px-4 fw-bold">
+                    <i className="fas fa-shield-alt me-2"></i>
+                    Voir les clubs
+                  </Link>
                 </div>
               )}
             </div>
@@ -103,69 +110,78 @@ const HomePage = () => {
         <h2 className="text-center mb-5">✨ Fonctionnalités Clés</h2>
         <div className="row g-4">
           <div className="col-md-4">
-            <div className="card h-100 border-0 shadow-sm hover-shadow" 
-                 style={{
-                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                   color: 'white'
-                 }}>
-              <div className="card-body text-center p-4">
-                <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
-                  <i className="fas fa-search text-white" style={{fontSize: '1.5rem'}}></i>
+            <Link to="/joueurs" className="text-decoration-none">
+              <div className="card h-100 border-0 shadow-sm hover-shadow cursor-pointer" 
+                   style={{
+                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                     color: 'white',
+                     transition: 'all 0.3s ease'
+                   }}>
+                <div className="card-body text-center p-4">
+                  <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                    <i className="fas fa-user-friends text-primary" style={{fontSize: '1.5rem'}}></i>
+                  </div>
+                  <h5 className="card-title">Recherche de Joueur</h5>
+                  <p className="card-text text-white-90">
+                    Trouvez des joueurs avec des filtres précis (poste, plateforme, disponibilité, niveau...).
+                  </p>
+                  <div className="btn btn-warning btn-sm">
+                    <i className="fas fa-search me-1"></i>
+                    Rechercher des joueurs
+                  </div>
                 </div>
-                <h5 className="card-title">Recherche Avancée</h5>
-                <p className="card-text text-white-90">
-                  Trouvez des joueurs ou des clubs avec des filtres précis (poste, plateforme, disponibilité...).
-                </p>
-                <Link to="/joueurs" className="btn btn-outline-light btn-sm">
-                  <i className="fas fa-search me-1"></i>
-                  Rechercher
-                </Link>
               </div>
-            </div>
+            </Link>
           </div>
 
           <div className="col-md-4">
-            <div className="card h-100 border-0 shadow-sm hover-shadow" 
-                 style={{
-                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                   color: 'white'
-                 }}>
-              <div className="card-body text-center p-4">
-                <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
-                  <i className="fas fa-users text-white" style={{fontSize: '1.5rem'}}></i>
+            <Link to="/mes-clubs" className="text-decoration-none">
+              <div className="card h-100 border-0 shadow-sm hover-shadow cursor-pointer" 
+                   style={{
+                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                     color: 'white',
+                     transition: 'all 0.3s ease'
+                   }}>
+                <div className="card-body text-center p-4">
+                  <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                    <i className="fas fa-shield-alt text-primary" style={{fontSize: '1.5rem'}}></i>
+                  </div>
+                  <h5 className="card-title">Gestion de Club</h5>
+                  <p className="card-text text-white-90">
+                    Créez votre club, gérez votre effectif, définissez vos formations et stratégies.
+                  </p>
+                  <div className="btn btn-warning btn-sm">
+                    <i className="fas fa-shield-alt me-1"></i>
+                    Gérer mon club
+                  </div>
                 </div>
-                <h5 className="card-title">Gestion de Club</h5>
-                <p className="card-text text-white-90">
-                  Créez votre club, gérez votre effectif, définissez vos formations et stratégies.
-                </p>
-                <Link to="/clubs" className="btn btn-outline-light btn-sm">
-                  <i className="fas fa-shield-alt me-1"></i>
-                  Gérer mon club
-                </Link>
               </div>
-            </div>
+            </Link>
           </div>
 
           <div className="col-md-4">
-            <div className="card h-100 border-0 shadow-sm hover-shadow" 
-                 style={{
-                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                   color: 'white'
-                 }}>
-              <div className="card-body text-center p-4">
-                <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
-                  <i className="fas fa-trophy text-white" style={{fontSize: '1.5rem'}}></i>
+            <Link to="/competition" className="text-decoration-none">
+              <div className="card h-100 border-0 shadow-sm hover-shadow cursor-pointer" 
+                   style={{
+                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                     color: 'white',
+                     transition: 'all 0.3s ease'
+                   }}>
+                <div className="card-body text-center p-4">
+                  <div className="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '60px', height: '60px'}}>
+                    <i className="fas fa-medal text-primary" style={{fontSize: '1.5rem'}}></i>
+                  </div>
+                  <h5 className="card-title">Compétitions</h5>
+                  <p className="card-text text-white-90">
+                    Participez à des tournois et championnats, mesurez-vous aux meilleures équipes.
+                  </p>
+                  <div className="btn btn-warning btn-sm">
+                    <i className="fas fa-trophy me-1"></i>
+                    Voir les compétitions
+                  </div>
                 </div>
-                <h5 className="card-title">Compétitions</h5>
-                <p className="card-text text-white-90">
-                  Participez à des tournois et championnats, mesurez-vous aux meilleures équipes.
-                </p>
-                <Link to="/competition" className="btn btn-outline-light btn-sm">
-                  <i className="fas fa-trophy me-1"></i>
-                  Voir les compétitions
-                </Link>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
@@ -184,34 +200,39 @@ const HomePage = () => {
                   <div className="row g-3">
                     {recentPlayers.map((player) => (
                       <div key={player._id} className="col-12">
-                        <div className="card border-0 shadow-sm hover-shadow" 
-                             style={{
-                               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                               color: 'white'
-                             }}>
-                          <div className="card-body p-3">
-                            <div className="d-flex align-items-center">
-                              <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px'}}>
-                                <i className="fas fa-user text-white"></i>
-                              </div>
-                              <div className="flex-grow-1">
-                                <h6 className="mb-1">
-                                  <Link to={`/joueur/${player._id}`} className="text-decoration-none text-white">
+                        <Link to={`/joueur/${player._id}`} className="text-decoration-none">
+                          <div className="card border-0 shadow-sm hover-shadow cursor-pointer" 
+                               style={{
+                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                 color: 'white',
+                                 transition: 'all 0.3s ease'
+                               }}>
+                            <div className="card-body p-3">
+                              <div className="d-flex align-items-center">
+                                <Avatar
+                                  src={player.photoProfil}
+                                  name={player.pseudo}
+                                  size="sm"
+                                  type="player"
+                                  className="me-3"
+                                />
+                                <div className="flex-grow-1">
+                                  <h6 className="mb-1 text-white">
                                     {player.pseudo}
-                                  </Link>
-                                </h6>
-                                <small className="text-white-75">
-                                  {player.postePrincipal} • {player.plateforme} • {player.niveau}
-                                </small>
-                              </div>
-                              <div className="text-end">
-                                <span className={`badge ${player.rechercheClub ? 'bg-success' : 'bg-secondary'}`}>
-                                  {player.rechercheClub ? 'Recherche club' : 'Club trouvé'}
-                                </span>
+                                  </h6>
+                                  <small className="text-white-75">
+                                    {player.postePrincipal} • {player.plateforme} • {player.niveau}
+                                  </small>
+                                </div>
+                                <div className="text-end">
+                                  <span className={`badge ${player.rechercheClub ? 'bg-success' : 'bg-secondary'}`}>
+                                    {player.rechercheClub ? 'Recherche club' : 'Club trouvé'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       </div>
                     ))}
                   </div>
@@ -231,34 +252,39 @@ const HomePage = () => {
                   <div className="row g-3">
                     {recentClubs.map((club) => (
                       <div key={club._id} className="col-12">
-                        <div className="card border-0 shadow-sm hover-shadow" 
-                             style={{
-                               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                               color: 'white'
-                             }}>
-                          <div className="card-body p-3">
-                            <div className="d-flex align-items-center">
-                              <div className="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px'}}>
-                                <i className="fas fa-shield-alt text-white"></i>
-                              </div>
-                              <div className="flex-grow-1">
-                                <h6 className="mb-1">
-                                  <Link to={`/club/${club._id}`} className="text-decoration-none text-white">
+                        <Link to={`/club/${club._id}`} className="text-decoration-none">
+                          <div className="card border-0 shadow-sm hover-shadow cursor-pointer" 
+                               style={{
+                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                 color: 'white',
+                                 transition: 'all 0.3s ease'
+                               }}>
+                            <div className="card-body p-3">
+                              <div className="d-flex align-items-center">
+                                <Avatar
+                                  src={club.photoProfil}
+                                  name={club.nom}
+                                  size="sm"
+                                  type="club"
+                                  className="me-3"
+                                />
+                                <div className="flex-grow-1">
+                                  <h6 className="mb-1 text-white">
                                     {club.nom}
-                                  </Link>
-                                </h6>
-                                <small className="text-white-75">
-                                  {club.plateforme} • {club.membres.length} membres
-                                </small>
-                              </div>
-                              <div className="text-end">
-                                <span className={`badge ${club.rechercheJoueurs ? 'bg-info' : 'bg-secondary'}`}>
-                                  {club.rechercheJoueurs ? 'Recrute' : 'Complet'}
-                                </span>
+                                  </h6>
+                                  <small className="text-white-75">
+                                    {club.plateforme} • {club.membres.length} membres
+                                  </small>
+                                </div>
+                                <div className="text-end">
+                                  <span className={`badge ${club.rechercheJoueurs ? 'bg-info' : 'bg-secondary'}`}>
+                                    {club.rechercheJoueurs ? 'Recrute' : 'Complet'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       </div>
                     ))}
                   </div>

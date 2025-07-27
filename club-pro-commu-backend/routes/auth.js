@@ -9,11 +9,16 @@ const router = express.Router();
 // Route d'inscription
 router.post('/register', async (req, res) => {
   try {
-    const { pseudo, email, password, plateforme } = req.body;
+    const { pseudo, pseudoPlateforme, email, password, plateforme, postePrincipal, age, pays } = req.body;
 
     // Validation des champs obligatoires
-    if (!pseudo || !email || !password || !plateforme) {
-      return res.status(400).json({ message: 'Tous les champs sont obligatoires.' });
+    if (!pseudo || !pseudoPlateforme || !email || !password || !plateforme || !postePrincipal) {
+      return res.status(400).json({ message: 'Pseudo, pseudo sur la plateforme, email, mot de passe, plateforme et poste principal sont obligatoires.' });
+    }
+
+    // Validation de l'âge si fourni
+    if (age && (parseInt(age) < 16 || parseInt(age) > 100)) {
+      return res.status(400).json({ message: 'L\'âge doit être compris entre 16 et 100 ans.' });
     }
 
     // Vérifier si l'utilisateur existe déjà
@@ -24,8 +29,8 @@ router.post('/register', async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ 
         message: existingUser.email === email 
-          ? 'Cet email est déjà utilisé.' 
-          : 'Ce pseudo est déjà utilisé.' 
+          ? 'Cette adresse email est déjà utilisée.' 
+          : 'Ce pseudo est déjà utilisé.'
       });
     }
 
@@ -44,21 +49,23 @@ router.post('/register', async (req, res) => {
 
     await user.save();
 
-    // Créer automatiquement un profil joueur
-    const player = new Player({
-      pseudo: user.pseudo,
+    // Créer le profil joueur
+    const playerData = {
+      pseudo,
+      pseudoPlateforme,
       userId: user._id,
-      postePrincipal: 'Milieu', // Poste par défaut
+      postePrincipal,
       postesSecondaires: [],
-      age: 25, // Âge par défaut
-      pays: 'France', // Pays par défaut
-      plateforme: user.plateforme,
+      age: age ? parseInt(age) : undefined,
+      pays: pays || undefined,
+      plateforme,
+      disponibilite: 'Disponible',
+      rechercheClub: true,
       langues: ['Français'],
-      description: 'Joueur FIFA Pro Clubs',
-      niveau: 'Intermédiaire',
-      rechercheClub: true // Par défaut, recherche un club
-    });
+      description: 'Joueur FIFA Pro Clubs'
+    };
 
+    const player = new Player(playerData);
     await player.save();
 
     res.status(201).json({ message: 'Utilisateur créé avec succès.' });

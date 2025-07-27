@@ -30,6 +30,8 @@ const apiCall = async (endpoint, options = {}) => {
   // S'assurer que le body est stringifié pour les requêtes POST/PUT
   if (options.body && typeof options.body === 'object') {
     config.body = JSON.stringify(options.body);
+    // Forcer explicitement le Content-Type pour les requêtes avec body
+    config.headers['Content-Type'] = 'application/json';
   }
 
   try {
@@ -118,6 +120,7 @@ export const playerAPI = {
       body: playerData,
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
   },
