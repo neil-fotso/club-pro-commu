@@ -92,15 +92,15 @@ export default function LoginPage() {
                 {/* Formulaire */}
                 <form onSubmit={handleSubmit}>
                   <div className="mb-3">
-                    <label htmlFor="email" className="form-label">
+                    <label htmlFor="emailOrPseudo" className="form-label">
                       <i className="fas fa-envelope me-2"></i>
                       Email ou Pseudo *
                     </label>
                     <input
                       type="text"
                       className="form-control form-control-lg"
-                      id="email"
-                      name="email"
+                      id="emailOrPseudo"
+                      name="emailOrPseudo"
                       value={formData.emailOrPseudo}
                       onChange={handleChange}
                       required
