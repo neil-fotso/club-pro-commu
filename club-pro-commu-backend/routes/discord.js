@@ -10,9 +10,20 @@ function verifyDiscordSignature(req, body, signature, timestamp) {
     return true;
   }
 
-  // Pour la vérification initiale Discord, on accepte toujours
-  // La vérification de signature sera implémentée plus tard si nécessaire
-  console.log('Signature Discord détectée, acceptée pour vérification initiale');
+  // Si on a une signature, on doit la valider
+  if (signature && timestamp) {
+    try {
+      // Pour l'instant, on accepte les signatures pour permettre la validation Discord
+      // TODO: Implémenter la vraie validation Ed25519
+      console.log('Signature Discord détectée, validation temporairement acceptée');
+      return true;
+    } catch (error) {
+      console.error('Erreur validation signature Discord:', error);
+      return false;
+    }
+  }
+
+  // Si pas de signature, on accepte (pour les tests)
   return true;
 }
 
@@ -47,6 +58,11 @@ router.post('/webhook', async (req, res) => {
     // Gestion de la vérification Discord (type: 0 = PING selon la doc Discord)
     if (req.body.type === 0) {
       // Discord attend une réponse 204 sans corps pour les PING
+      return res.status(204).send();
+    }
+
+    // Pour les événements normaux (type: 1), répondre avec 204 aussi
+    if (req.body.type === 1) {
       return res.status(204).send();
     }
     
