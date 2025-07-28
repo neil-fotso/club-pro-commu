@@ -1,4 +1,4 @@
-const axios = require('axios');
+const discordSimple = require('./discordSimple');
 
 class DiscordService {
   constructor() {
@@ -8,26 +8,27 @@ class DiscordService {
 
   // Envoyer une notification Discord
   async sendNotification(embed) {
-    if (!this.webhookUrl) {
-      console.log('Discord webhook non configuré');
-      return;
-    }
+    // Utiliser le service Discord simplifié
+    const message = this.formatEmbedToMessage(embed);
+    return await discordSimple.sendNotification(message);
+  }
 
-    try {
-      const payload = {
-        embeds: [embed]
-      };
-
-      await axios.post(this.webhookUrl, payload, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+  // Convertir un embed en message Discord
+  formatEmbedToMessage(embed) {
+    let message = `**${embed.title}**\n`;
+    message += `${embed.description}\n\n`;
+    
+    if (embed.fields) {
+      embed.fields.forEach(field => {
+        message += `**${field.name}**: ${field.value}\n`;
       });
-
-      console.log('Notification Discord envoyée avec succès');
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi de la notification Discord:', error.message);
     }
+    
+    if (embed.footer) {
+      message += `\n${embed.footer.text}`;
+    }
+    
+    return message;
   }
 
   // Notification d'invitation de club
