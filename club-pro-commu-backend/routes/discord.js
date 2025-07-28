@@ -37,80 +37,24 @@ router.get('/webhook', (req, res) => {
 });
 
 // Endpoint pour recevoir les webhooks Discord
-router.post('/webhook', async (req, res) => {
-  try {
-    console.log('Webhook Discord reçu:', req.body);
-    console.log('Headers Discord:', req.headers);
-    
-    const signature = req.headers['x-signature-ed25519'];
-    const timestamp = req.headers['x-signature-timestamp'];
-    
-    // Vérification de la signature Discord
-    if (signature && timestamp) {
-      const isValid = verifyDiscordSignature(req, req.body, signature, timestamp);
-      if (!isValid) {
-        console.error('Signature Discord invalide');
-        return res.status(401).json({ error: 'Signature invalide' });
-      }
-      console.log('Signature Discord vérifiée avec succès');
-    }
-    
-    // Gestion de la vérification Discord (type: 0 = PING selon la doc Discord)
-    if (req.body.type === 0) {
-      // Discord attend une réponse 204 sans corps pour les PING
-      return res.status(204).send();
-    }
-
-    // Pour les événements normaux (type: 1), répondre avec 204 aussi
-    if (req.body.type === 1) {
-      return res.status(204).send();
-    }
-    
-    // Gestion des événements Discord
-    if (req.body.type === 2) { // INTERACTION
-      console.log('Interaction Discord reçue:', req.body);
-      return res.status(200).json({ type: 2 }); // ACKNOWLEDGE
-    }
-    
-    // Réponse par défaut
-    res.status(200).json({ 
-      success: true,
-      message: 'Webhook Discord reçu',
-      timestamp: new Date().toISOString()
-    });
-    
-    // Traitement en arrière-plan des événements
-    const { type, data } = req.body;
-    
-    switch (type) {
-      case 'MESSAGE_CREATE':
-        console.log('Nouveau message Discord:', data);
-        break;
-        
-      case 'GUILD_MEMBER_ADD':
-        console.log('Nouveau membre Discord:', data);
-        break;
-        
-      case 'GUILD_MEMBER_REMOVE':
-        console.log('Membre Discord parti:', data);
-        break;
-        
-      case 'GUILD_ROLE_CREATE':
-        console.log('Nouveau rôle Discord:', data);
-        break;
-        
-      case 'GUILD_ROLE_UPDATE':
-        console.log('Rôle Discord modifié:', data);
-        break;
-        
-      default:
-        console.log('Événement Discord non géré:', type);
-    }
-    
-  } catch (error) {
-    console.error('Erreur webhook Discord:', error);
-    // Ne pas renvoyer d'erreur, juste logger
+router.post('/webhook', (req, res) => {
+  console.log('Webhook Discord reçu:', req.body);
+  console.log('Headers Discord:', req.headers);
+  
+  // Répondre IMMÉDIATEMENT pour éviter les timeouts
+  if (req.body.type === 0) {
+    console.log('PING Discord détecté, réponse 204');
+    return res.status(204).send();
   }
+
+  if (req.body.type === 1) {
+    console.log('Événement Discord détecté, réponse 204');
+    return res.status(204).send();
+  }
+
+  // Pour tous les autres cas, répondre 204 aussi
+  console.log('Autre type Discord détecté, réponse 204');
+  return res.status(204).send();
 });
 
 // Endpoint de test spécifique pour Discord
