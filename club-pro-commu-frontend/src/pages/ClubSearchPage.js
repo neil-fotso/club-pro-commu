@@ -130,7 +130,7 @@ export default function ClubSearchPage() {
       <div className="row">
         <div className="col-lg-3">
           <div className="card shadow-lg border-0">
-            <div className="card-header bg-gradient-primary text-white">
+            <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
               <h5 className="mb-0">
                 <i className="fas fa-filter me-2"></i>
                 Filtres
@@ -226,7 +226,7 @@ export default function ClubSearchPage() {
 
           {userClub && (
             <div className="card shadow-lg border-0 mt-3">
-              <div className="card-header bg-gradient-warning text-white">
+              <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
                 <h6 className="mb-0">
                   <i className="fas fa-info-circle me-2"></i>
                   Votre club
@@ -260,7 +260,7 @@ export default function ClubSearchPage() {
 
         <div className="col-lg-9">
           <div className="card shadow-lg border-0">
-            <div className="card-header bg-gradient-success text-white d-flex justify-content-between align-items-center">
+            <div className="card-header text-white d-flex justify-content-between align-items-center" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
               <h5 className="mb-0">
                 <i className="fas fa-shield-alt me-2"></i>
                 Clubs disponibles ({clubs.length})

@@ -191,3 +191,80 @@ export const clubAPI = {
     });
   },
 }; 
+
+// API compétitions
+export const competitionAPI = {
+  // Récupérer toutes les compétitions avec filtres
+  getCompetitions: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/competitions?${params}`);
+  },
+
+  // Récupérer une compétition par ID
+  getCompetition: async (id) => {
+    return apiCall(`/competitions/${id}`);
+  },
+
+  // Créer une compétition
+  createCompetition: async (competitionData, token) => {
+    return apiCall('/competitions', {
+      method: 'POST',
+      body: competitionData,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Mettre à jour une compétition
+  updateCompetition: async (id, competitionData, token) => {
+    return apiCall(`/competitions/${id}`, {
+      method: 'PUT',
+      body: competitionData,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Supprimer une compétition
+  deleteCompetition: async (id, token) => {
+    return apiCall(`/competitions/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Inscrire un club à une compétition
+  registerClub: async (competitionId, clubId, token) => {
+    return apiCall(`/competitions/${competitionId}/inscrire`, {
+      method: 'POST',
+      body: { clubId },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Désinscrire un club d'une compétition
+  unregisterClub: async (competitionId, clubId, token) => {
+    return apiCall(`/competitions/${competitionId}/desinscrire`, {
+      method: 'POST',
+      body: { clubId },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Récupérer les compétitions de l'utilisateur connecté
+  getMyCompetitions: async (token) => {
+    return apiCall('/competitions/mes-competitions', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+}; 

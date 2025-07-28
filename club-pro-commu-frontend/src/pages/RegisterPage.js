@@ -192,8 +192,8 @@ export default function RegisterPage() {
                 {/* Formulaire */}
                 <form onSubmit={handleSubmit}>
                   <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="pseudo" className="form-label">
+                    <div className="col-md-6 mb-4">
+                      <label htmlFor="pseudo" className="form-label fw-bold">
                         <i className="fas fa-user me-2"></i>
                         Pseudo *
                       </label>
@@ -206,11 +206,16 @@ export default function RegisterPage() {
                         onChange={handleChange}
                         placeholder="Votre pseudo"
                         required
+                        style={{
+                          borderRadius: '12px',
+                          border: '2px solid #e9ecef',
+                          transition: 'all 0.3s ease'
+                        }}
                       />
                     </div>
 
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="pseudoPlateforme" className="form-label">
+                    <div className="col-md-6 mb-4">
+                      <label htmlFor="pseudoPlateforme" className="form-label fw-bold">
                         <i className="fas fa-gamepad me-2"></i>
                         Pseudo sur la plateforme *
                       </label>
@@ -224,24 +229,30 @@ export default function RegisterPage() {
                         placeholder="Votre pseudo sur la plateforme"
                         required
                         disabled={useSamePseudo}
+                        style={{
+                          borderRadius: '12px',
+                          border: '2px solid #e9ecef',
+                          transition: 'all 0.3s ease'
+                        }}
                       />
-                      <div className="form-check mt-2">
+                      <div className="form-check mt-3">
                         <input
                           className="form-check-input"
                           type="checkbox"
                           id="useSamePseudo"
                           checked={useSamePseudo}
                           onChange={handleUseSamePseudo}
+                          style={{ transform: 'scale(1.2)' }}
                         />
-                        <label className="form-check-label" htmlFor="useSamePseudo">
+                        <label className="form-check-label ms-2" htmlFor="useSamePseudo">
                           Utiliser le même pseudo
                         </label>
                       </div>
                     </div>
                   </div>
 
-                  <div className="col-md-6 mb-3">
-                    <label htmlFor="email" className="form-label">
+                  <div className="col-md-6 mb-4">
+                    <label htmlFor="email" className="form-label fw-bold">
                       <i className="fas fa-envelope me-2"></i>
                       Email *
                     </label>
@@ -254,12 +265,17 @@ export default function RegisterPage() {
                       onChange={handleChange}
                       placeholder="Votre email"
                       required
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e9ecef',
+                        transition: 'all 0.3s ease'
+                      }}
                     />
                   </div>
 
                   <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="plateforme" className="form-label">
+                    <div className="col-md-6 mb-4">
+                      <label htmlFor="plateforme" className="form-label fw-bold">
                         <i className="fas fa-tv me-2"></i>
                         Plateforme *
                       </label>
@@ -270,6 +286,11 @@ export default function RegisterPage() {
                         value={formData.plateforme}
                         onChange={handleChange}
                         required
+                        style={{
+                          borderRadius: '12px',
+                          border: '2px solid #e9ecef',
+                          transition: 'all 0.3s ease'
+                        }}
                       >
                         <option value="">Choisir votre plateforme</option>
                         <option value="PS5">PlayStation 5</option>
@@ -280,8 +301,8 @@ export default function RegisterPage() {
                       </select>
                     </div>
 
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="postePrincipal" className="form-label">
+                    <div className="col-md-6 mb-4">
+                      <label htmlFor="postePrincipal" className="form-label fw-bold">
                         <i className="fas fa-futbol me-2"></i>
                         Poste principal *
                       </label>
@@ -292,6 +313,11 @@ export default function RegisterPage() {
                         value={formData.postePrincipal}
                         onChange={handleChange}
                         required
+                        style={{
+                          borderRadius: '12px',
+                          border: '2px solid #e9ecef',
+                          transition: 'all 0.3s ease'
+                        }}
                       >
                         <option value="">Choisir votre poste</option>
                         <optgroup label="Attaquants">
@@ -359,8 +385,8 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="password" className="form-label">
+                    <div className="col-md-6 mb-4">
+                      <label htmlFor="password" className="form-label fw-bold">
                         <i className="fas fa-lock me-2"></i>
                         Mot de passe *
                       </label>
@@ -372,10 +398,16 @@ export default function RegisterPage() {
                         value={formData.password}
                         onChange={handleChange}
                         required
+                        placeholder="Votre mot de passe"
+                        style={{
+                          borderRadius: '12px',
+                          border: '2px solid #e9ecef',
+                          transition: 'all 0.3s ease'
+                        }}
                       />
                     </div>
                     <div className="col-md-6 mb-4">
-                      <label htmlFor="confirmPassword" className="form-label">
+                      <label htmlFor="confirmPassword" className="form-label fw-bold">
                         <i className="fas fa-lock me-2"></i>
                         Confirmer le mot de passe *
                       </label>
@@ -387,18 +419,29 @@ export default function RegisterPage() {
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         required
+                        placeholder="Confirmez votre mot de passe"
+                        style={{
+                          borderRadius: '12px',
+                          border: '2px solid #e9ecef',
+                          transition: 'all 0.3s ease'
+                        }}
                       />
                     </div>
                   </div>
 
                   <button 
                     type="submit" 
-                    className="btn btn-primary btn-lg w-100 mb-3"
+                    className="btn btn-primary btn-lg w-100 mb-4"
                     disabled={loading}
                     style={{
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       border: 'none',
-                      color: 'white'
+                      color: 'white',
+                      borderRadius: '12px',
+                      minHeight: '56px',
+                      fontSize: '1.1rem',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease'
                     }}
                   >
                     {loading ? (

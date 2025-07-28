@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { competitionAPI } from '../services/api';
 
 export default function CompetitionPage() {
   const { user } = useAuth();
@@ -59,11 +60,25 @@ export default function CompetitionPage() {
     e.preventDefault();
     setLoading(true);
     
-    // Simulation d'une création de compétition
-    setTimeout(() => {
+    try {
+      // Préparer les données de la compétition
+      const competitionData = {
+        ...form,
+        dateDebut: new Date(form.dateDebut).toISOString(),
+        dateFin: form.dateFin ? new Date(form.dateFin).toISOString() : null,
+        montantInscription: form.inscriptionGratuite ? 0 : form.montantInscription
+      };
+
+      // Appeler l'API pour créer la compétition
+      await competitionAPI.createCompetition(competitionData, user.token);
+      
       setSuccess(true);
       setLoading(false);
-    }, 1500);
+    } catch (error) {
+      console.error('Erreur création compétition:', error);
+      alert('Erreur lors de la création de la compétition: ' + (error.message || 'Erreur inconnue'));
+      setLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -114,7 +129,7 @@ export default function CompetitionPage() {
                     <i className="fas fa-plus me-2"></i>
                     Créer une autre compétition
                   </button>
-                  <a href="/clubs" className="btn btn-primary">
+                  <a href="/mes-competitions" className="btn btn-primary">
                     <i className="fas fa-trophy me-2"></i>
                     Voir mes compétitions
                   </a>

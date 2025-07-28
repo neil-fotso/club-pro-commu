@@ -85,7 +85,7 @@ const HomePage = () => {
               <div className="bg-white bg-opacity-10 rounded p-4 backdrop-blur">
                 <div className="mb-3" style={{fontSize: '4rem'}}>⚽</div>
                 <h3 className="text-white mb-3">📊 Statistiques</h3>
-                <div className="row text-center">
+                <div className="row text-center g-2">
                   <div className="col-4">
                     <div className="h4 text-white mb-1 fw-bold">{recentPlayers.length > 0 ? '6+' : '150+'}</div>
                     <small className="text-white-75">Joueurs</small>
@@ -106,10 +106,10 @@ const HomePage = () => {
       </div>
 
       {/* Main Features Section */}
-      <div className="container py-5">
+      <div className="container py-5 mt-5">
         <h2 className="text-center mb-5">✨ Fonctionnalités Clés</h2>
-        <div className="row g-4">
-          <div className="col-md-4">
+        <div className="row g-4 g-md-4 g-lg-4">
+          <div className="col-md-4 mb-3 mb-md-0">
             <Link to="/joueurs" className="text-decoration-none">
               <div className="card h-100 border-0 shadow-sm hover-shadow cursor-pointer" 
                    style={{
@@ -134,7 +134,7 @@ const HomePage = () => {
             </Link>
           </div>
 
-          <div className="col-md-4">
+          <div className="col-md-4 mb-3 mb-md-0">
             <Link to="/mes-clubs" className="text-decoration-none">
               <div className="card h-100 border-0 shadow-sm hover-shadow cursor-pointer" 
                    style={{
@@ -159,7 +159,7 @@ const HomePage = () => {
             </Link>
           </div>
 
-          <div className="col-md-4">
+          <div className="col-md-4 mb-3 mb-md-0">
             <Link to="/competition" className="text-decoration-none">
               <div className="card h-100 border-0 shadow-sm hover-shadow cursor-pointer" 
                    style={{
@@ -197,7 +197,7 @@ const HomePage = () => {
               {recentPlayers.length > 0 && (
                 <div className="col-lg-6 mb-4">
                   <h3 className="mb-4">👥 Derniers Joueurs Inscrits</h3>
-                  <div className="row g-3">
+                  <div className="row g-3 g-md-3 g-lg-3">
                     {recentPlayers.map((player) => (
                       <div key={player._id} className="col-12">
                         <Link to={`/joueur/${player._id}`} className="text-decoration-none">
@@ -249,7 +249,7 @@ const HomePage = () => {
               {recentClubs.length > 0 && (
                 <div className="col-lg-6 mb-4">
                   <h3 className="mb-4">🏆 Derniers Clubs Créés</h3>
-                  <div className="row g-3">
+                  <div className="row g-3 g-md-3 g-lg-3">
                     {recentClubs.map((club) => (
                       <div key={club._id} className="col-12">
                         <Link to={`/club/${club._id}`} className="text-decoration-none">
@@ -296,13 +296,41 @@ const HomePage = () => {
                   </div>
                 </div>
               )}
+
+              {/* Compétitions */}
+              <div className="col-lg-12 mb-4">
+                <div className="card border-0 shadow-lg" style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white'
+                }}>
+                  <div className="card-body text-center p-5">
+                    <i className="fas fa-trophy fa-4x text-warning mb-4"></i>
+                    <h2 className="mb-3">🏆 Compétitions FIFA Pro Clubs</h2>
+                    <p className="lead mb-4">
+                      Participez à des tournois, championnats et coupes organisés par la communauté
+                    </p>
+                    <div className="d-flex justify-content-center gap-3 flex-wrap">
+                      <Link to="/competitions" className="btn btn-warning btn-lg">
+                        <i className="fas fa-search me-2"></i>
+                        Découvrir les compétitions
+                      </Link>
+                      {user && (
+                        <Link to="/competitions/creer" className="btn btn-outline-light btn-lg">
+                          <i className="fas fa-plus me-2"></i>
+                          Créer une compétition
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* Section Plateformes */}
-      <div className="py-5" style={{
+      <div className="py-5 mt-5" style={{
         background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
       }}>
         <div className="container">
@@ -312,22 +340,22 @@ const HomePage = () => {
               <p className="lead text-muted mb-4">
                 Notre communauté s'étend sur toutes les plateformes FIFA Pro Clubs
               </p>
-              <div className="row g-3">
-                <div className="col-4">
+              <div className="row g-3 g-md-3 g-lg-3">
+                <div className="col-4 mb-3 mb-md-0">
                   <div className="text-center p-3 bg-white rounded shadow-sm hover-shadow">
                     <div className="mb-2" style={{fontSize: '2rem'}}>🎮</div>
                     <div className="h6 text-primary mb-1">PS5</div>
                     <small className="text-muted">PlayStation 5</small>
                   </div>
                 </div>
-                <div className="col-4">
+                <div className="col-4 mb-3 mb-md-0">
                   <div className="text-center p-3 bg-white rounded shadow-sm hover-shadow">
                     <div className="mb-2" style={{fontSize: '2rem'}}>🎮</div>
                     <div className="h6 text-primary mb-1">Xbox</div>
                     <small className="text-muted">Xbox Series</small>
                   </div>
                 </div>
-                <div className="col-4">
+                <div className="col-4 mb-3 mb-md-0">
                   <div className="text-center p-3 bg-white rounded shadow-sm hover-shadow">
                     <div className="mb-2" style={{fontSize: '2rem'}}>💻</div>
                     <div className="h6 text-primary mb-1">PC</div>
@@ -339,7 +367,7 @@ const HomePage = () => {
             <div className="col-lg-6">
               <div className="bg-white rounded p-4 shadow-sm">
                 <h5 className="mb-3">📈 Statistiques Récentes</h5>
-                <div className="row text-center">
+                <div className="row text-center g-3">
                   <div className="col-6 mb-3">
                     <div className="h4 text-primary">85%</div>
                     <small className="text-muted">Joueurs trouvent un club</small>
@@ -364,7 +392,7 @@ const HomePage = () => {
       </div>
 
       {/* Section Call-to-Action */}
-      <div className="container py-5">
+      <div className="container py-5 mt-5">
         <div className="row justify-content-center">
           <div className="col-lg-8 text-center">
             <h2 className="mb-4">🚀 Prêt à Rejoindre l'Aventure ?</h2>

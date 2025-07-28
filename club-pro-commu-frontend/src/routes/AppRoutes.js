@@ -9,6 +9,9 @@ import PlayerProfilePage from '../pages/PlayerProfilePage';
 import ClubProfilePage from '../pages/ClubProfilePage';
 import DiscussionsPage from '../pages/DiscussionsPage';
 import CompetitionPage from '../pages/CompetitionPage';
+import CompetitionListPage from '../pages/CompetitionListPage';
+import CompetitionDetailPage from '../pages/CompetitionDetailPage';
+import MesCompetitionsPage from '../pages/MesCompetitionsPage';
 import CreateClubPage from '../pages/CreateClubPage';
 import CreatePlayerPage from '../pages/CreatePlayerPage';
 import MyProfilePage from '../pages/MyProfilePage';
@@ -27,7 +30,14 @@ export default function AppRoutes() {
       <Route path="/club/:id" element={<ClubProfilePage />} />
       <Route path="/compte" element={<MyProfilePage />} />
       <Route path="/discussions" element={<DiscussionsPage />} />
+      
+      {/* Routes Compétitions */}
+      <Route path="/competitions" element={<CompetitionListPage />} />
+      <Route path="/competitions/creer" element={<CompetitionPage />} />
+      <Route path="/competitions/:id" element={<CompetitionDetailPage />} />
+      <Route path="/mes-competitions" element={<MesCompetitionsPage />} />
       <Route path="/competition" element={<CompetitionPage />} />
+      
       <Route path="/creer-club" element={<CreateClubPage />} />
       <Route path="/creer-joueur" element={<CreatePlayerPage />} />
       <Route path="/mon-profil" element={<MyProfilePage />} />

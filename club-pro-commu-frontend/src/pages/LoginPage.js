@@ -91,8 +91,8 @@ export default function LoginPage() {
 
                 {/* Formulaire */}
                 <form onSubmit={handleSubmit}>
-                  <div className="mb-3">
-                    <label htmlFor="emailOrPseudo" className="form-label">
+                  <div className="mb-4">
+                    <label htmlFor="emailOrPseudo" className="form-label fw-bold">
                       <i className="fas fa-envelope me-2"></i>
                       Email ou Pseudo *
                     </label>
@@ -104,11 +104,17 @@ export default function LoginPage() {
                       value={formData.emailOrPseudo}
                       onChange={handleChange}
                       required
+                      placeholder="Entrez votre email ou pseudo"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e9ecef',
+                        transition: 'all 0.3s ease'
+                      }}
                     />
                   </div>
 
                   <div className="mb-4">
-                    <label htmlFor="password" className="form-label">
+                    <label htmlFor="password" className="form-label fw-bold">
                       <i className="fas fa-lock me-2"></i>
                       Mot de passe *
                     </label>
@@ -120,16 +126,27 @@ export default function LoginPage() {
                       value={formData.password}
                       onChange={handleChange}
                       required
+                      placeholder="Entrez votre mot de passe"
+                      style={{
+                        borderRadius: '12px',
+                        border: '2px solid #e9ecef',
+                        transition: 'all 0.3s ease'
+                      }}
                     />
                   </div>
 
                   <button 
                     type="submit" 
-                    className="btn btn-primary btn-lg w-100 mb-3"
+                    className="btn btn-primary btn-lg w-100 mb-4"
                     style={{
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       border: 'none',
-                      color: 'white'
+                      color: 'white',
+                      borderRadius: '12px',
+                      minHeight: '56px',
+                      fontSize: '1.1rem',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease'
                     }}
                     disabled={loading}
                   >

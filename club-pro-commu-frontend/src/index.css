@@ -99,10 +99,180 @@ img:hover {
   animation: fadeInUp 0.6s ease-out;
 }
 
-/* Responsive pour les images SVG */
+/* ===== AMÉLIORATIONS MOBILE-FIRST ===== */
+
+/* Optimisations pour mobile */
 @media (max-width: 768px) {
+  /* Images responsives */
   .img-fluid {
     max-height: 150px !important;
+  }
+  
+  /* Espacement amélioré pour mobile */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Boutons optimisés pour le touch */
+  .btn {
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
+  }
+  
+  /* Cartes avec meilleur espacement */
+  .card {
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
+  
+  /* Navigation mobile améliorée */
+  .navbar-nav .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    margin-bottom: 0.125rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+  
+  .navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Dropdown mobile optimisé */
+  .dropdown-menu {
+    border-radius: 12px;
+    margin-top: 0.25rem;
+    padding: 0.25rem 0;
+  }
+  
+  .dropdown-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    margin-bottom: 0.125rem;
+    border-radius: 6px;
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+  }
+  
+  .dropdown-item:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+  }
+  
+  /* Formulaires optimisés */
+  .form-control, .form-select {
+    min-height: 48px;
+    font-size: 1rem;
+    border-radius: 8px;
+  }
+  
+  /* Badges plus lisibles */
+  .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Textes optimisés */
+  h1 { font-size: 2rem !important; }
+  h2 { font-size: 1.75rem !important; }
+  h3 { font-size: 1.5rem !important; }
+  h4 { font-size: 1.25rem !important; }
+  h5 { font-size: 1.125rem !important; }
+  h6 { font-size: 1rem !important; }
+  
+  /* Espacement des sections */
+  .py-5 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+  }
+  
+  .mb-5 {
+    margin-bottom: 2rem !important;
+  }
+}
+
+/* Animations tactiles pour mobile */
+@media (hover: none) and (pointer: coarse) {
+  .hover-shadow:hover {
+    transform: none;
+  }
+  
+  .btn:hover {
+    transform: none;
+  }
+  
+  /* Effet de pression pour les boutons */
+  .btn:active {
+    transform: scale(0.98);
+  }
+  
+  /* Effet de pression pour les cartes */
+  .card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Améliorations pour les écrans tactiles */
+@media (max-width: 768px) {
+  /* Zone de clic minimale */
+  .nav-link, .dropdown-item, .btn {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Espacement spécifique pour le menu burger */
+  .navbar-collapse .navbar-nav {
+    padding: 0.25rem 0;
+  }
+  
+  .navbar-collapse .navbar-nav .nav-item {
+    margin-bottom: 0.5rem;
+  }
+  
+  .navbar-collapse .navbar-nav .nav-link {
+    margin-bottom: 0.25rem;
+  }
+  
+  /* Espacement uniforme et compact pour tous les éléments du menu mobile */
+  .navbar-collapse .navbar-nav .nav-item {
+    margin-bottom: 0.125rem;
+  }
+  
+  .navbar-collapse .navbar-nav .nav-item .btn {
+    min-height: 44px;
+    border-radius: 8px;
+    margin-bottom: 0.125rem;
+  }
+  
+  /* Espacement uniforme pour les liens */
+  .navbar-collapse .navbar-nav .nav-link {
+    margin-bottom: 0.125rem;
+  }
+  
+  /* Espacement entre les éléments interactifs */
+  .btn + .btn {
+    margin-left: 0.5rem;
+  }
+  
+  /* Amélioration de la lisibilité */
+  .text-muted {
+    color: #6c757d !important;
+  }
+  
+  /* Ombres plus douces sur mobile */
+  .shadow-sm {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+  }
+  
+  .shadow {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  }
+  
+  .shadow-lg {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
   }
 }
 
