@@ -52,11 +52,13 @@ const registerSchema = yup.object({
     .typeError('L\'âge doit être un nombre')
     .min(13, 'L\'âge minimum est de 13 ans')
     .max(100, 'L\'âge maximum est de 100 ans')
-    .nullable(),
+    .nullable()
+    .optional(),
   
   pays: yup
     .string()
-    .nullable(),
+    .nullable()
+    .optional(),
   
   acceptedTerms: yup
     .boolean()
