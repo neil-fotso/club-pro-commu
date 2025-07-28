@@ -2,7 +2,7 @@ const express = require('express');
 const Competition = require('../models/Competition');
 const Club = require('../models/Club');
 const auth = require('../middleware/auth');
-const discordService = require('../services/discordService');
+const discordSimple = require('../services/discordSimple');
 
 const router = express.Router();
 
@@ -123,7 +123,7 @@ router.post('/', auth, async (req, res) => {
       .populate('createurId', 'pseudo');
 
     // Envoyer notification Discord
-    await discordService.sendNewCompetition(competitionPopulated, competitionPopulated.createurId);
+    await discordSimple.sendNewCompetition(competitionPopulated, competitionPopulated.createurId);
 
     res.status(201).json(competitionPopulated);
   } catch (error) {
@@ -169,14 +169,15 @@ router.put('/:id', auth, async (req, res) => {
 // DELETE /api/competitions/:id - Supprimer une compétition
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const competition = await Competition.findById(req.params.id);
+    const competition = await Competition.findById(req.params.id)
+      .populate('createurId', 'pseudo');
     
     if (!competition) {
       return res.status(404).json({ message: 'Compétition non trouvée' });
     }
 
     // Vérifier que l'utilisateur est le créateur
-    if (competition.createurId.toString() !== req.user.id) {
+    if (competition.createurId._id.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Non autorisé' });
     }
 
@@ -186,6 +187,9 @@ router.delete('/:id', auth, async (req, res) => {
         message: 'Impossible de supprimer une compétition avec des équipes inscrites' 
       });
     }
+
+    // Envoyer notification Discord avant suppression
+    await discordSimple.sendCompetitionDeleted(competition, competition.createurId);
 
     await Competition.findByIdAndDelete(req.params.id);
     res.json({ message: 'Compétition supprimée avec succès' });

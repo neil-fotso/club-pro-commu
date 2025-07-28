@@ -2,293 +2,309 @@ const express = require('express');
 const Player = require('../models/Player');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
-const { calculatePlayerAvailability, updatePlayerAvailability } = require('../utils/playerUtils');
 
 const router = express.Router();
 
-// Récupérer tous les joueurs avec filtres
+// GET /api/players - Recherche avancée des joueurs
 router.get('/', async (req, res) => {
   try {
-    const { search, poste, plateforme, age, rechercheClub, status } = req.query;
-    
-    let query = {};
-    
-    // Filtre par recherche (pseudo)
-    if (search) {
-      query.pseudo = { $regex: search, $options: 'i' };
+    const {
+      page = 1,
+      limit = 20,
+      pseudo,
+      pays,
+      plateforme,
+      position,
+      niveau,
+      disponibilite,
+      ageMin,
+      ageMax,
+      experienceMin,
+      experienceMax,
+      matchsMin,
+      winRateMin,
+      langue,
+      tri = 'derniereActivite',
+      ordre = 'desc'
+    } = req.query;
+
+    // Construction de la requête
+    const query = {};
+
+    // Filtres de base
+    if (pseudo) {
+      query.pseudo = { $regex: pseudo, $options: 'i' };
     }
-    
-    // Filtre par poste
-    if (poste) {
-      query.$or = [
-        { postePrincipal: poste },
-        { postesSecondaires: poste }
-      ];
+    if (pays) {
+      query.pays = pays;
     }
-    
-    // Filtre par plateforme
     if (plateforme) {
       query.plateforme = plateforme;
     }
-    
-    // Filtre par âge
-    if (age) {
-      query.age = { $gte: parseInt(age) };
+    if (position) {
+      query.position = position;
     }
-    
-    // Filtre par recherche de club
-    if (rechercheClub === 'true') {
-      query.rechercheClub = true;
+    if (niveau) {
+      query.niveau = niveau;
     }
-    
-    // Filtre par statut de connexion
-    if (status === 'online') {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      query.lastActivity = { $gte: fiveMinutesAgo };
-    } else if (status === 'offline') {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      query.lastActivity = { $lt: fiveMinutesAgo };
+    if (disponibilite) {
+      query.disponibilite = disponibilite;
     }
-    
+    if (langue) {
+      query['preferences.langue'] = langue;
+    }
+
+    // Filtres numériques
+    if (ageMin || ageMax) {
+      query.age = {};
+      if (ageMin) query.age.$gte = parseInt(ageMin);
+      if (ageMax) query.age.$lte = parseInt(ageMax);
+    }
+
+    if (experienceMin || experienceMax) {
+      query.experience = {};
+      if (experienceMin) query.experience.$gte = parseInt(experienceMin);
+      if (experienceMax) query.experience.$lte = parseInt(experienceMax);
+    }
+
+    if (matchsMin) {
+      query['statistiques.matchsJoues'] = { $gte: parseInt(matchsMin) };
+    }
+
+    // Tri
+    let sortOptions = {};
+    switch (tri) {
+      case 'pseudo':
+        sortOptions.pseudo = ordre === 'desc' ? -1 : 1;
+        break;
+      case 'niveau':
+        sortOptions.niveau = ordre === 'desc' ? -1 : 1;
+        break;
+      case 'experience':
+        sortOptions.experience = ordre === 'desc' ? -1 : 1;
+        break;
+      case 'matchsJoues':
+        sortOptions['statistiques.matchsJoues'] = ordre === 'desc' ? -1 : 1;
+        break;
+      case 'winRate':
+        // Pour le win rate, on doit calculer après
+        break;
+      case 'derniereActivite':
+      default:
+        sortOptions.derniereActivite = ordre === 'desc' ? -1 : 1;
+        break;
+    }
+
+    // Exécution de la requête
     const players = await Player.find(query)
       .populate('userId', 'pseudo email')
-      .sort({ dateCreation: -1 });
-    
-    // Ajouter le statut de connexion et calculer la disponibilité pour chaque joueur
-    const playersWithStatus = await Promise.all(players.map(async (player) => {
+      .sort(sortOptions)
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    // Calcul du win rate si demandé
+    if (tri === 'winRate') {
+      players.sort((a, b) => {
+        const winRateA = a.winRate || 0;
+        const winRateB = b.winRate || 0;
+        return ordre === 'desc' ? winRateB - winRateA : winRateA - winRateB;
+      });
+    }
+
+    // Filtre par win rate si spécifié
+    let filteredPlayers = players;
+    if (winRateMin) {
+      filteredPlayers = players.filter(player => (player.winRate || 0) >= parseInt(winRateMin));
+    }
+
+    // Compter le total
+    const total = await Player.countDocuments(query);
+
+    // Ajouter les statistiques calculées
+    const playersWithStats = filteredPlayers.map(player => {
       const playerObj = player.toObject();
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      playerObj.isOnline = player.lastActivity >= fiveMinutesAgo;
-      
-      // Calculer la disponibilité en fonction de l'appartenance à un club
-      playerObj.disponibilite = await calculatePlayerAvailability(player.userId);
-      
+      playerObj.winRate = player.winRate;
+      playerObj.goalsPerMatch = player.goalsPerMatch;
+      playerObj.assistsPerMatch = player.assistsPerMatch;
       return playerObj;
-    }));
-    
-    res.json(playersWithStatus);
+    });
+
+    res.json({
+      players: playersWithStats,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalPlayers: total,
+        hasNext: parseInt(page) < Math.ceil(total / parseInt(limit)),
+        hasPrev: parseInt(page) > 1
+      }
+    });
   } catch (error) {
     console.error('Erreur recherche joueurs:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-// Récupérer un joueur par ID
+// GET /api/players/recommendations - Recommandations de joueurs
+router.get('/recommendations', auth, async (req, res) => {
+  try {
+    console.log('🔍 Recherche de recommandations pour l\'utilisateur:', req.user.id);
+    
+    const currentPlayer = await Player.findOne({ userId: req.user.id });
+    
+    if (!currentPlayer) {
+      console.log('⚠️ Aucun profil joueur trouvé pour l\'utilisateur:', req.user.id);
+      // Retourner des recommandations basiques si pas de profil
+      const basicRecommendations = await Player.find({
+        userId: { $ne: req.user.id },
+        disponibilite: 'Disponible'
+      })
+      .populate('userId', 'pseudo')
+      .limit(10)
+      .sort({ derniereActivite: -1 });
+
+      return res.json(basicRecommendations);
+    }
+
+    console.log('✅ Profil joueur trouvé:', currentPlayer.pseudo);
+
+    // Logique de recommandation basée sur :
+    // - Même plateforme
+    // - Positions complémentaires
+    // - Niveau similaire
+    // - Disponibilité
+    const recommendations = await Player.find({
+      userId: { $ne: req.user.id },
+      plateforme: currentPlayer.plateforme,
+      disponibilite: 'Disponible',
+      niveau: { $in: [currentPlayer.niveau, ...getNiveauProche(currentPlayer.niveau)] }
+    })
+    .populate('userId', 'pseudo')
+    .limit(10)
+    .sort({ derniereActivite: -1 });
+
+    console.log(`✅ ${recommendations.length} recommandations trouvées`);
+    res.json(recommendations);
+  } catch (error) {
+    console.error('❌ Erreur recommandations:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Fonction helper pour les niveaux proches
+function getNiveauProche(niveau) {
+  const niveaux = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert', 'Pro'];
+  const index = niveaux.indexOf(niveau);
+  const proches = [];
+  
+  if (index > 0) proches.push(niveaux[index - 1]);
+  if (index < niveaux.length - 1) proches.push(niveaux[index + 1]);
+  
+  return proches;
+}
+
+// GET /api/players/:id - Récupérer un joueur spécifique
 router.get('/:id', async (req, res) => {
   try {
     const player = await Player.findById(req.params.id)
-      .populate('userId', 'pseudo email plateforme');
-    
+      .populate('userId', 'pseudo email');
+
     if (!player) {
-      return res.status(404).json({ message: 'Joueur non trouvé.' });
+      return res.status(404).json({ message: 'Joueur non trouvé' });
     }
-    
-    // Ajouter le statut de connexion et calculer la disponibilité
+
+    // Ajouter les statistiques calculées
     const playerObj = player.toObject();
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    playerObj.isOnline = player.lastActivity >= fiveMinutesAgo;
-    
-    // Calculer la disponibilité en fonction de l'appartenance à un club
-    playerObj.disponibilite = await calculatePlayerAvailability(player.userId);
-    
+    playerObj.winRate = player.winRate;
+    playerObj.goalsPerMatch = player.goalsPerMatch;
+    playerObj.assistsPerMatch = player.assistsPerMatch;
+
     res.json(playerObj);
   } catch (error) {
     console.error('Erreur récupération joueur:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-// Récupérer le profil joueur de l'utilisateur connecté
-router.get('/me/profile', auth, async (req, res) => {
-  try {
-    let player = await Player.findOne({ userId: req.user.id });
-    
-    if (!player) {
-      // Créer automatiquement un profil joueur basique
-      const user = await User.findById(req.user.id);
-      if (!user) {
-        return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-      }
-      
-      player = new Player({
-        pseudo: user.pseudo,
-        userId: req.user.id,
-        postePrincipal: user.postePrincipal || '',
-        postesSecondaires: [],
-        age: undefined, // Pas d'âge par défaut
-        pays: undefined, // Pas de pays par défaut
-        plateforme: user.plateforme || 'PS5', // Valeur par défaut si manquante
-        langues: ['Français'],
-        description: 'Joueur FIFA Pro Clubs',
-        rechercheClub: true, // Par défaut, recherche un club
-        lastActivity: new Date() // Initialiser avec la date actuelle
-      });
-      
-      await player.save();
-    }
-    
-    // Ajouter le statut de connexion et calculer la disponibilité
-    const playerObj = player.toObject();
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    playerObj.isOnline = player.lastActivity >= fiveMinutesAgo;
-    
-    // Calculer la disponibilité en fonction de l'appartenance à un club
-    playerObj.disponibilite = await calculatePlayerAvailability(player.userId);
-    
-    res.json(playerObj);
-  } catch (error) {
-    console.error('Erreur récupération profil joueur:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
-  }
-});
-
-// Créer un profil joueur (pour personnalisation)
-router.post('/', auth, async (req, res) => {
-  try {
-    const { postePrincipal, postesSecondaires, age, pays, langues, description, disponibilite, rechercheClub } = req.body;
-    
-    // Vérifier si le joueur existe déjà
-    const existingPlayer = await Player.findOne({ userId: req.user.id });
-    if (existingPlayer) {
-      return res.status(400).json({ message: 'Vous avez déjà un profil joueur.' });
-    }
-    
-    // Récupérer les infos de l'utilisateur
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
-    
-    const player = new Player({
-      pseudo: user.pseudo,
-      userId: req.user.id,
-      postePrincipal,
-      postesSecondaires: postesSecondaires || [],
-      age: age ? parseInt(age) : undefined,
-      pays: pays || undefined,
-      plateforme: user.plateforme || 'PS5', // Valeur par défaut si manquante
-      langues: langues || [],
-      description,
-      disponibilite: 'Disponible', // Sera recalculé automatiquement
-      rechercheClub: rechercheClub !== undefined ? rechercheClub : true,
-      lastActivity: new Date() // Initialiser avec la date actuelle
-    });
-    
-    await player.save();
-    
-    res.status(201).json(player);
-  } catch (error) {
-    console.error('Erreur création profil joueur:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
-  }
-});
-
-// Mettre à jour un profil joueur
+// PUT /api/players/:id - Mettre à jour le profil joueur
 router.put('/:id', auth, async (req, res) => {
   try {
-    const { id } = req.params;
+    const player = await Player.findById(req.params.id);
     
-    // Vérifier que le joueur appartient à l'utilisateur connecté
-    const player = await Player.findOne({ _id: id, userId: req.user.id });
     if (!player) {
-      return res.status(404).json({ message: 'Profil joueur non trouvé.' });
+      return res.status(404).json({ message: 'Joueur non trouvé' });
     }
-    
-    // Préparer les données de mise à jour
-    const updateData = {};
-    
-    // Ajouter seulement les champs qui sont présents dans req.body
-    if (req.body) {
-      if (req.body.postePrincipal) {
-        updateData.postePrincipal = req.body.postePrincipal;
-      }
-      if (req.body.postesSecondaires !== undefined) {
-        updateData.postesSecondaires = Array.isArray(req.body.postesSecondaires) 
-          ? req.body.postesSecondaires 
-          : [];
-      }
-      if (req.body.age !== undefined) {
-        updateData.age = req.body.age ? parseInt(req.body.age) : undefined;
-      }
-      if (req.body.pays !== undefined) {
-        updateData.pays = req.body.pays || undefined;
-      }
-      if (req.body.description !== undefined) {
-        updateData.description = req.body.description;
-      }
-      if (req.body.disponibilite !== undefined) {
-        updateData.disponibilite = req.body.disponibilite;
-      }
-      if (req.body.rechercheClub !== undefined) {
-        updateData.rechercheClub = req.body.rechercheClub;
-      }
-      if (req.body.langues !== undefined) {
-        updateData.langues = Array.isArray(req.body.langues) ? req.body.langues : [];
-      }
-    }
-    
-    // Mettre à jour le profil seulement s'il y a des données à mettre à jour
-    if (Object.keys(updateData).length > 0) {
-      const updatedPlayer = await Player.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
-      );
-      res.json(updatedPlayer);
-    } else {
-      // Si aucune donnée à mettre à jour, retourner le joueur actuel
-      res.json(player);
-    }
-  } catch (error) {
-    console.error('Erreur mise à jour profil joueur:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
-  }
-});
 
-// Mettre à jour la photo de profil
-router.put('/:id/photo', auth, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { photoProfil } = req.body;
-    
-    // Vérifier que le joueur appartient à l'utilisateur connecté
-    const player = await Player.findOne({ _id: id, userId: req.user.id });
-    if (!player) {
-      return res.status(404).json({ message: 'Profil joueur non trouvé.' });
+    // Vérifier que l'utilisateur modifie son propre profil
+    if (player.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Non autorisé' });
     }
-    
-    // Mettre à jour la photo de profil
-    const updatedPlayer = await Player.findByIdAndUpdate(
-      id,
-      { photoProfil },
-      { new: true }
-    );
-    
-    res.json(updatedPlayer);
-  } catch (error) {
-    console.error('Erreur mise à jour photo profil:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
-  }
-});
 
-// Route pour mettre à jour la disponibilité de tous les joueurs (maintenance)
-router.post('/update-availability', auth, async (req, res) => {
-  try {
-    const players = await Player.find({});
-    let updatedCount = 0;
-    
-    for (const player of players) {
-      await updatePlayerAvailability(player.userId, Player);
-      updatedCount++;
-    }
-    
-    res.json({ 
-      message: `Disponibilité mise à jour pour ${updatedCount} joueurs.`,
-      updatedCount 
+    // Mise à jour des champs autorisés
+    const allowedUpdates = [
+      'pseudo', 'photoProfil', 'age', 'pays', 'nationalite', 'ville',
+      'plateforme', 'position', 'niveau', 'bio', 'disponibilite',
+      'horaires', 'jeux', 'reseauxSociaux', 'preferences'
+    ];
+
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) {
+        player[field] = req.body[field];
+      }
     });
+
+    // Mettre à jour l'activité
+    player.derniereActivite = new Date();
+
+    await player.save();
+
+    // Ajouter les statistiques calculées
+    const playerObj = player.toObject();
+    playerObj.winRate = player.winRate;
+    playerObj.goalsPerMatch = player.goalsPerMatch;
+    playerObj.assistsPerMatch = player.assistsPerMatch;
+
+    res.json(playerObj);
   } catch (error) {
-    console.error('Erreur mise à jour disponibilité:', error);
-    res.status(500).json({ message: 'Erreur serveur.' });
+    console.error('Erreur mise à jour joueur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/players/:id/statistics - Ajouter des statistiques
+router.post('/:id/statistics', auth, async (req, res) => {
+  try {
+    const { type, value = 1 } = req.body;
+    const player = await Player.findById(req.params.id);
+    
+    if (!player) {
+      return res.status(404).json({ message: 'Joueur non trouvé' });
+    }
+
+    await player.addStatistic(type, value);
+    res.json({ message: 'Statistique mise à jour' });
+  } catch (error) {
+    console.error('Erreur mise à jour statistiques:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/players/:id/rewards - Ajouter une récompense
+router.post('/:id/rewards', auth, async (req, res) => {
+  try {
+    const { nom, description, type } = req.body;
+    const player = await Player.findById(req.params.id);
+    
+    if (!player) {
+      return res.status(404).json({ message: 'Joueur non trouvé' });
+    }
+
+    const reward = { nom, description, type };
+    await player.addReward(reward);
+    res.json({ message: 'Récompense ajoutée' });
+  } catch (error) {
+    console.error('Erreur ajout récompense:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 

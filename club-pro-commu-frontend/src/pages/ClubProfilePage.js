@@ -94,42 +94,27 @@ export default function ClubProfilePage() {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      'Actif': 'bg-success',
-      'Inactif': 'bg-secondary',
-      'En construction': 'bg-warning'
-    };
-    return badges[status] || 'bg-secondary';
-  };
-
   const handlePromoteMember = async (memberId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir promouvoir ce membre en admin ?')) {
-      return;
-    }
-
+    if (!window.confirm('Promouvoir ce membre au rang d\'Admin ?')) return;
+    
     try {
-      const token = localStorage.getItem('token');
-      await clubAPI.promoteMember(club._id, memberId, token);
-      alert('Membre promu avec succès !');
+      await clubAPI.promoteMember(club._id, memberId);
       loadClub(); // Recharger les données du club
-    } catch (error) {
-      alert('Erreur lors de la promotion: ' + error.message);
+      alert('Membre promu avec succès !');
+    } catch (err) {
+      alert(err.message || 'Erreur lors de la promotion');
     }
   };
 
   const handleExcludeMember = async (memberId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir exclure ce membre du club ?')) {
-      return;
-    }
-
+    if (!window.confirm('Exclure ce membre du club ?')) return;
+    
     try {
-      const token = localStorage.getItem('token');
-      await clubAPI.excludeMember(club._id, memberId, token);
-      alert('Membre exclu avec succès !');
+      await clubAPI.excludeMember(club._id, memberId);
       loadClub(); // Recharger les données du club
-    } catch (error) {
-      alert('Erreur lors de l\'exclusion: ' + error.message);
+      alert('Membre exclu avec succès !');
+    } catch (err) {
+      alert(err.message || 'Erreur lors de l\'exclusion');
     }
   };
 
@@ -137,7 +122,7 @@ export default function ClubProfilePage() {
     const badges = {
       'Admin': 'badge bg-danger',
       'Capitaine': 'badge bg-warning',
-      'Joueur': 'badge bg-success'
+      'Joueur': 'badge bg-primary'
     };
     return badges[role] || 'badge bg-secondary';
   };
@@ -219,12 +204,6 @@ export default function ClubProfilePage() {
                       <strong>Plateforme:</strong> 
                       <span className="badge bg-dark ms-2">
                         {getPlatformIcon(club.plateforme)} {club.plateforme}
-                      </span>
-                    </li>
-                    <li className="mb-2">
-                      <strong>Statut:</strong> 
-                      <span className={`badge ${getStatusBadge(club.statut)} ms-2`}>
-                        {club.statut}
                       </span>
                     </li>
                     <li className="mb-2">

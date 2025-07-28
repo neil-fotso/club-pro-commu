@@ -94,7 +94,6 @@ router.post('/', auth, async (req, res) => {
       nom, 
       plateforme, 
       pays, 
-      statut, 
       description, 
       effectifMax, 
       langues, 
@@ -125,7 +124,6 @@ router.post('/', auth, async (req, res) => {
       createurId: req.user.id,
       plateforme: plateforme || user.plateforme, // Use form platform or user's
       pays,
-      statut: statut || 'Actif', // Handle status from form
       description,
       effectifMax: effectifMax || 11, // Handle effectifMax from form
       langues: langues || ['Français'], // Handle languages from form

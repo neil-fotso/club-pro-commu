@@ -1,6 +1,17 @@
 // Configuration de l'API
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
+// Fonction utilitaire pour récupérer le token
+const getToken = () => {
+  return localStorage.getItem('token');
+};
+
+// Fonction utilitaire pour les headers d'authentification
+const getAuthHeaders = () => {
+  const token = getToken();
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 // Fonction utilitaire pour les appels API
 const apiCall = async (endpoint, options = {}) => {
   const url = `${API_URL}${endpoint}`;
@@ -9,6 +20,7 @@ const apiCall = async (endpoint, options = {}) => {
   const defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    ...getAuthHeaders(),
   };
   
   // Fusionner les headers en s'assurant que Content-Type reste application/json
@@ -66,63 +78,74 @@ export const authAPI = {
       body: credentials,
     });
   },
+
+  // Récupérer les données de l'utilisateur connecté
+  getMe: async () => {
+    return apiCall('/auth/me');
+  },
+
+  // Changer le mot de passe
+  changePassword: async (passwordData) => {
+    return apiCall('/auth/change-password', {
+      method: 'POST',
+      body: passwordData,
+    });
+  },
 };
 
 // API utilisateur
 export const userAPI = {
   // Récupérer le profil utilisateur
-  getProfile: async (token) => {
-    return apiCall('/user/me', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+  getProfile: async () => {
+    return apiCall('/user/me');
   },
 };
 
 // API joueurs
 export const playerAPI = {
-  // Récupérer tous les joueurs avec filtres
+  // Recherche avancée des joueurs
+  searchPlayers: async (params) => {
+    return apiCall(`/players?${params}`);
+  },
+
+  // Récupérer tous les joueurs (ancienne méthode pour compatibilité)
   getPlayers: async (filters = {}) => {
     const params = new URLSearchParams(filters);
     return apiCall(`/players?${params}`);
   },
 
-  // Récupérer un joueur par ID
+  // Récupérer un joueur spécifique
   getPlayer: async (id) => {
     return apiCall(`/players/${id}`);
   },
 
-  // Récupérer le profil joueur de l'utilisateur connecté
-  getMyProfile: async (token) => {
-    return apiCall('/players/me/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-  },
-
-  // Créer un profil joueur
-  createPlayer: async (playerData, token) => {
-    return apiCall('/players', {
-      method: 'POST',
-      body: playerData,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-  },
-
   // Mettre à jour un profil joueur
-  updatePlayer: async (id, playerData, token) => {
+  updatePlayer: async (id, playerData) => {
     return apiCall(`/players/${id}`, {
       method: 'PUT',
       body: playerData,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
     });
+  },
+
+  // Ajouter des statistiques
+  addStatistics: async (id, type, value = 1) => {
+    return apiCall(`/players/${id}/statistics`, {
+      method: 'POST',
+      body: { type, value },
+    });
+  },
+
+  // Ajouter une récompense
+  addReward: async (id, reward) => {
+    return apiCall(`/players/${id}/rewards`, {
+      method: 'POST',
+      body: reward,
+    });
+  },
+
+  // Obtenir les recommandations
+  getRecommendations: async () => {
+    return apiCall('/players/recommendations');
   },
 };
 

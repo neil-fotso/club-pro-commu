@@ -88,12 +88,25 @@ app.use('/api/invitations', updateActivity, invitationRoutes);
 app.use('/api/notifications', updateActivity, notificationRoutes);
 app.use('/api/discord', discordRoutes);
 
+// Route de santé pour tester la connexion
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Serveur Club Pro Communauté opérationnel',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log('MongoDB connecté'))
+.then(() => {
+  console.log('MongoDB connecté');
+  console.log('🤖 Service Discord simplifié prêt');
+})
 .catch((err) => console.error('Erreur MongoDB :', err));
 
 const PORT = process.env.PORT || 3001;

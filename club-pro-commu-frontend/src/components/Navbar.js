@@ -146,6 +146,18 @@ export default function Navbar() {
                     Discussions
                   </Link>
                 </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/recherche-joueur">
+                    <i className="fas fa-users me-1"></i>
+                    Recherche Joueurs
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/recommandations">
+                    <i className="fas fa-lightbulb me-1"></i>
+                    Recommandations
+                  </Link>
+                </li>
               </>
             ) : (
               <li className="nav-item">

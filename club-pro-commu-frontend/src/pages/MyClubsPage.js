@@ -64,22 +64,14 @@ export default function MyClubsPage() {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch(status) {
-      case 'Actif': return 'success';
-      case 'Inactif': return 'secondary';
-      case 'En construction': return 'warning';
-      default: return 'info';
-    }
-  };
-
   const getRoleBadgeColor = (role) => {
-    switch(role) {
-      case 'Admin': return 'danger';
-      case 'Capitaine': return 'warning';
-      case 'Joueur': return 'primary';
-      default: return 'secondary';
-    }
+    const colors = {
+      'Admin': 'danger',
+      'Capitaine': 'warning',
+      'Joueur': 'primary',
+      'Membre': 'secondary'
+    };
+    return colors[role] || 'secondary';
   };
 
   if (!user) {
@@ -197,8 +189,8 @@ export default function MyClubsPage() {
                               </small>
                             </div>
                             <div className="text-end">
-                              <span className={`badge bg-${getStatusColor(club.statut)}`}>
-                                {club.statut}
+                              <span className={`badge bg-${getRoleBadgeColor(userRole)}`}>
+                                {userRole}
                               </span>
                             </div>
                           </div>

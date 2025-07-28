@@ -97,92 +97,156 @@ const usersData = [
 // Données de test pour les clubs
 const clubsData = [
   {
-    nom: 'Real Madrid Pro',
+    nom: 'Les Champions PS5',
+    createurId: users[0]._id,
     plateforme: 'PS5',
-    pays: 'Espagne',
-    statut: 'Actif',
-    description: 'Club historique, recherche joueurs de haut niveau pour compétitions',
-    effectifMax: 25,
-    langues: ['Espagnol', 'Anglais', 'Français'],
+    pays: 'France',
+    description: 'Club compétitif PS5, recherche de joueurs motivés pour les compétitions.',
     recrute: true,
-    niveau: 'Elite'
+    niveauRecherche: 'Intermédiaire+',
+    postesRecherches: ['Attaquant', 'Milieu'],
+    effectifMax: 15,
+    effectifActuel: 8,
+    membres: [
+      { userId: users[0]._id, role: 'Admin' },
+      { userId: users[1]._id, role: 'Capitaine' },
+      { userId: users[2]._id, role: 'Joueur' }
+    ],
+    langues: ['Français'],
+    horaires: 'Soirées et weekends',
+    dateCreation: new Date('2024-01-15')
   },
   {
-    nom: 'Barcelona FC',
-    plateforme: 'PS5',
-    pays: 'Espagne',
-    statut: 'Actif',
-    description: 'Club basé sur le jeu de possession, recherche milieux créatifs',
-    effectifMax: 20,
-    langues: ['Espagnol', 'Catalan', 'Anglais'],
-    recrute: true,
-    niveau: 'Pro'
-  },
-  {
-    nom: 'Manchester United',
+    nom: 'Elite Xbox',
+    createurId: users[1]._id,
     plateforme: 'Xbox',
-    pays: 'Angleterre',
-    statut: 'Actif',
-    description: 'Club légendaire, recherche attaquants et défenseurs',
-    effectifMax: 30,
-    langues: ['Anglais'],
-    recrute: true,
-    niveau: 'Elite'
+    pays: 'France',
+    description: 'Club Xbox pour joueurs expérimentés, focus sur la performance.',
+    recrute: false,
+    niveauRecherche: 'Expert uniquement',
+    postesRecherches: ['Défenseur', 'Gardien'],
+    effectifMax: 12,
+    effectifActuel: 12,
+    membres: [
+      { userId: users[1]._id, role: 'Admin' },
+      { userId: users[3]._id, role: 'Capitaine' }
+    ],
+    langues: ['Français', 'Anglais'],
+    horaires: 'Tous les jours 20h-23h',
+    dateCreation: new Date('2024-02-01')
   },
   {
-    nom: 'Paris Saint-Germain',
+    nom: 'PC Masters',
+    createurId: users[2]._id,
+    plateforme: 'PC',
+    pays: 'Belgique',
+    description: 'Club PC pour tous niveaux, ambiance conviviale et progression.',
+    recrute: true,
+    niveauRecherche: 'Tous niveaux',
+    postesRecherches: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien'],
+    effectifMax: 20,
+    effectifActuel: 5,
+    membres: [
+      { userId: users[2]._id, role: 'Admin' },
+      { userId: users[4]._id, role: 'Joueur' }
+    ],
+    langues: ['Français', 'Néerlandais'],
+    horaires: 'Weekends',
+    dateCreation: new Date('2024-01-20')
+  },
+  {
+    nom: 'PS5 Warriors',
+    createurId: users[3]._id,
+    plateforme: 'PS5',
+    pays: 'France',
+    description: 'Club PS5 compétitif, recherche de joueurs pour tournois.',
+    recrute: true,
+    niveauRecherche: 'Avancé+',
+    postesRecherches: ['Attaquant', 'Milieu'],
+    effectifMax: 11,
+    effectifActuel: 7,
+    membres: [
+      { userId: users[3]._id, role: 'Admin' },
+      { userId: users[5]._id, role: 'Capitaine' }
+    ],
+    langues: ['Français'],
+    horaires: 'Soirées',
+    dateCreation: new Date('2024-02-10')
+  },
+  {
+    nom: 'Xbox Legends',
+    createurId: users[4]._id,
+    plateforme: 'Xbox',
+    pays: 'France',
+    description: 'Club Xbox légendaire, pour les vrais passionnés du jeu.',
+    recrute: true,
+    niveauRecherche: 'Intermédiaire+',
+    postesRecherches: ['Milieu', 'Défenseur'],
+    effectifMax: 15,
+    effectifActuel: 3,
+    membres: [
+      { userId: users[4]._id, role: 'Admin' }
+    ],
+    langues: ['Français'],
+    horaires: 'Flexible',
+    dateCreation: new Date('2024-01-25')
+  },
+  {
+    nom: 'PC Elite',
+    createurId: users[5]._id,
     plateforme: 'PC',
     pays: 'France',
-    statut: 'Actif',
-    description: 'Club parisien, recherche joueurs pour championnat',
-    effectifMax: 22,
+    description: 'Club PC d\'élite, pour les meilleurs joueurs.',
+    recrute: false,
+    niveauRecherche: 'Expert uniquement',
+    postesRecherches: ['Attaquant', 'Gardien'],
+    effectifMax: 10,
+    effectifActuel: 10,
+    membres: [
+      { userId: users[5]._id, role: 'Admin' },
+      { userId: users[0]._id, role: 'Capitaine' }
+    ],
     langues: ['Français', 'Anglais'],
-    recrute: true,
-    niveau: 'Pro'
+    horaires: 'Tous les jours',
+    dateCreation: new Date('2024-02-05')
   },
   {
-    nom: 'Bayern Munich',
+    nom: 'PS5 United',
+    createurId: users[6]._id,
     plateforme: 'PS5',
-    pays: 'Allemagne',
-    statut: 'Actif',
-    description: 'Club allemand, jeu direct et efficace',
+    pays: 'Belgique',
+    description: 'Club PS5 unifié, pour tous les joueurs.',
+    recrute: true,
+    niveauRecherche: 'Tous niveaux',
+    postesRecherches: ['Attaquant', 'Milieu', 'Défenseur'],
     effectifMax: 18,
-    langues: ['Allemand', 'Anglais'],
-    recrute: true,
-    niveau: 'Pro'
+    effectifActuel: 9,
+    membres: [
+      { userId: users[6]._id, role: 'Admin' },
+      { userId: users[1]._id, role: 'Joueur' }
+    ],
+    langues: ['Français', 'Néerlandais'],
+    horaires: 'Soirées et weekends',
+    dateCreation: new Date('2024-01-30')
   },
   {
-    nom: 'Juventus FC',
+    nom: 'Xbox United',
+    createurId: users[7]._id,
     plateforme: 'Xbox',
-    pays: 'Italie',
-    statut: 'Actif',
-    description: 'Club italien, défense solide et contre-attaque',
-    effectifMax: 24,
-    langues: ['Italien', 'Anglais'],
+    pays: 'France',
+    description: 'Club Xbox unifié, pour tous les joueurs.',
     recrute: true,
-    niveau: 'Intermédiaire'
-  },
-  {
-    nom: 'Ajax Amsterdam',
-    plateforme: 'PC',
-    pays: 'Pays-Bas',
-    statut: 'Actif',
-    description: 'Club formateur, recherche jeunes talents',
+    niveauRecherche: 'Tous niveaux',
+    postesRecherches: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien'],
     effectifMax: 16,
-    langues: ['Néerlandais', 'Anglais'],
-    recrute: true,
-    niveau: 'Intermédiaire'
-  },
-  {
-    nom: 'Porto FC',
-    plateforme: 'PS5',
-    pays: 'Portugal',
-    statut: 'Actif',
-    description: 'Club portugais, jeu technique et offensif',
-    effectifMax: 20,
-    langues: ['Portugais', 'Anglais'],
-    recrute: true,
-    niveau: 'Pro'
+    effectifActuel: 4,
+    membres: [
+      { userId: users[7]._id, role: 'Admin' },
+      { userId: users[2]._id, role: 'Joueur' }
+    ],
+    langues: ['Français'],
+    horaires: 'Weekends',
+    dateCreation: new Date('2024-02-15')
   }
 ];
 

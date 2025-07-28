@@ -24,11 +24,6 @@ const clubSchema = new mongoose.Schema({
     type: String,
     maxlength: 1000
   },
-  statut: {
-    type: String,
-    enum: ['Actif', 'Inactif', 'En construction'],
-    default: 'Actif'
-  },
   recrute: {
     type: Boolean,
     default: true

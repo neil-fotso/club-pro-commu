@@ -19,33 +19,49 @@ import MyClubsPage from '../pages/MyClubsPage';
 import InvitationsPage from '../pages/InvitationsPage';
 import NotificationsPage from '../pages/NotificationsPage';
 import ErrorPage from '../pages/ErrorPage';
+import PlayerRecommendationsPage from '../pages/PlayerRecommendationsPage';
 
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* Routes publiques */}
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/joueurs" element={<PlayerSearchPage />} />
-      <Route path="/clubs" element={<ClubSearchPage />} />
-      <Route path="/joueur/:id" element={<PlayerProfilePage />} />
-      <Route path="/club/:id" element={<ClubProfilePage />} />
-      <Route path="/compte" element={<MyProfilePage />} />
-      <Route path="/discussions" element={<DiscussionsPage />} />
       
-      {/* Routes Compétitions */}
+      {/* Routes pour les joueurs */}
+      <Route path="/recherche-joueur" element={<PlayerSearchPage />} />
+      <Route path="/joueurs" element={<PlayerSearchPage />} />
+      <Route path="/player/:id" element={<PlayerProfilePage />} />
+      <Route path="/joueur/:id" element={<PlayerProfilePage />} />
+      <Route path="/recommandations" element={<PlayerRecommendationsPage />} />
+      
+      {/* Routes pour les clubs */}
+      <Route path="/clubs" element={<ClubSearchPage />} />
+      <Route path="/club/:id" element={<ClubProfilePage />} />
+      <Route path="/creer-club" element={<CreateClubPage />} />
+      
+      {/* Routes pour les compétitions */}
       <Route path="/competitions" element={<CompetitionListPage />} />
       <Route path="/competitions/creer" element={<CompetitionPage />} />
       <Route path="/competitions/:id" element={<CompetitionDetailPage />} />
       <Route path="/mes-competitions" element={<MesCompetitionsPage />} />
       <Route path="/competition" element={<CompetitionPage />} />
       
-      <Route path="/creer-club" element={<CreateClubPage />} />
-      <Route path="/creer-joueur" element={<CreatePlayerPage />} />
+      {/* Routes pour le profil utilisateur */}
       <Route path="/mon-profil" element={<MyProfilePage />} />
+      <Route path="/compte" element={<MyProfilePage />} />
       <Route path="/mes-clubs" element={<MyClubsPage />} />
+      <Route path="/creer-joueur" element={<CreatePlayerPage />} />
+      
+      {/* Routes pour les invitations et notifications */}
       <Route path="/invitations" element={<InvitationsPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
+      
+      {/* Routes pour les discussions */}
+      <Route path="/discussions" element={<DiscussionsPage />} />
+      
+      {/* Route d'erreur */}
       <Route path="*" element={<ErrorPage />} />
     </Routes>
   );
