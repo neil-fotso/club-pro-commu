@@ -1,75 +1,28 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
-const auth = require('../middleware/auth');
 
-// Endpoint pour recevoir les webhooks Discord
-router.post('/webhook', async (req, res) => {
-  try {
-    console.log('Webhook Discord reçu:', req.body);
-    
-    // Vérification Discord - répondre immédiatement au ping
-    if (req.body.type === 'PING') {
-      console.log('Ping Discord reçu, réponse PONG');
-      return res.status(200).json({ type: 'PONG' });
-    }
-    
-    // Vérification de la signature Discord (optionnel mais recommandé)
-    const signature = req.headers['x-signature-ed25519'];
-    const timestamp = req.headers['x-signature-timestamp'];
-    
-    if (signature && timestamp) {
-      console.log('Signature Discord détectée:', { signature, timestamp });
-    }
-    
-    // Traiter les différents types d'événements Discord
-    const { type, data } = req.body;
-    
-    switch (type) {
-      case 'MESSAGE_CREATE':
-        // Traiter les nouveaux messages
-        console.log('Nouveau message Discord:', data);
-        break;
-        
-      case 'GUILD_MEMBER_ADD':
-        // Nouveau membre sur le serveur
-        console.log('Nouveau membre Discord:', data);
-        break;
-        
-      case 'GUILD_MEMBER_REMOVE':
-        // Membre qui quitte le serveur
-        console.log('Membre Discord parti:', data);
-        break;
-        
-      case 'GUILD_ROLE_CREATE':
-        // Nouveau rôle créé
-        console.log('Nouveau rôle Discord:', data);
-        break;
-        
-      case 'GUILD_ROLE_UPDATE':
-        // Rôle modifié
-        console.log('Rôle Discord modifié:', data);
-        break;
-        
-      default:
-        console.log('Événement Discord non géré:', type);
-    }
-    
-    // Réponse par défaut pour les autres événements
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Erreur webhook Discord:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+// Fonction pour vérifier la signature Discord
+function verifyDiscordSignature(req, body, signature, timestamp) {
+  const publicKey = process.env.DISCORD_PUBLIC_KEY;
+  if (!publicKey) {
+    console.warn('DISCORD_PUBLIC_KEY non configurée, signature non vérifiée');
+    return true;
   }
-});
 
-// Endpoint pour vérifier la santé du webhook
-router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Webhook Discord opérationnel',
-    timestamp: new Date().toISOString()
-  });
-});
+  const message = timestamp + '.' + JSON.stringify(body);
+  const signatureBuffer = Buffer.from(signature, 'hex');
+  const messageBuffer = Buffer.from(message, 'utf8');
+  
+  try {
+    const verify = crypto.createVerify('Ed25519');
+    verify.update(messageBuffer);
+    return verify.verify(publicKey, signatureBuffer);
+  } catch (error) {
+    console.error('Erreur vérification signature Discord:', error);
+    return false;
+  }
+}
 
 // Endpoint GET pour la vérification Discord
 router.get('/webhook', (req, res) => {
@@ -77,6 +30,103 @@ router.get('/webhook', (req, res) => {
     status: 'OK', 
     message: 'Webhook Discord accessible',
     timestamp: new Date().toISOString()
+  });
+});
+
+// Endpoint pour recevoir les webhooks Discord
+router.post('/webhook', async (req, res) => {
+  try {
+    console.log('Webhook Discord reçu:', req.body);
+    console.log('Headers Discord:', req.headers);
+    
+    const signature = req.headers['x-signature-ed25519'];
+    const timestamp = req.headers['x-signature-timestamp'];
+    
+    // Vérification de la signature Discord
+    if (signature && timestamp) {
+      const isValid = verifyDiscordSignature(req, req.body, signature, timestamp);
+      if (!isValid) {
+        console.error('Signature Discord invalide');
+        return res.status(401).json({ error: 'Signature invalide' });
+      }
+      console.log('Signature Discord vérifiée avec succès');
+    }
+    
+    // Gestion des interactions Discord
+    if (req.body.type === 1) { // PING
+      console.log('Ping Discord reçu');
+      return res.status(200).json({ type: 1 }); // PONG
+    }
+    
+    // Gestion des événements Discord
+    if (req.body.type === 2) { // INTERACTION
+      console.log('Interaction Discord reçue:', req.body);
+      return res.status(200).json({ type: 2 }); // ACKNOWLEDGE
+    }
+    
+    // Réponse par défaut
+    res.status(200).json({ 
+      success: true,
+      message: 'Webhook Discord reçu',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Traitement en arrière-plan des événements
+    const { type, data } = req.body;
+    
+    switch (type) {
+      case 'MESSAGE_CREATE':
+        console.log('Nouveau message Discord:', data);
+        break;
+        
+      case 'GUILD_MEMBER_ADD':
+        console.log('Nouveau membre Discord:', data);
+        break;
+        
+      case 'GUILD_MEMBER_REMOVE':
+        console.log('Membre Discord parti:', data);
+        break;
+        
+      case 'GUILD_ROLE_CREATE':
+        console.log('Nouveau rôle Discord:', data);
+        break;
+        
+      case 'GUILD_ROLE_UPDATE':
+        console.log('Rôle Discord modifié:', data);
+        break;
+        
+      default:
+        console.log('Événement Discord non géré:', type);
+    }
+    
+  } catch (error) {
+    console.error('Erreur webhook Discord:', error);
+    // Ne pas renvoyer d'erreur, juste logger
+  }
+});
+
+// Endpoint de test spécifique pour Discord
+router.post('/test', (req, res) => {
+  console.log('Test Discord reçu:', req.body);
+  res.status(200).json({ 
+    type: 'PONG',
+    success: true,
+    message: 'Test Discord réussi'
+  });
+});
+
+// Endpoint de santé pour Discord
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    service: 'Discord Webhook',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    features: [
+      'Signature verification',
+      'Event handling',
+      'Ping/Pong support'
+    ]
   });
 });
 
