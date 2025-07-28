@@ -8,6 +8,9 @@ const userRoutes = require('./routes/user');
 const playerRoutes = require('./routes/players');
 const clubRoutes = require('./routes/clubs');
 const competitionRoutes = require('./routes/competitions');
+const invitationRoutes = require('./routes/invitations');
+const notificationRoutes = require('./routes/notifications');
+const discordRoutes = require('./routes/discord');
 const updateActivity = require('./middleware/updateActivity');
 
 const app = express();
@@ -81,6 +84,9 @@ app.use('/api/user', updateActivity, userRoutes);
 app.use('/api/players', updateActivity, playerRoutes);
 app.use('/api/clubs', updateActivity, clubRoutes);
 app.use('/api/competitions', updateActivity, competitionRoutes);
+app.use('/api/invitations', updateActivity, invitationRoutes);
+app.use('/api/notifications', updateActivity, notificationRoutes);
+app.use('/api/discord', discordRoutes);
 
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu', {

@@ -2,6 +2,7 @@ const express = require('express');
 const Competition = require('../models/Competition');
 const Club = require('../models/Club');
 const auth = require('../middleware/auth');
+const discordService = require('../services/discordService');
 
 const router = express.Router();
 
@@ -120,6 +121,9 @@ router.post('/', auth, async (req, res) => {
     
     const competitionPopulated = await Competition.findById(competition._id)
       .populate('createurId', 'pseudo');
+
+    // Envoyer notification Discord
+    await discordService.sendNewCompetition(competitionPopulated, competitionPopulated.createurId);
 
     res.status(201).json(competitionPopulated);
   } catch (error) {

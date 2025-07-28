@@ -3,6 +3,7 @@ const Club = require('../models/Club');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const { updatePlayerAvailability } = require('../utils/playerUtils');
+const discordService = require('../services/discordService');
 
 const router = express.Router();
 
@@ -289,6 +290,96 @@ router.get('/user/my-clubs', auth, async (req, res) => {
     res.json(clubs);
   } catch (error) {
     console.error('Erreur récupération clubs utilisateur:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Promouvoir un membre en admin
+router.put('/:id/promouvoir/:userId', auth, async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const club = await Club.findById(id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    // Vérifier que l'utilisateur est admin du club
+    const currentMember = club.membres.find(m => m.userId.toString() === req.user.id);
+    if (!currentMember || currentMember.role !== 'Admin') {
+      return res.status(403).json({ message: 'Vous devez être admin pour promouvoir un membre.' });
+    }
+    
+    // Vérifier que le membre à promouvoir existe
+    const memberToPromote = club.membres.find(m => m.userId.toString() === userId);
+    if (!memberToPromote) {
+      return res.status(404).json({ message: 'Membre non trouvé.' });
+    }
+    
+    if (memberToPromote.role === 'Admin') {
+      return res.status(400).json({ message: 'Ce membre est déjà admin.' });
+    }
+    
+    // Promouvoir le membre
+    memberToPromote.role = 'Admin';
+    await club.save();
+    
+    // Envoyer notification Discord
+    const promoteur = await User.findById(req.user.id);
+    const joueurPromu = await User.findById(userId);
+    await discordService.sendAdminPromotion(club, joueurPromu, promoteur);
+    
+    res.json({ message: 'Membre promu avec succès.' });
+  } catch (error) {
+    console.error('Erreur promotion membre:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Exclure un membre du club
+router.delete('/:id/exclure/:userId', auth, async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const club = await Club.findById(id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    // Vérifier que l'utilisateur est admin du club
+    const currentMember = club.membres.find(m => m.userId.toString() === req.user.id);
+    if (!currentMember || currentMember.role !== 'Admin') {
+      return res.status(403).json({ message: 'Vous devez être admin pour exclure un membre.' });
+    }
+    
+    // Empêcher l'exclusion d'un autre admin
+    const memberToExclude = club.membres.find(m => m.userId.toString() === userId);
+    if (!memberToExclude) {
+      return res.status(404).json({ message: 'Membre non trouvé.' });
+    }
+    
+    if (memberToExclude.role === 'Admin') {
+      return res.status(400).json({ message: 'Vous ne pouvez pas exclure un autre admin.' });
+    }
+    
+    // Exclure le membre
+    const memberIndex = club.membres.findIndex(m => m.userId.toString() === userId);
+    club.membres.splice(memberIndex, 1);
+    club.effectifActuel -= 1;
+    
+    await club.save();
+    
+    // Envoyer notification Discord
+    const excluteur = await User.findById(req.user.id);
+    const joueurExclu = await User.findById(userId);
+    await discordService.sendClubExclusion(club, joueurExclu, excluteur);
+    
+    // Mettre à jour la disponibilité du joueur exclu
+    await updatePlayerAvailability(userId, require('../models/Player'));
+    
+    res.json({ message: 'Membre exclu avec succès.' });
+  } catch (error) {
+    console.error('Erreur exclusion membre:', error);
     res.status(500).json({ message: 'Erreur serveur.' });
   }
 });
