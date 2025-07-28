@@ -5,7 +5,7 @@ import { playerAPI } from '../services/api';
 import Avatar from '../components/Avatar';
 
 const PlayerSearchPage = () => {
-  const { user: authUser } = useAuth();
+  // const { user: authUser } = useAuth(); // Variable non utilisée pour le moment
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,31 +34,31 @@ const PlayerSearchPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
+    const fetchPlayers = async () => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams({
+          page: currentPage,
+          limit: 20,
+          tri: sortBy,
+          ordre: sortOrder,
+          ...filters
+        });
+
+        const response = await playerAPI.searchPlayers(params);
+        setPlayers(response.players);
+        setPagination(response.pagination);
+        setError(null);
+      } catch (err) {
+        setError('Erreur lors du chargement des joueurs');
+        console.error('Erreur recherche joueurs:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPlayers();
-  }, [filters, sortBy, sortOrder, currentPage, fetchPlayers]);
-
-  const fetchPlayers = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage,
-        limit: 20,
-        tri: sortBy,
-        ordre: sortOrder,
-        ...filters
-      });
-
-      const response = await playerAPI.searchPlayers(params);
-      setPlayers(response.players);
-      setPagination(response.pagination);
-      setError(null);
-    } catch (err) {
-      setError('Erreur lors du chargement des joueurs');
-      console.error('Erreur recherche joueurs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [filters, sortBy, sortOrder, currentPage]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));

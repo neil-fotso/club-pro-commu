@@ -17,25 +17,25 @@ const PlayerProfilePage = () => {
   const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
+    const fetchPlayer = async () => {
+      try {
+        setLoading(true);
+        const data = await playerAPI.getPlayer(id);
+        setPlayer(data);
+        setError(null);
+      } catch (err) {
+        setError('Erreur lors du chargement du profil');
+        console.error('Erreur chargement joueur:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPlayer();
     if (user) {
       fetchUserClubs();
     }
-  }, [id, user, fetchPlayer]);
-
-  const fetchPlayer = async () => {
-    try {
-      setLoading(true);
-      const data = await playerAPI.getPlayer(id);
-      setPlayer(data);
-      setError(null);
-    } catch (err) {
-      setError('Erreur lors du chargement du profil');
-      console.error('Erreur chargement joueur:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [id, user]);
 
   const fetchUserClubs = async () => {
     try {

@@ -9,7 +9,7 @@ const HomePage = () => {
   const { user } = useAuth();
   const [recentPlayers, setRecentPlayers] = useState([]);
   const [recentClubs, setRecentClubs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRecentData = async () => {
