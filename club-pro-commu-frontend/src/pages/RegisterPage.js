@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
-import { getAllCountries, getCountryFlag } from '../utils/countryUtils';
+import { getAllCountries } from '../utils/countryUtils';
 import { getAllPositions } from '../utils/positionUtils';
 
 // Schéma de validation Yup
@@ -86,8 +86,7 @@ export default function RegisterPage() {
     formState: { errors, isValid },
     setValue,
     watch,
-    clearErrors,
-    reset
+    clearErrors
   } = useForm({
     resolver: yupResolver(registerSchema),
     mode: 'onChange'
