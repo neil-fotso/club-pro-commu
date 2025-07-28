@@ -7,15 +7,16 @@ router.post('/webhook', async (req, res) => {
   try {
     console.log('Webhook Discord reçu:', req.body);
     
+    // Vérification Discord - répondre immédiatement au ping
+    if (req.body.type === 'PING') {
+      console.log('Ping Discord reçu, réponse PONG');
+      return res.status(200).json({ type: 'PONG' });
+    }
+    
     // Traiter les différents types d'événements Discord
     const { type, data } = req.body;
     
     switch (type) {
-      case 'PING':
-        // Répondre au ping Discord
-        res.json({ type: 'PONG' });
-        break;
-        
       case 'MESSAGE_CREATE':
         // Traiter les nouveaux messages
         console.log('Nouveau message Discord:', data);
@@ -30,6 +31,7 @@ router.post('/webhook', async (req, res) => {
         console.log('Événement Discord non géré:', type);
     }
     
+    // Réponse par défaut pour les autres événements
     res.status(200).json({ success: true });
   } catch (error) {
     console.error('Erreur webhook Discord:', error);
