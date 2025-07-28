@@ -13,6 +13,14 @@ router.post('/webhook', async (req, res) => {
       return res.status(200).json({ type: 'PONG' });
     }
     
+    // Vérification de la signature Discord (optionnel mais recommandé)
+    const signature = req.headers['x-signature-ed25519'];
+    const timestamp = req.headers['x-signature-timestamp'];
+    
+    if (signature && timestamp) {
+      console.log('Signature Discord détectée:', { signature, timestamp });
+    }
+    
     // Traiter les différents types d'événements Discord
     const { type, data } = req.body;
     
@@ -25,6 +33,21 @@ router.post('/webhook', async (req, res) => {
       case 'GUILD_MEMBER_ADD':
         // Nouveau membre sur le serveur
         console.log('Nouveau membre Discord:', data);
+        break;
+        
+      case 'GUILD_MEMBER_REMOVE':
+        // Membre qui quitte le serveur
+        console.log('Membre Discord parti:', data);
+        break;
+        
+      case 'GUILD_ROLE_CREATE':
+        // Nouveau rôle créé
+        console.log('Nouveau rôle Discord:', data);
+        break;
+        
+      case 'GUILD_ROLE_UPDATE':
+        // Rôle modifié
+        console.log('Rôle Discord modifié:', data);
         break;
         
       default:
@@ -44,6 +67,15 @@ router.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     message: 'Webhook Discord opérationnel',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Endpoint GET pour la vérification Discord
+router.get('/webhook', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Webhook Discord accessible',
     timestamp: new Date().toISOString()
   });
 });
