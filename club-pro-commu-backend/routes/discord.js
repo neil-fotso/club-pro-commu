@@ -46,8 +46,9 @@ router.post('/webhook', async (req, res) => {
     
     // Gestion de la vérification Discord (type: 1 = PING, type: 0 = non documenté mais utilisé)
     if (req.body.type === 1 || req.body.type === 0) {
-      // Répondre avec le même type reçu pour la validation Discord
-      return res.status(200).json({ type: req.body.type });
+      // Répondre avec le type reçu ou 1 pour la validation Discord
+      const responseType = req.body.type === 0 ? 1 : req.body.type;
+      return res.status(200).json({ type: responseType });
     }
     
     // Gestion des événements Discord
