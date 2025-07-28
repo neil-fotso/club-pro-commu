@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI, userAPI } from '../services/api';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
       console.log('🔐 Réponse login:', response);
       
       // Le backend retourne { user: { token, ... }, player: {...} }
-      const { user: userData, player } = response;
+      const { user: userData } = response;
       const token = userData.token;
       
       if (!token) {

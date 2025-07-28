@@ -5,7 +5,7 @@ import { playerAPI } from '../services/api';
 import Avatar from '../components/Avatar';
 
 const PlayerSearchPage = () => {
-  const { user } = useAuth();
+  const { user: authUser } = useAuth();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -35,7 +35,7 @@ const PlayerSearchPage = () => {
 
   useEffect(() => {
     fetchPlayers();
-  }, [filters, sortBy, sortOrder, currentPage]);
+  }, [filters, sortBy, sortOrder, currentPage, fetchPlayers]);
 
   const fetchPlayers = async () => {
     try {

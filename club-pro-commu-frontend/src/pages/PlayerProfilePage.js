@@ -21,7 +21,7 @@ const PlayerProfilePage = () => {
     if (user) {
       fetchUserClubs();
     }
-  }, [id, user]);
+  }, [id, user, fetchPlayer]);
 
   const fetchPlayer = async () => {
     try {

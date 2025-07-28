@@ -67,10 +67,9 @@ export default function Navbar() {
             {user ? (
               <>
                 <li className="nav-item dropdown">
-                  <a
+                  <button
                     className="nav-link dropdown-toggle d-flex align-items-center"
-                    href="#"
-                    role="button"
+                    type="button"
                     data-bs-toggle="dropdown"
                   >
                     <Avatar
@@ -80,7 +79,7 @@ export default function Navbar() {
                       className="me-2"
                     />
                     {user.pseudo}
-                  </a>
+                  </button>
                   <ul className="dropdown-menu">
                     <li>
                       <Link className="dropdown-item" to="/mon-profil" onClick={() => setIsMenuOpen(false)}>
