@@ -203,6 +203,28 @@ function getNiveauProche(niveau) {
   return proches;
 }
 
+// GET /api/players/me - Récupérer mon profil joueur
+router.get('/me', auth, async (req, res) => {
+  try {
+    const player = await Player.findOne({ userId: req.user.id });
+    
+    if (!player) {
+      return res.status(404).json({ message: 'Profil joueur non trouvé' });
+    }
+
+    // Ajouter les statistiques calculées
+    const playerObj = player.toObject();
+    playerObj.winRate = player.winRate;
+    playerObj.goalsPerMatch = player.goalsPerMatch;
+    playerObj.assistsPerMatch = player.assistsPerMatch;
+
+    res.json(playerObj);
+  } catch (error) {
+    console.error('Erreur récupération profil:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // GET /api/players/:id - Récupérer un joueur spécifique
 router.get('/:id', async (req, res) => {
   try {
@@ -229,34 +251,55 @@ router.get('/:id', async (req, res) => {
 // PUT /api/players/:id - Mettre à jour le profil joueur
 router.put('/:id', auth, async (req, res) => {
   try {
+    console.log('🔄 Mise à jour profil - ID:', req.params.id);
+    console.log('🔄 Données reçues:', req.body);
+    console.log('🔄 Utilisateur connecté:', req.user.id);
+    
     const player = await Player.findById(req.params.id);
     
     if (!player) {
+      console.log('❌ Joueur non trouvé');
       return res.status(404).json({ message: 'Joueur non trouvé' });
     }
 
+    console.log('✅ Joueur trouvé:', player.pseudo);
+    console.log('🔍 Vérification autorisation - Player userId:', player.userId.toString());
+    console.log('🔍 Vérification autorisation - User connecté:', req.user.id);
+
     // Vérifier que l'utilisateur modifie son propre profil
     if (player.userId.toString() !== req.user.id) {
+      console.log('❌ Non autorisé - userId ne correspond pas');
       return res.status(403).json({ message: 'Non autorisé' });
     }
 
     // Mise à jour des champs autorisés
     const allowedUpdates = [
       'pseudo', 'photoProfil', 'age', 'pays', 'nationalite', 'ville',
-      'plateforme', 'position', 'niveau', 'bio', 'disponibilite',
-      'horaires', 'jeux', 'reseauxSociaux', 'preferences'
+      'plateforme', 'position', 'postePrincipal', 'postesSecondaires', 'niveau', 
+      'bio', 'description', 'horaires', 'jeux', 'reseauxSociaux', 'preferences',
+      'langues', 'rechercheClub'
     ];
 
+    console.log('📝 Mise à jour des champs autorisés...');
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined) {
+        console.log(`📝 Mise à jour ${field}:`, req.body[field]);
         player[field] = req.body[field];
       }
     });
 
     // Mettre à jour l'activité
     player.derniereActivite = new Date();
+    console.log('📝 Mise à jour dernière activité:', player.derniereActivite);
 
+    console.log('💾 Sauvegarde du joueur...');
     await player.save();
+    console.log('✅ Joueur sauvegardé avec succès');
+    
+    // Calculer automatiquement la disponibilité
+    console.log('🔄 Calcul automatique de la disponibilité...');
+    await player.calculateDisponibilite();
+    console.log('✅ Disponibilité mise à jour:', player.disponibilite);
 
     // Ajouter les statistiques calculées
     const playerObj = player.toObject();
@@ -304,6 +347,35 @@ router.post('/:id/rewards', auth, async (req, res) => {
     res.json({ message: 'Récompense ajoutée' });
   } catch (error) {
     console.error('Erreur ajout récompense:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/players/recalculate-availability - Recalculer la disponibilité de tous les joueurs
+router.post('/recalculate-availability', auth, async (req, res) => {
+  try {
+    console.log('🔄 Recalcul de la disponibilité pour tous les joueurs...');
+    
+    const players = await Player.find({});
+    let updatedCount = 0;
+    
+    for (const player of players) {
+      const oldDisponibilite = player.disponibilite;
+      await player.calculateDisponibilite();
+      
+      if (oldDisponibilite !== player.disponibilite) {
+        updatedCount++;
+        console.log(`📝 ${player.pseudo}: ${oldDisponibilite} → ${player.disponibilite}`);
+      }
+    }
+    
+    console.log(`✅ ${updatedCount} joueurs mis à jour`);
+    res.json({ 
+      message: `Disponibilité recalculée pour ${updatedCount} joueurs`,
+      updatedCount 
+    });
+  } catch (error) {
+    console.error('Erreur recalcul disponibilité:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });

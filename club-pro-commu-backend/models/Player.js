@@ -26,7 +26,7 @@ const playerSchema = new mongoose.Schema({
   },
   pays: {
     type: String,
-    required: true
+    default: ''
   },
   nationalite: {
     type: String,
@@ -38,7 +38,7 @@ const playerSchema = new mongoose.Schema({
   },
   plateforme: {
     type: String,
-    enum: ['PC', 'PS5', 'Xbox', 'Switch', 'Mobile'],
+    enum: ['PC', 'PS5', 'Xbox'],
     required: true
   },
   position: {
@@ -46,6 +46,27 @@ const playerSchema = new mongoose.Schema({
     enum: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien', 'Polyvalent'],
     required: true
   },
+  postePrincipal: {
+    type: String,
+    enum: ['BU', 'AG', 'AD', 'MOC', 'MG', 'MD', 'MC', 'MDC', 'DD', 'DG', 'DC', 'DLD', 'DLG', 'GB']
+  },
+  postesSecondaires: [{
+    type: String,
+    enum: ['BU', 'AG', 'AD', 'MOC', 'MG', 'MD', 'MC', 'MDC', 'DD', 'DG', 'DC', 'DLD', 'DLG', 'GB']
+  }],
+  langues: [{
+    type: String,
+    enum: [
+      'Français', 'Anglais', 'Espagnol', 'Allemand', 'Italien', 'Portugais', 'Néerlandais',
+      'Suédois', 'Norvégien', 'Danois', 'Finnois', 'Polonais', 'Tchèque', 'Slovaque',
+      'Hongrois', 'Roumain', 'Bulgare', 'Grec', 'Turc', 'Russe', 'Ukrainien',
+      'Biélorusse', 'Serbe', 'Croate', 'Bosniaque', 'Monténégrin', 'Macédonien',
+      'Albanais', 'Estonien', 'Letton', 'Lituanien', 'Arabe', 'Hébreu', 'Persan',
+      'Hindi', 'Bengali', 'Ourdou', 'Chinois', 'Japonais', 'Coréen', 'Thaï',
+      'Vietnamien', 'Indonésien', 'Malais', 'Tagalog', 'Swahili', 'Zoulou',
+      'Afrikaans', 'Autre'
+    ]
+  }],
   niveau: {
     type: String,
     enum: ['Débutant', 'Intermédiaire', 'Avancé', 'Expert', 'Pro'],
@@ -61,6 +82,15 @@ const playerSchema = new mongoose.Schema({
     type: String,
     maxlength: 500,
     default: ''
+  },
+  description: {
+    type: String,
+    maxlength: 1000,
+    default: ''
+  },
+  rechercheClub: {
+    type: Boolean,
+    default: true
   },
   disponibilite: {
     type: String,
@@ -170,6 +200,28 @@ playerSchema.methods.addStatistic = function(type, value = 1) {
 
 playerSchema.methods.addReward = function(reward) {
   this.recompenses.push(reward);
+  return this.save();
+};
+
+// Méthode pour calculer automatiquement la disponibilité
+playerSchema.methods.calculateDisponibilite = async function() {
+  // Vérifier si le joueur appartient à un club
+  const Club = require('./Club');
+  const clubMembership = await Club.findOne({ 
+    'membres.joueurId': this._id 
+  });
+  
+  const isInClub = !!clubMembership;
+  
+  // Logique de disponibilité automatique
+  if (this.rechercheClub && !isInClub) {
+    this.disponibilite = 'Recherche équipe';
+  } else if (isInClub) {
+    this.disponibilite = 'Occupé';
+  } else {
+    this.disponibilite = 'Disponible';
+  }
+  
   return this.save();
 };
 

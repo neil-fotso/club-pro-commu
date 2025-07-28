@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       // Vérifier si le token est valide
-      userAPI.getProfile(token)
+      authAPI.getMe()
         .then(userData => {
           setUser({ ...userData, token });
         })
@@ -31,12 +31,21 @@ export function AuthProvider({ children }) {
   const login = async (emailOrPseudo, password) => {
     try {
       const response = await authAPI.login({ emailOrPseudo, password });
-      const { token, user: userData } = response;
+      console.log('🔐 Réponse login:', response);
+      
+      // Le backend retourne { user: { token, ... }, player: {...} }
+      const { user: userData, player } = response;
+      const token = userData.token;
+      
+      if (!token) {
+        throw new Error('Token non reçu du serveur');
+      }
       
       localStorage.setItem('token', token);
       setUser({ ...userData, token });
       return { success: true };
     } catch (error) {
+      console.error('❌ Erreur login:', error);
       return { success: false, error: error.message };
     }
   };
@@ -47,6 +56,15 @@ export function AuthProvider({ children }) {
       await authAPI.register(userData);
       return { success: true };
     } catch (error) {
+      // Si l'erreur vient de l'API avec des détails
+      if (error.response && error.response.data) {
+        return { 
+          success: false, 
+          error: error.response.data.message,
+          field: error.response.data.field,
+          type: error.response.data.type
+        };
+      }
       return { success: false, error: error.message };
     }
   };

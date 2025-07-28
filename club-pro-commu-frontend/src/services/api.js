@@ -1,5 +1,5 @@
 // Configuration de l'API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_URL = 'http://localhost:3001/api';
 
 // Fonction utilitaire pour récupérer le token
 const getToken = () => {
@@ -9,6 +9,7 @@ const getToken = () => {
 // Fonction utilitaire pour les headers d'authentification
 const getAuthHeaders = () => {
   const token = getToken();
+  console.log('🔐 Token récupéré:', token ? token.substring(0, 20) + '...' : 'Aucun token');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
@@ -73,9 +74,14 @@ export const authAPI = {
 
   // Connexion
   login: async (credentials) => {
+    // Adapter le format pour le backend qui attend email et password
+    const { emailOrPseudo, password } = credentials;
     return apiCall('/auth/login', {
       method: 'POST',
-      body: credentials,
+      body: {
+        email: emailOrPseudo, // Le backend attend 'email'
+        password
+      },
     });
   },
 
@@ -99,6 +105,17 @@ export const userAPI = {
   getProfile: async () => {
     return apiCall('/user/me');
   },
+  
+  exerciseDataRights: async (requestType, reason) => {
+    return apiCall('/api/user/exercise-data-rights', {
+      method: 'POST',
+      body: JSON.stringify({ requestType, reason })
+    });
+  },
+  
+  getDataRightsStatus: async () => {
+    return apiCall('/api/user/data-rights-status');
+  }
 };
 
 // API joueurs
@@ -146,6 +163,11 @@ export const playerAPI = {
   // Obtenir les recommandations
   getRecommendations: async () => {
     return apiCall('/players/recommendations');
+  },
+
+  // Récupérer mon profil joueur
+  getMyProfile: async () => {
+    return apiCall('/players/me');
   },
 };
 

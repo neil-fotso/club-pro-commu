@@ -74,17 +74,15 @@ export default function MyProfilePage() {
   const loadMyProfile = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const data = await playerAPI.getMyProfile(token);
+      const data = await playerAPI.getMyProfile();
       setPlayer(data);
       setFormData({
         postePrincipal: data.postePrincipal || '',
         postesSecondaires: data.postesSecondaires || [],
         age: data.age || '',
         pays: data.pays || '',
-        description: data.description || '',
+        bio: data.bio || '',
         rechercheClub: data.rechercheClub !== undefined ? data.rechercheClub : true,
-        disponibilite: data.disponibilite || 'Disponible',
         langues: data.langues || ['Français']
       });
       setError('');
@@ -110,7 +108,8 @@ export default function MyProfilePage() {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+      console.log('🔄 Début mise à jour profil...');
+      console.log('🔄 Données du formulaire:', formData);
       
       // Préparer les données en s'assurant qu'elles sont correctement formatées
       const updateData = {
@@ -118,13 +117,18 @@ export default function MyProfilePage() {
         // S'assurer que les champs optionnels sont bien gérés
         age: formData.age ? parseInt(formData.age) : undefined,
         pays: formData.pays || undefined,
+        postePrincipal: formData.postePrincipal || undefined,
         postesSecondaires: Array.isArray(formData.postesSecondaires) ? formData.postesSecondaires : [],
-        langues: Array.isArray(formData.langues) ? formData.langues : []
+        langues: Array.isArray(formData.langues) ? formData.langues : [],
+        bio: formData.bio || undefined
       };
 
-      console.log('Données envoyées:', updateData);
+      console.log('📤 Données envoyées au backend:', updateData);
+      console.log('🆔 ID du joueur:', player._id);
       
-      const updatedPlayer = await playerAPI.updatePlayer(player._id, updateData, token);
+      const updatedPlayer = await playerAPI.updatePlayer(player._id, updateData);
+      console.log('✅ Réponse du backend:', updatedPlayer);
+      
       setPlayer(updatedPlayer);
       setEditing(false);
       alert('Profil mis à jour avec succès !');
@@ -132,8 +136,8 @@ export default function MyProfilePage() {
       // Recharger le profil pour s'assurer que tout est à jour
       await loadMyProfile();
     } catch (err) {
+      console.error('❌ Erreur mise à jour:', err);
       setError(err.message || 'Erreur lors de la mise à jour');
-      console.error('Erreur mise à jour:', err);
     } finally {
       setLoading(false);
     }
@@ -299,23 +303,6 @@ export default function MyProfilePage() {
                   <div className="row">
                     <div className="col-md-6 mb-3">
                       <label className="form-label fw-bold">
-                        <i className="fas fa-clock me-1"></i>
-                        Disponibilité
-                      </label>
-                      <select
-                        className="form-select form-select-lg"
-                        name="disponibilite"
-                        value={formData.disponibilite}
-                        onChange={handleChange}
-                      >
-                        <option value="Disponible">✅ Disponible</option>
-                        <option value="Partiellement disponible">⚠️ Partiellement disponible</option>
-                        <option value="Occupé">❌ Occupé</option>
-                      </select>
-                    </div>
-                    
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label fw-bold">
                         <i className="fas fa-search me-1"></i>
                         Recherche un club
                       </label>
@@ -332,6 +319,9 @@ export default function MyProfilePage() {
                           {formData.rechercheClub ? 'Oui' : 'Non'}
                         </label>
                       </div>
+                      <small className="text-muted">
+                        La disponibilité sera automatiquement mise à jour selon votre statut de recherche et d'appartenance à un club
+                      </small>
                     </div>
                   </div>
 
@@ -342,8 +332,8 @@ export default function MyProfilePage() {
                     </label>
                     <textarea
                       className="form-control"
-                      name="description"
-                      value={formData.description}
+                      name="bio"
+                      value={formData.bio}
                       onChange={handleChange}
                       rows="4"
                       placeholder="Parlez-nous de vous, de votre style de jeu, de vos objectifs..."
@@ -426,12 +416,6 @@ export default function MyProfilePage() {
                         <strong>Plateforme:</strong> 
                         <span className="text-muted ms-2">{player.plateforme}</span>
                       </li>
-                      <li className="mb-2">
-                        <strong>Expérience:</strong> 
-                        <span className="text-muted ms-2">
-                          {player.experience ? `${player.experience} matchs` : 'Non renseigné'}
-                        </span>
-                      </li>
                     </ul>
                   </div>
                   
@@ -444,7 +428,7 @@ export default function MyProfilePage() {
                       <li className="mb-2">
                         <strong>Poste principal:</strong> 
                         <span className="badge bg-primary ms-2">
-                          {getPositionDisplay(player.postePrincipal)}
+                          {player.postePrincipal ? getPositionDisplay(player.postePrincipal) : 'Non renseigné'}
                         </span>
                       </li>
                       {player.postesSecondaires && player.postesSecondaires.length > 0 && (
@@ -488,7 +472,7 @@ export default function MyProfilePage() {
                     <div className="card bg-light">
                       <div className="card-body">
                         <p className="mb-0">
-                          {player.description ? player.description : 'Aucune description renseignée'}
+                          {player.bio ? player.bio : 'Aucune description renseignée'}
                         </p>
                       </div>
                     </div>

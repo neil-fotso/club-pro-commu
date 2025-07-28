@@ -3,14 +3,50 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAllCountries, getCountryFlag } from '../utils/countryUtils';
 
+// Styles CSS pour les champs en erreur
+const errorStyles = {
+  border: '2px solid #dc3545',
+  backgroundColor: '#fff5f5',
+  boxShadow: '0 0 0 0.2rem rgba(220, 53, 69, 0.25)'
+};
+
+// Styles CSS inline pour forcer l'affichage
+const getFieldStyle = (fieldName, errorField) => {
+  if (errorField === fieldName) {
+    return {
+      border: '3px solid #ff0000',
+      backgroundColor: '#ffe6e6',
+      boxShadow: '0 0 0 0.3rem rgba(255, 0, 0, 0.3)'
+    };
+  }
+  return {};
+};
+
+
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { user, register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [errorField, setErrorField] = useState('');
+  
+  // Test temporaire pour vérifier les styles - décommentez pour tester
+  // const [errorField, setErrorField] = useState('pseudo');
+  // const [error, setError] = useState('Test erreur pseudo');
 
   const allCountries = getAllCountries();
+
+  // Fonction pour scroll vers un champ
+  const scrollToField = (fieldName) => {
+    setTimeout(() => {
+      const fieldElement = document.querySelector(`[name="${fieldName}"]`);
+      if (fieldElement) {
+        fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
 
   const [formData, setFormData] = useState({
     pseudo: '',
@@ -25,6 +61,8 @@ export default function RegisterPage() {
   });
 
   const [useSamePseudo, setUseSamePseudo] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   if (user) {
     return (
@@ -87,392 +125,478 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     setSuccess('');
+    setErrorField('');
 
     if (!formData.pseudo) {
       setError('Veuillez indiquer votre pseudo');
+      setErrorField('pseudo');
+      scrollToField('pseudo');
       setLoading(false);
       return;
     }
 
     if (!formData.pseudoPlateforme) {
       setError('Veuillez indiquer votre pseudo sur la plateforme');
+      setErrorField('pseudoPlateforme');
+      scrollToField('pseudoPlateforme');
       setLoading(false);
       return;
     }
 
     if (!formData.email) {
       setError('Veuillez indiquer votre email');
+      setErrorField('email');
+      scrollToField('email');
       setLoading(false);
       return;
     }
 
     if (!formData.password) {
       setError('Veuillez indiquer votre mot de passe');
+      setErrorField('password');
+      scrollToField('password');
       setLoading(false);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Les mots de passe ne correspondent pas');
+      setErrorField('confirmPassword');
+      scrollToField('confirmPassword');
       setLoading(false);
       return;
     }
 
     if (!formData.plateforme) {
       setError('Veuillez sélectionner votre plateforme');
+      setErrorField('plateforme');
+      scrollToField('plateforme');
       setLoading(false);
       return;
     }
 
-    if (!formData.postePrincipal) {
-      setError('Veuillez sélectionner un poste principal');
+
+
+    if (!acceptedTerms) {
+      setError('Vous devez accepter les Conditions Générales d\'Utilisation');
+      setErrorField('terms');
+      scrollToField('terms');
       setLoading(false);
       return;
     }
 
-    const result = await register({
-      pseudo: formData.pseudo,
-      pseudoPlateforme: formData.pseudoPlateforme,
-      email: formData.email,
-      password: formData.password,
-      plateforme: formData.plateforme,
-      postePrincipal: formData.postePrincipal,
-      age: formData.age ? parseInt(formData.age) : undefined,
-      pays: formData.pays || undefined
-    });
-    
-    if (result.success) {
-      setSuccess('Inscription réussie ! Vous allez être redirigé vers la page de connexion...');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    } else {
-      setError(result.error);
+    if (!acceptedPrivacy) {
+      setError('Vous devez accepter la Politique de Confidentialité');
+      setErrorField('privacy');
+      scrollToField('privacy');
+      setLoading(false);
+      return;
     }
-    
-    setLoading(false);
+
+    try {
+      const result = await register(formData);
+      if (result.success) {
+        setSuccess('Inscription réussie ! Redirection...');
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } else {
+        setError(result.error || 'Erreur lors de l\'inscription');
+        
+        // Si l'erreur vient de l'API avec un champ spécifique
+        if (result.field) {
+          setErrorField(result.field);
+          // Scroll vers le champ en erreur
+          setTimeout(() => {
+            const fieldElement = document.querySelector(`[name="${result.field}"]`);
+            if (fieldElement) {
+              fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
+        }
+      }
+    } catch (err) {
+      setError(err.message || 'Erreur lors de l\'inscription');
+    } finally {
+      setLoading(false);
+    }
   };
 
-
-
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center py-5" 
-         style={{
-           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-           minHeight: '100vh'
-         }}>
-      <div className="container">
-        <div className="row justify-content-center">
-          <div className="col-lg-6 col-md-8">
-            <div className="card border-0 shadow-lg">
-              <div className="card-body p-5">
-                {/* Header */}
-                <div className="text-center mb-4">
-                  <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
-                    <i className="fas fa-user-plus text-primary" style={{fontSize: '2.5rem'}}></i>
-                  </div>
-                  <h2 className="card-title mb-2">Créer un compte</h2>
-                  <p className="text-muted">Rejoignez la communauté FIFA Pro Clubs</p>
+    <div className="container py-5" 
+           style={{
+             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+             minHeight: '100vh'
+           }}>
+      <div className="row justify-content-center">
+        <div className="col-lg-6 col-md-8">
+          <div className="card border-0 shadow-lg">
+            <div className="card-body p-5">
+              <div className="text-center mb-4">
+                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
+                  <i className="fas fa-user-plus text-primary" style={{fontSize: '2.5rem'}}></i>
                 </div>
+                <h2 className="card-title">Créer un compte</h2>
+                <p className="text-muted">Rejoignez la communauté des joueurs</p>
+              </div>
 
-                {/* Messages */}
-                {error && (
-                  <div className="alert alert-danger border-0 bg-danger bg-opacity-10 mb-4">
-                    <i className="fas fa-exclamation-triangle me-2"></i>
-                    {error}
-                  </div>
-                )}
-                {success && (
-                  <div className="alert alert-success border-0 bg-success bg-opacity-10 mb-4">
-                    <i className="fas fa-check-circle me-2"></i>
-                    {success}
-                  </div>
-                )}
+              {error && (
+                <div className="alert alert-danger border-0 bg-danger bg-opacity-10 mb-4">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  {error}
+                  {errorField && (
+                    <div className="mt-2">
+                      <small className="text-muted">Champ en erreur: {errorField}</small>
+                      <br />
+                      <small className="text-muted">Style appliqué: {JSON.stringify(getFieldStyle(errorField, errorField))}</small>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {/* Formulaire */}
-                <form onSubmit={handleSubmit}>
-                  <div className="row">
-                    <div className="col-md-6 mb-4">
-                      <label htmlFor="pseudo" className="form-label fw-bold">
+              {success && (
+                <div className="alert alert-success border-0 bg-success bg-opacity-10 mb-4">
+                  <i className="fas fa-check-circle me-2"></i>
+                  {success}
+                </div>
+              )}
+
+
+
+              <form onSubmit={handleSubmit}>
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
                         <i className="fas fa-user me-2"></i>
-                        Pseudo *
+                        Pseudo <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
-                        className="form-control form-control-lg"
-                        id="pseudo"
+                        className={`form-control ${errorField === 'pseudo' ? 'is-invalid field-error' : ''}`}
                         name="pseudo"
                         value={formData.pseudo}
                         onChange={handleChange}
                         placeholder="Votre pseudo"
                         required
-                        style={{
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          transition: 'all 0.3s ease'
-                        }}
+                        style={getFieldStyle('pseudo', errorField)}
                       />
+                      {errorField === 'pseudo' && (
+                        <div className="invalid-feedback">
+                          {error}
+                        </div>
+                      )}
                     </div>
-
-                    <div className="col-md-6 mb-4">
-                      <label htmlFor="pseudoPlateforme" className="form-label fw-bold">
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
                         <i className="fas fa-gamepad me-2"></i>
-                        Pseudo sur la plateforme *
+                        Pseudo sur plateforme <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
-                        className="form-control form-control-lg"
-                        id="pseudoPlateforme"
+                        className={`form-control ${errorField === 'pseudoPlateforme' ? 'is-invalid' : ''}`}
                         name="pseudoPlateforme"
                         value={formData.pseudoPlateforme}
                         onChange={handleChange}
-                        placeholder="Votre pseudo sur la plateforme"
+                        placeholder="Votre pseudo en jeu"
                         required
-                        disabled={useSamePseudo}
-                        style={{
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          transition: 'all 0.3s ease'
-                        }}
+                        style={getFieldStyle('pseudoPlateforme', errorField)}
                       />
-                      <div className="form-check mt-3">
+                      {errorField === 'pseudoPlateforme' && (
+                        <div className="invalid-feedback">
+                          {error}
+                        </div>
+                      )}
+                      <div className="form-check mt-2">
                         <input
                           className="form-check-input"
                           type="checkbox"
                           id="useSamePseudo"
                           checked={useSamePseudo}
                           onChange={handleUseSamePseudo}
-                          style={{ transform: 'scale(1.2)' }}
                         />
-                        <label className="form-check-label ms-2" htmlFor="useSamePseudo">
-                          Utiliser le même pseudo
+                        <label className="form-check-label" htmlFor="useSamePseudo">
+                          Même que mon pseudo
                         </label>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div className="col-md-6 mb-4">
-                    <label htmlFor="email" className="form-label fw-bold">
-                      <i className="fas fa-envelope me-2"></i>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      className="form-control form-control-lg"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="Votre email"
-                      required
-                      style={{
-                        borderRadius: '12px',
-                        border: '2px solid #e9ecef',
-                        transition: 'all 0.3s ease'
-                      }}
-                    />
-                  </div>
-
-                  <div className="row">
-                    <div className="col-md-6 mb-4">
-                      <label htmlFor="plateforme" className="form-label fw-bold">
-                        <i className="fas fa-tv me-2"></i>
-                        Plateforme *
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
+                        <i className="fas fa-envelope me-2"></i>
+                        Email <span className="text-danger">*</span>
                       </label>
-                      <select
-                        className="form-select form-select-lg"
-                        id="plateforme"
-                        name="plateforme"
-                        value={formData.plateforme}
+                      <input
+                        type="email"
+                        className={`form-control ${errorField === 'email' ? 'is-invalid' : ''}`}
+                        name="email"
+                        value={formData.email}
                         onChange={handleChange}
+                        placeholder="votre@email.com"
                         required
-                        style={{
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <option value="">Choisir votre plateforme</option>
-                        <option value="PS5">PlayStation 5</option>
-                        <option value="PS4">PlayStation 4</option>
-                        <option value="Xbox Series X/S">Xbox Series X/S</option>
-                        <option value="Xbox One">Xbox One</option>
-                        <option value="PC">PC</option>
-                      </select>
-                    </div>
-
-                    <div className="col-md-6 mb-4">
-                      <label htmlFor="postePrincipal" className="form-label fw-bold">
-                        <i className="fas fa-futbol me-2"></i>
-                        Poste principal *
-                      </label>
-                      <select
-                        className="form-select form-select-lg"
-                        id="postePrincipal"
-                        name="postePrincipal"
-                        value={formData.postePrincipal}
-                        onChange={handleChange}
-                        required
-                        style={{
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <option value="">Choisir votre poste</option>
-                        <optgroup label="Attaquants">
-                          <option value="BU">⚽ Buteur</option>
-                          <option value="AG">⚽ Ailier Gauche</option>
-                          <option value="AD">⚽ Ailier Droit</option>
-                        </optgroup>
-                        <optgroup label="Milieux">
-                          <option value="MOC">🎯 Milieu Offensif Central</option>
-                          <option value="MG">🎯 Milieu Gauche</option>
-                          <option value="MD">🎯 Milieu Droit</option>
-                          <option value="MC">🎯 Milieu Central</option>
-                          <option value="MDC">🛡️ Milieu Défensif Central</option>
-                        </optgroup>
-                        <optgroup label="Défenseurs">
-                          <option value="DD">🛡️ Défenseur Droit</option>
-                          <option value="DG">🛡️ Défenseur Gauche</option>
-                          <option value="DC">🛡️ Défenseur Central</option>
-                          <option value="DLD">🛡️ Défenseur Latéral Droit</option>
-                          <option value="DLG">🛡️ Défenseur Latéral Gauche</option>
-                        </optgroup>
-                      </select>
+                        style={getFieldStyle('email', errorField)}
+                      />
+                      {errorField === 'email' && (
+                        <div className="invalid-feedback">
+                          {error}
+                        </div>
+                      )}
                     </div>
                   </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
+                        <i className="fas fa-lock me-2"></i>
+                        Mot de passe <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        className={`form-control ${errorField === 'password' ? 'is-invalid' : ''}`}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Votre mot de passe"
+                        required
+                        style={getFieldStyle('password', errorField)}
+                      />
+                      {errorField === 'password' && (
+                        <div className="invalid-feedback">
+                          {error}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="age" className="form-label">
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
+                        <i className="fas fa-lock me-2"></i>
+                        Confirmer le mot de passe <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        className={`form-control ${errorField === 'confirmPassword' ? 'is-invalid' : ''}`}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        placeholder="Confirmez votre mot de passe"
+                        required
+                        style={getFieldStyle('confirmPassword', errorField)}
+                      />
+                      {errorField === 'confirmPassword' && (
+                        <div className="invalid-feedback">
+                          {error}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
+                        <i className="fas fa-gamepad me-2"></i>
+                        Plateforme <span className="text-danger">*</span>
+                      </label>
+                                              <select
+                          className={`form-select ${errorField === 'plateforme' ? 'is-invalid' : ''}`}
+                          name="plateforme"
+                          value={formData.plateforme}
+                          onChange={handleChange}
+                          required
+                          style={getFieldStyle('plateforme', errorField)}
+                        >
+                          <option value="">Sélectionnez votre plateforme</option>
+                          <option value="PC">PC</option>
+                          <option value="PS5">PlayStation 5</option>
+                          <option value="Xbox">Xbox</option>
+                        </select>
+                        {errorField === 'plateforme' && (
+                          <div className="invalid-feedback">
+                            {error}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                                              <label className="form-label">
+                          <i className="fas fa-futbol me-2"></i>
+                          Poste principal
+                        </label>
+                        <select
+                          className="form-select"
+                          name="postePrincipal"
+                          value={formData.postePrincipal}
+                          onChange={handleChange}
+                        >
+                        <option value="">Sélectionnez votre poste</option>
+                        <option value="BU">Buteur (BU)</option>
+                        <option value="AG">Ailier Gauche (AG)</option>
+                        <option value="AD">Ailier Droit (AD)</option>
+                        <option value="MOC">Milieu Offensif Central (MOC)</option>
+                        <option value="MG">Milieu Gauche (MG)</option>
+                        <option value="MD">Milieu Droit (MD)</option>
+                        <option value="MC">Milieu Central (MC)</option>
+                        <option value="MDC">Milieu Défensif Central (MDC)</option>
+                        <option value="DD">Défenseur Droit (DD)</option>
+                        <option value="DG">Défenseur Gauche (DG)</option>
+                        <option value="DC">Défenseur Central (DC)</option>
+                        <option value="DLD">Défenseur Latéral Droit (DLD)</option>
+                        <option value="DLG">Défenseur Latéral Gauche (DLG)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
                         <i className="fas fa-birthday-cake me-2"></i>
-                        Âge (facultatif)
+                        Âge
                       </label>
                       <input
                         type="number"
-                        className="form-control form-control-lg"
-                        id="age"
+                        className="form-control"
                         name="age"
                         value={formData.age}
                         onChange={handleChange}
-                        min="16"
+                        placeholder="Votre âge"
+                        min="13"
                         max="100"
-                        placeholder="Votre âge (optionnel)"
                       />
                     </div>
+                  </div>
+                </div>
 
-                    <div className="col-md-6 mb-3">
-                      <label htmlFor="pays" className="form-label">
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
                         <i className="fas fa-flag me-2"></i>
-                        Nationalité (facultatif)
+                        Nationalité
                       </label>
                       <select
-                        className="form-select form-select-lg"
-                        id="pays"
+                        className="form-select"
                         name="pays"
                         value={formData.pays}
                         onChange={handleChange}
                       >
-                        <option value="">Sélectionnez votre pays</option>
-                        {allCountries.map(country => (
-                          <option key={country.code} value={country.code}>
+                        <option value="">Sélectionnez votre nationalité</option>
+                        {allCountries.map((country, index) => (
+                          <option key={index} value={country.name}>
                             {getCountryFlag(country.code)} {country.name}
                           </option>
                         ))}
                       </select>
                     </div>
                   </div>
+                </div>
 
-                  <div className="row">
-                    <div className="col-md-6 mb-4">
-                      <label htmlFor="password" className="form-label fw-bold">
-                        <i className="fas fa-lock me-2"></i>
-                        Mot de passe *
-                      </label>
-                      <input
-                        type="password"
-                        className="form-control form-control-lg"
-                        id="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        placeholder="Votre mot de passe"
-                        style={{
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          transition: 'all 0.3s ease'
-                        }}
-                      />
+                {/* Section CGU et Politique de Confidentialité */}
+                <div className="card bg-light border-0 mb-4">
+                  <div className="card-body">
+                    <h6 className="text-primary mb-3">
+                      <i className="fas fa-gavel me-2"></i>
+                      Conditions légales
+                    </h6>
+                    
+                    <div className="mb-3">
+                      <div className={`form-check ${errorField === 'terms' ? 'is-invalid' : ''}`}>
+                        <input
+                          className={`form-check-input ${errorField === 'terms' ? 'is-invalid' : ''}`}
+                          type="checkbox"
+                          id="acceptedTerms"
+                          name="terms"
+                          checked={acceptedTerms}
+                          onChange={(e) => setAcceptedTerms(e.target.checked)}
+                          required
+                          style={errorField === 'terms' ? errorStyles : {}}
+                        />
+                        <label className="form-check-label" htmlFor="acceptedTerms">
+                          J'accepte les{' '}
+                          <Link to="/cgu" target="_blank" className="text-decoration-none">
+                            <strong>Conditions Générales d'Utilisation</strong>
+                          </Link>
+                          {' '}<span className="text-danger">*</span>
+                        </label>
+                        {errorField === 'terms' && (
+                          <div className="invalid-feedback">
+                            {error}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="col-md-6 mb-4">
-                      <label htmlFor="confirmPassword" className="form-label fw-bold">
-                        <i className="fas fa-lock me-2"></i>
-                        Confirmer le mot de passe *
-                      </label>
-                      <input
-                        type="password"
-                        className="form-control form-control-lg"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        required
-                        placeholder="Confirmez votre mot de passe"
-                        style={{
-                          borderRadius: '12px',
-                          border: '2px solid #e9ecef',
-                          transition: 'all 0.3s ease'
-                        }}
-                      />
+
+                    <div className="mb-3">
+                      <div className={`form-check ${errorField === 'privacy' ? 'is-invalid' : ''}`}>
+                        <input
+                          className={`form-check-input ${errorField === 'privacy' ? 'is-invalid' : ''}`}
+                          type="checkbox"
+                          id="acceptedPrivacy"
+                          name="privacy"
+                          checked={acceptedPrivacy}
+                          onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+                          required
+                          style={errorField === 'privacy' ? errorStyles : {}}
+                        />
+                        <label className="form-check-label" htmlFor="acceptedPrivacy">
+                          J'accepte la{' '}
+                          <Link to="/privacy" target="_blank" className="text-decoration-none">
+                            <strong>Politique de Confidentialité</strong>
+                          </Link>
+                          {' '}et le traitement de mes données personnelles <span className="text-danger">*</span>
+                        </label>
+                        {errorField === 'privacy' && (
+                          <div className="invalid-feedback">
+                            {error}
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    <small className="text-muted">
+                      <i className="fas fa-info-circle me-1"></i>
+                      En cochant ces cases, vous acceptez nos conditions et confirmez avoir lu notre politique de confidentialité.
+                    </small>
                   </div>
+                </div>
 
-                  <button 
-                    type="submit" 
-                    className="btn btn-primary btn-lg w-100 mb-4"
+                <div className="d-grid">
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-lg"
                     disabled={loading}
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      border: 'none',
-                      color: 'white',
-                      borderRadius: '12px',
-                      minHeight: '56px',
-                      fontSize: '1.1rem',
-                      fontWeight: 'bold',
-                      transition: 'all 0.3s ease'
-                    }}
                   >
                     {loading ? (
                       <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Inscription en cours...
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Création en cours...
                       </>
                     ) : (
                       <>
                         <i className="fas fa-user-plus me-2"></i>
-                        S'inscrire
+                        Créer mon compte
                       </>
                     )}
                   </button>
+                </div>
+              </form>
 
-                  <div className="text-center">
-                    <small className="text-muted">
-                      <i className="fas fa-info-circle me-1"></i>
-                      Les champs marqués d'un * sont obligatoires
-                    </small>
-                  </div>
-
-                  <div className="text-center mt-3">
-                    <p className="text-muted mb-0">
-                      Déjà un compte ? 
-                      <Link to="/login" className="text-decoration-none fw-bold ms-1">
-                        Se connecter
-                      </Link>
-                    </p>
-                  </div>
-                </form>
+              <div className="text-center mt-4">
+                <p className="text-muted mb-0">
+                  Déjà un compte ?{' '}
+                  <Link to="/login" className="text-decoration-none">
+                    <strong>Se connecter</strong>
+                  </Link>
+                </p>
               </div>
             </div>
           </div>

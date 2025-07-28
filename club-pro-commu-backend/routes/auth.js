@@ -7,6 +7,35 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Fonction de mapping des positions frontend vers backend
+const mapPositionToBackend = (frontendPosition) => {
+  const positionMap = {
+    // Positions d'attaque
+    'BU': 'Attaquant',
+    'AG': 'Attaquant',
+    'AD': 'Attaquant',
+    'MOC': 'Attaquant',
+
+    // Positions de milieu
+    'MG': 'Milieu',
+    'MD': 'Milieu',
+    'MC': 'Milieu',
+    'MDC': 'Milieu',
+
+    // Positions de défense
+    'DD': 'Défenseur',
+    'DG': 'Défenseur',
+    'DC': 'Défenseur',
+    'DLD': 'Défenseur',
+    'DLG': 'Défenseur',
+
+    // Position de gardien
+    'GB': 'Gardien'
+  };
+
+  return positionMap[frontendPosition] || 'Polyvalent';
+};
+
 // POST /api/auth/register - Inscription avec création automatique du profil joueur
 router.post('/register', async (req, res) => {
   try {
@@ -25,9 +54,9 @@ router.post('/register', async (req, res) => {
     } = req.body;
 
     // Validation des champs obligatoires
-    if (!pseudo || !email || !password || !pays || !plateforme || !position) {
+    if (!pseudo || !email || !password || !plateforme) {
       return res.status(400).json({
-        message: 'Pseudo, email, mot de passe, pays, plateforme et position sont obligatoires'
+        message: 'Pseudo, email, mot de passe et plateforme sont obligatoires'
       });
     }
 
@@ -54,30 +83,30 @@ router.post('/register', async (req, res) => {
     }
 
     // Vérifier si l'email existe déjà
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+    if (existingUserByEmail) {
       return res.status(400).json({
-        message: 'Un compte avec cet email existe déjà'
+        message: 'Un compte avec cet email existe déjà',
+        field: 'email',
+        type: 'duplicate'
       });
     }
 
     // Vérifier si le pseudo existe déjà
-    const existingPlayer = await Player.findOne({ pseudo });
-    if (existingPlayer) {
+    const existingUserByPseudo = await User.findOne({ pseudo });
+    if (existingUserByPseudo) {
       return res.status(400).json({
-        message: 'Ce pseudo est déjà utilisé'
+        message: 'Ce pseudo est déjà utilisé',
+        field: 'pseudo',
+        type: 'duplicate'
       });
     }
 
-    // Hasher le mot de passe
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Créer l'utilisateur
+    // Créer l'utilisateur (le mot de passe sera hashé automatiquement par le middleware pre('save'))
     const user = new User({
       pseudo,
       email: email.toLowerCase(),
-      password: hashedPassword,
+      password: password, // Le middleware pre('save') va hasher automatiquement
       dateCreation: new Date()
     });
 
@@ -88,11 +117,12 @@ router.post('/register', async (req, res) => {
       userId: user._id,
       pseudo,
       age: age ? parseInt(age) : undefined,
-      pays,
+      pays: pays || '',
       nationalite: nationalite || '',
       ville: ville || '',
       plateforme,
-      position,
+      position: position ? mapPositionToBackend(position) : 'Polyvalent', // Position générale pour compatibilité
+      postePrincipal: position || undefined, // Position détaillée du frontend (optionnel)
       niveau,
       bio,
       disponibilite: 'Disponible',
@@ -126,9 +156,10 @@ router.post('/register', async (req, res) => {
     await player.save();
 
     // Générer le token JWT
+    const jwtSecret = process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise_pour_le_developpement_local';
     const token = jwt.sign(
       { id: user._id, pseudo: user.pseudo },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
@@ -160,6 +191,45 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// GET /api/auth/test - Endpoint de test
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'Backend local avec modifications récentes',
+    timestamp: new Date().toISOString(),
+    hasDebugLogs: true
+  });
+});
+
+// GET /api/auth/me - Récupérer les données de l'utilisateur connecté
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    const player = await Player.findOne({ userId: user._id });
+    
+    res.json({
+      _id: user._id,
+      pseudo: user.pseudo,
+      email: user.email,
+      dateCreation: user.dateCreation,
+      player: player ? {
+        _id: player._id,
+        pseudo: player.pseudo,
+        plateforme: player.plateforme,
+        position: player.position,
+        niveau: player.niveau,
+        disponibilite: player.disponibilite
+      } : null
+    });
+  } catch (error) {
+    console.error('Erreur récupération utilisateur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // POST /api/auth/login - Connexion
 router.post('/login', async (req, res) => {
   try {
@@ -172,29 +242,56 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Rechercher l'utilisateur
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Rechercher l'utilisateur par email ou pseudo
+    let user = await User.findOne({ email: email.toLowerCase() });
+    console.log('🔍 Recherche par email:', email.toLowerCase(), 'Résultat:', user ? 'Trouvé' : 'Non trouvé');
+
+    // Si pas trouvé par email, essayer par pseudo
     if (!user) {
+      user = await User.findOne({ pseudo: email });
+      console.log('🔍 Recherche par pseudo:', email, 'Résultat:', user ? 'Trouvé' : 'Non trouvé');
+    }
+
+    if (!user) {
+      console.log('❌ Aucun utilisateur trouvé pour:', email);
       return res.status(400).json({
         message: 'Email ou mot de passe incorrect'
       });
     }
 
-    // Vérifier le mot de passe
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('✅ Utilisateur trouvé:', user.pseudo);
+    console.log('🔐 Mot de passe fourni:', password);
+    console.log('🔐 Hash stocké:', user.password.substring(0, 20) + '...');
+
+    // Vérifier le mot de passe avec la méthode du modèle User
+    let isPasswordValid = false;
+    try {
+      isPasswordValid = await user.comparePassword(password);
+      console.log('🔍 Résultat comparePassword:', isPasswordValid);
+    } catch (bcryptError) {
+      console.error('❌ Erreur comparePassword:', bcryptError);
+      return res.status(500).json({
+        message: 'Erreur de vérification du mot de passe'
+      });
+    }
+
     if (!isPasswordValid) {
+      console.log('❌ Mot de passe incorrect pour:', user.pseudo);
       return res.status(400).json({
         message: 'Email ou mot de passe incorrect'
       });
     }
+
+    console.log('✅ Mot de passe correct pour:', user.pseudo);
 
     // Récupérer le profil joueur
     const player = await Player.findOne({ userId: user._id });
 
     // Générer le token JWT
+    const jwtSecret = process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise_pour_le_developpement_local';
     const token = jwt.sign(
       { id: user._id, pseudo: user.pseudo },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '7d' }
     );
 
