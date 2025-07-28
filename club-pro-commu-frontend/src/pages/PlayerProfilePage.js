@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { playerAPI } from '../services/api';
+import { playerAPI, invitationAPI, clubAPI } from '../services/api';
 import Avatar from '../components/Avatar';
 import { getCountryDisplay } from '../utils/countryUtils';
 import { getPositionDisplay } from '../utils/positionUtils';
@@ -12,6 +12,11 @@ export default function PlayerProfilePage() {
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [userClubs, setUserClubs] = useState([]);
+  const [selectedClub, setSelectedClub] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   const loadPlayer = useCallback(async () => {
     try {
@@ -37,8 +42,34 @@ export default function PlayerProfilePage() {
       return;
     }
     
-    // Simulation d'invitation (à implémenter plus tard)
-    alert('Invitation envoyée au joueur !');
+    try {
+      // Charger les clubs de l'utilisateur
+      const clubs = await clubAPI.getMyClubs(user.token);
+      setUserClubs(clubs);
+      setShowInviteModal(true);
+    } catch (error) {
+      alert('Erreur lors du chargement de vos clubs: ' + error.message);
+    }
+  };
+
+  const handleSendInvitation = async () => {
+    if (!selectedClub) {
+      alert('Veuillez sélectionner un club');
+      return;
+    }
+
+    try {
+      setInviting(true);
+      await invitationAPI.invitePlayer(selectedClub, id, inviteMessage, user.token);
+      alert('Invitation envoyée avec succès !');
+      setShowInviteModal(false);
+      setSelectedClub('');
+      setInviteMessage('');
+    } catch (error) {
+      alert('Erreur lors de l\'envoi de l\'invitation: ' + error.message);
+    } finally {
+      setInviting(false);
+    }
   };
 
   if (loading) {
@@ -104,9 +135,6 @@ export default function PlayerProfilePage() {
                 <div>
                   <h2 className="mb-0">
                     {player.pseudo}
-                    <span className={`badge ms-2 ${player.isOnline ? 'bg-success' : 'bg-secondary'}`}>
-                      {player.isOnline ? '🟢' : '🔴'} {player.isOnline ? 'Connecté' : 'Déconnecté'}
-                    </span>
                   </h2>
                   <small className="text-light">
                     {getPositionDisplay(player.postePrincipal)} • {player.plateforme}
@@ -154,9 +182,6 @@ export default function PlayerProfilePage() {
                     </li>
                     <li className="mb-2">
                       <strong>Statut:</strong> 
-                      <span className={`badge ms-2 ${player.isOnline ? 'bg-success' : 'bg-secondary'}`}>
-                        {player.isOnline ? '🟢 Connecté' : '🔴 Déconnecté'}
-                      </span>
                     </li>
                   </ul>
                 </div>
@@ -261,6 +286,83 @@ export default function PlayerProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Modal d'invitation */}
+      {showInviteModal && (
+        <div className="modal fade show" style={{display: 'block'}} tabIndex="-1">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="fas fa-user-plus me-2"></i>
+                  Inviter {player?.pseudo} dans votre club
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowInviteModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Sélectionner un club :</label>
+                  <select 
+                    className="form-select"
+                    value={selectedClub}
+                    onChange={(e) => setSelectedClub(e.target.value)}
+                  >
+                    <option value="">Choisir un club...</option>
+                    {userClubs.map(club => (
+                      <option key={club._id} value={club._id}>
+                        {club.nom} ({club.plateforme})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="mb-3">
+                  <label className="form-label">Message (optionnel) :</label>
+                  <textarea 
+                    className="form-control"
+                    rows="3"
+                    placeholder="Ajoutez un message personnalisé..."
+                    value={inviteMessage}
+                    onChange={(e) => setInviteMessage(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowInviteModal(false)}
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={handleSendInvitation}
+                  disabled={inviting || !selectedClub}
+                >
+                  {inviting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Envoi...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane me-1"></i>
+                      Envoyer l'invitation
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show"></div>
+        </div>
+      )}
     </div>
   );
 } 

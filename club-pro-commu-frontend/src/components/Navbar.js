@@ -183,6 +183,18 @@ export default function Navbar() {
                         Mon profil
                       </Link>
                     </li>
+                    <li>
+                      <Link className="dropdown-item d-flex align-items-center" to="/invitations" onClick={closeMobileMenu}>
+                        <i className="fas fa-envelope me-2 text-info"></i>
+                        Mes invitations
+                      </Link>
+                    </li>
+                    <li>
+                      <Link className="dropdown-item d-flex align-items-center" to="/notifications" onClick={closeMobileMenu}>
+                        <i className="fas fa-bell me-2 text-warning"></i>
+                        Notifications
+                      </Link>
+                    </li>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
                       <button className="dropdown-item d-flex align-items-center text-danger" onClick={logout}>

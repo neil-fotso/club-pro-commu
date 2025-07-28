@@ -190,7 +190,140 @@ export const clubAPI = {
       },
     });
   },
+
+  // Promouvoir un membre en admin
+  promoteMember: async (clubId, userId, token) => {
+    return apiCall(`/clubs/${clubId}/promouvoir/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Exclure un membre du club
+  excludeMember: async (clubId, userId, token) => {
+    return apiCall(`/clubs/${clubId}/exclure/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
 }; 
+
+// API invitations
+export const invitationAPI = {
+  // Inviter un joueur dans un club
+  invitePlayer: async (clubId, inviteId, message, token) => {
+    return apiCall('/invitations/inviter', {
+      method: 'POST',
+      body: { clubId, inviteId, message },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Accepter une invitation
+  acceptInvitation: async (invitationId, token) => {
+    return apiCall(`/invitations/accepter/${invitationId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Refuser une invitation
+  refuseInvitation: async (invitationId, token) => {
+    return apiCall(`/invitations/refuser/${invitationId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Récupérer les invitations reçues
+  getReceivedInvitations: async (token) => {
+    return apiCall('/invitations/recues', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Récupérer les invitations envoyées
+  getSentInvitations: async (token) => {
+    return apiCall('/invitations/envoyees', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+};
+
+// API notifications
+export const notificationAPI = {
+  // Récupérer toutes les notifications
+  getNotifications: async (token, page = 1, limit = 20) => {
+    return apiCall(`/notifications?page=${page}&limit=${limit}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Récupérer les notifications non lues
+  getUnreadNotifications: async (token) => {
+    return apiCall('/notifications/non-lues', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Marquer une notification comme lue
+  markAsRead: async (notificationId, token) => {
+    return apiCall(`/notifications/lire/${notificationId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Marquer toutes les notifications comme lues
+  markAllAsRead: async (token) => {
+    return apiCall('/notifications/lire-toutes', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Supprimer une notification
+  deleteNotification: async (notificationId, token) => {
+    return apiCall(`/notifications/${notificationId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Supprimer toutes les notifications
+  deleteAllNotifications: async (token) => {
+    return apiCall('/notifications', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+};
 
 // API compétitions
 export const competitionAPI = {

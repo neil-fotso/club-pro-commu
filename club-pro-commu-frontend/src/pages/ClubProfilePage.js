@@ -12,6 +12,8 @@ export default function ClubProfilePage() {
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
   const [userClub, setUserClub] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showMemberModal, setShowMemberModal] = useState(false);
 
   const loadClub = useCallback(async () => {
     try {
@@ -43,10 +45,21 @@ export default function ClubProfilePage() {
     }
   }, [user]);
 
+  const checkAdminStatus = useCallback(() => {
+    if (!club || !user) return;
+    
+    const currentMember = club.membres.find(m => m.userId._id === user._id);
+    setIsAdmin(currentMember?.role === 'Admin');
+  }, [club, user]);
+
   useEffect(() => {
     loadClub();
     loadUserClub();
   }, [loadClub, loadUserClub]);
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, [checkAdminStatus]);
 
   const handleJoinRequest = async () => {
     if (!user) {
@@ -90,6 +103,45 @@ export default function ClubProfilePage() {
     return badges[status] || 'bg-secondary';
   };
 
+  const handlePromoteMember = async (memberId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir promouvoir ce membre en admin ?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await clubAPI.promoteMember(club._id, memberId, token);
+      alert('Membre promu avec succès !');
+      loadClub(); // Recharger les données du club
+    } catch (error) {
+      alert('Erreur lors de la promotion: ' + error.message);
+    }
+  };
+
+  const handleExcludeMember = async (memberId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir exclure ce membre du club ?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await clubAPI.excludeMember(club._id, memberId, token);
+      alert('Membre exclu avec succès !');
+      loadClub(); // Recharger les données du club
+    } catch (error) {
+      alert('Erreur lors de l\'exclusion: ' + error.message);
+    }
+  };
+
+  const getRoleBadge = (role) => {
+    const badges = {
+      'Admin': 'badge bg-danger',
+      'Capitaine': 'badge bg-warning',
+      'Joueur': 'badge bg-success'
+    };
+    return badges[role] || 'badge bg-secondary';
+  };
+
   if (loading) {
     return (
       <div className="container mt-4 text-center">
@@ -129,7 +181,7 @@ export default function ClubProfilePage() {
       <div className="row">
         <div className="col-lg-8">
           <div className="card shadow-lg border-0">
-            <div className="card-header bg-gradient-primary text-white">
+            <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
               <div className="d-flex align-items-center">
                 <Avatar
                   src={club.photoProfil}
@@ -241,20 +293,32 @@ export default function ClubProfilePage() {
                   <h5 className="text-primary mb-3">
                     <i className="fas fa-users me-2"></i>
                     Membres ({club.membres.length})
+                    {isAdmin && (
+                      <button 
+                        className="btn btn-sm btn-outline-primary ms-2"
+                        onClick={() => setShowMemberModal(true)}
+                      >
+                        <i className="fas fa-cog me-1"></i>
+                        Gérer
+                      </button>
+                    )}
                   </h5>
                   <div className="row">
                     {club.membres.slice(0, 6).map((membre, index) => (
                       <div key={index} className="col-md-2 col-sm-3 col-4 mb-2">
                         <div className="text-center">
                           <Avatar
-                            src={membre.photoProfil}
-                            name={membre.pseudo}
+                            src={membre.userId?.photoProfil}
+                            name={membre.userId?.pseudo}
                             size="sm"
                             type="player"
                           />
                           <small className="d-block text-muted mt-1">
-                            {membre.pseudo}
+                            {membre.userId?.pseudo}
                           </small>
+                          <span className={getRoleBadge(membre.role)}>
+                            {membre.role}
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -344,6 +408,99 @@ export default function ClubProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Modal de gestion des membres */}
+      {showMemberModal && (
+        <div className="modal fade show" style={{display: 'block'}} tabIndex="-1">
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="fas fa-users me-2"></i>
+                  Gestion des membres - {club?.nom}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowMemberModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="table-responsive">
+                  <table className="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Membre</th>
+                        <th>Rôle</th>
+                        <th>Date d'adhésion</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {club?.membres.map((membre, index) => (
+                        <tr key={index}>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              <Avatar
+                                src={membre.userId?.photoProfil}
+                                name={membre.userId?.pseudo}
+                                size="sm"
+                                type="player"
+                                className="me-2"
+                              />
+                              <span>{membre.userId?.pseudo}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={getRoleBadge(membre.role)}>
+                              {membre.role}
+                            </span>
+                          </td>
+                          <td>
+                            <small className="text-muted">
+                              {new Date(membre.dateAdhesion).toLocaleDateString()}
+                            </small>
+                          </td>
+                          <td>
+                            {membre.role !== 'Admin' && (
+                              <div className="btn-group btn-group-sm">
+                                <button
+                                  className="btn btn-outline-warning btn-sm"
+                                  onClick={() => handlePromoteMember(membre.userId._id)}
+                                  title="Promouvoir en admin"
+                                >
+                                  <i className="fas fa-crown"></i>
+                                </button>
+                                <button
+                                  className="btn btn-outline-danger btn-sm"
+                                  onClick={() => handleExcludeMember(membre.userId._id)}
+                                  title="Exclure du club"
+                                >
+                                  <i className="fas fa-user-times"></i>
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowMemberModal(false)}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show"></div>
+        </div>
+      )}
     </div>
   );
 } 

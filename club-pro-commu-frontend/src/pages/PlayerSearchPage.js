@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { playerAPI } from '../services/api';
+import { playerAPI, clubAPI, invitationAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import Avatar from '../components/Avatar';
 import { getCountryDisplay } from '../utils/countryUtils';
 import { getPositionDisplay } from '../utils/positionUtils';
 
 export default function PlayerSearchPage() {
+  const { user } = useAuth();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +17,12 @@ export default function PlayerSearchPage() {
     rechercheClub: '',
     status: ''
   });
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [userClubs, setUserClubs] = useState([]);
+  const [selectedClub, setSelectedClub] = useState('');
+  const [inviteMessage, setInviteMessage] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   const loadPlayers = useCallback(async () => {
     try {
@@ -47,9 +55,44 @@ export default function PlayerSearchPage() {
     loadPlayers();
   };
 
-  const handleInvite = (playerId, playerName) => {
-    // Simulation d'invitation
-    alert(`Invitation envoyée à ${playerName} !`);
+  const handleInvite = async (playerId, playerName) => {
+    if (!user) {
+      alert('Vous devez être connecté pour inviter un joueur');
+      return;
+    }
+
+    try {
+      // Récupérer les clubs de l'utilisateur
+      const clubs = await clubAPI.getMyClubs(user.token);
+      setUserClubs(clubs);
+      setSelectedPlayer({ id: playerId, name: playerName });
+      setShowInviteModal(true);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des clubs:', error);
+      alert('Erreur lors de la récupération de vos clubs');
+    }
+  };
+
+  const handleSendInvitation = async () => {
+    if (!selectedClub) {
+      alert('Veuillez sélectionner un club');
+      return;
+    }
+
+    try {
+      setInviting(true);
+      await invitationAPI.invitePlayer(selectedClub, selectedPlayer.id, inviteMessage, user.token);
+      alert('Invitation envoyée avec succès !');
+      setShowInviteModal(false);
+      setSelectedPlayer(null);
+      setSelectedClub('');
+      setInviteMessage('');
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi de l\'invitation:', error);
+      alert('Erreur lors de l\'envoi de l\'invitation: ' + error.message);
+    } finally {
+      setInviting(false);
+    }
   };
 
 
@@ -171,8 +214,6 @@ export default function PlayerSearchPage() {
                     onChange={handleFilterChange}
                   >
                     <option value="">Tous les statuts</option>
-                    <option value="online">🟢 Connecté</option>
-                    <option value="offline">🔴 Déconnecté</option>
                   </select>
                 </div>
 
@@ -223,9 +264,6 @@ export default function PlayerSearchPage() {
                           
                           <h5 className="card-title mb-2">
                             {player.pseudo}
-                            <span className={`badge ms-2 ${player.isOnline ? 'bg-success' : 'bg-secondary'}`}>
-                              {player.isOnline ? '🟢' : '🔴'} {player.isOnline ? 'Connecté' : 'Déconnecté'}
-                            </span>
                           </h5>
                           
                           <div className="mb-3">
@@ -282,6 +320,88 @@ export default function PlayerSearchPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal d'invitation */}
+      {showInviteModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="fas fa-user-plus me-2"></i>
+                  Inviter {selectedPlayer?.name}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowInviteModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    <i className="fas fa-shield-alt me-1"></i>
+                    Sélectionner un club
+                  </label>
+                  <select 
+                    className="form-select"
+                    value={selectedClub}
+                    onChange={(e) => setSelectedClub(e.target.value)}
+                  >
+                    <option value="">Choisir un club...</option>
+                    {userClubs.map(club => (
+                      <option key={club._id} value={club._id}>
+                        {club.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    <i className="fas fa-comment me-1"></i>
+                    Message (optionnel)
+                  </label>
+                  <textarea 
+                    className="form-control"
+                    rows="3"
+                    placeholder="Message personnalisé pour l'invitation..."
+                    value={inviteMessage}
+                    onChange={(e) => setInviteMessage(e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowInviteModal(false)}
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-success"
+                  onClick={handleSendInvitation}
+                  disabled={inviting || !selectedClub}
+                >
+                  {inviting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                      Envoi...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane me-1"></i>
+                      Envoyer l'invitation
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

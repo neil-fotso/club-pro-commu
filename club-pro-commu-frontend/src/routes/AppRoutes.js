@@ -16,6 +16,8 @@ import CreateClubPage from '../pages/CreateClubPage';
 import CreatePlayerPage from '../pages/CreatePlayerPage';
 import MyProfilePage from '../pages/MyProfilePage';
 import MyClubsPage from '../pages/MyClubsPage';
+import InvitationsPage from '../pages/InvitationsPage';
+import NotificationsPage from '../pages/NotificationsPage';
 import ErrorPage from '../pages/ErrorPage';
 
 export default function AppRoutes() {
@@ -42,6 +44,8 @@ export default function AppRoutes() {
       <Route path="/creer-joueur" element={<CreatePlayerPage />} />
       <Route path="/mon-profil" element={<MyProfilePage />} />
       <Route path="/mes-clubs" element={<MyClubsPage />} />
+      <Route path="/invitations" element={<InvitationsPage />} />
+      <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="*" element={<ErrorPage />} />
     </Routes>
   );
