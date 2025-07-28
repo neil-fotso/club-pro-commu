@@ -1,5 +1,7 @@
 // Configuration de l'API
-const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://club-pro-commu.onrender.com/api'
+  : 'http://localhost:3001/api';
 
 // Fonction utilitaire pour récupérer le token
 const getToken = () => {
