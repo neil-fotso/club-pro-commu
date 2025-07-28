@@ -52,10 +52,10 @@ router.post('/webhook', async (req, res) => {
       console.log('Signature Discord vérifiée avec succès');
     }
     
-    // Gestion des interactions Discord
-    if (req.body.type === 1) { // PING
-      console.log('Ping Discord reçu');
-      return res.status(200).json({ type: 1 }); // PONG
+    // Gestion de la vérification Discord (type: 1 = PING, type: 0 = non documenté mais utilisé)
+    if (req.body.type === 1 || req.body.type === 0) {
+      // Toujours répondre { type: 1 } pour forcer la validation Discord
+      return res.status(200).json({ type: 1 });
     }
     
     // Gestion des événements Discord
