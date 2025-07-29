@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Avatar from './Avatar';
 import { userAPI } from '../services/api';
+import logo from '../assets/logo.png';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -63,9 +64,9 @@ export default function Navbar() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
       <div className="container">
-        <Link className="navbar-brand" to="/">
-          <i className="fas fa-trophy me-2"></i>
-          Club Pro Communauté
+        <Link className="navbar-brand d-flex align-items-center" to="/">
+          <img src={logo} alt="Club Pro Communauté Logo" style={{ width: '40px', height: '40px', marginRight: '10px' }} />
+          <span>Club Pro Communauté</span>
         </Link>
 
         <button

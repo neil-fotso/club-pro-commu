@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Pages publiques
 import HomePage from '../pages/HomePage';
@@ -88,6 +88,11 @@ export default function AppRoutes() {
           <CompetitionDetailPage />
         </MainLayout>
       } />
+      <Route path="/competitions/creer" element={
+        <MainLayout>
+          <CompetitionPage />
+        </MainLayout>
+      } />
       <Route path="/privacy" element={
         <MainLayout>
           <PrivacyPolicyPage />
@@ -125,6 +130,7 @@ export default function AppRoutes() {
           <CreateClubPage />
         </MainLayout>
       } />
+      <Route path="/create-club" element={<Navigate to="/creer-club" replace />} />
       <Route path="/creer-competition" element={
         <MainLayout>
           <CompetitionPage />

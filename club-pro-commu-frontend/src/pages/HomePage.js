@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { playerAPI, clubAPI } from '../services/api';
 import Avatar from '../components/Avatar';
 import bgHeader from '../assets/bg-header.jpg';
+import logo from '../assets/logo.png';
 
 // Styles pour les cartes de fonctionnalités
 const featureCardStyles = `
@@ -159,7 +160,7 @@ const HomePage = () => {
             </div>
             <div className="col-lg-4 text-center mt-5">
               <div className="bg-white bg-opacity-10 rounded p-4 backdrop-blur mb-4 mb-lg-0">
-                <div className="mb-3" style={{fontSize: '4rem'}}>⚽</div>
+                <img src={logo} alt="Club Pro Communauté Logo" style={{ width: '80px', height: '80px', marginBottom: '1rem' }} />
                 <h3 className="text-white mb-3">📊 Statistiques</h3>
                 <div className="row text-center g-2">
                   <div className="col-4">
