@@ -16,7 +16,7 @@ const competitionsData = [
   {
     nom: "Coupe de France Pro Clubs 2024",
     type: "coupe",
-    description: "La plus grande compétition française de FIFA Pro Clubs. Plus de 100 équipes s'affrontent pour remporter le titre de champion de France.",
+    description: "La plus grande compétition française de EA Sports FC Pro Clubs. Plus de 100 équipes s'affrontent pour remporter le titre de champion de France.",
     dateDebut: new Date('2024-02-15'),
     dateFin: new Date('2024-03-15'),
     nombreEquipes: 64,
@@ -26,7 +26,7 @@ const competitionsData = [
     inscriptionGratuite: true,
     montantInscription: 0,
     recompense: "🏆 Trophée de champion de France\n💰 500€ de récompenses\n🎮 Équipements exclusifs\n📺 Diffusion sur Twitch",
-    reglement: "1. Format : Élimination directe\n2. Matchs : 2x12 minutes\n3. Règles FIFA 24 officielles\n4. Pas de glitch autorisé\n5. Respect obligatoire des adversaires\n6. Arbitrage vidéo en cas de litige",
+    reglement: "1. Format : Élimination directe\n2. Matchs : 2x12 minutes\n3. Règles EA Sports FC 24 officielles\n4. Pas de glitch autorisé\n5. Respect obligatoire des adversaires\n6. Arbitrage vidéo en cas de litige",
     equipesInscrites: []
   },
   {
@@ -42,7 +42,7 @@ const competitionsData = [
     inscriptionGratuite: false,
     montantInscription: 10,
     recompense: "🏆 Trophée de champion\n💰 300€ de récompenses\n🎮 Équipements exclusifs",
-    reglement: "1. Format : Championnat\n2. Matchs : 2x12 minutes\n3. 3 points pour une victoire, 1 pour un nul\n4. Classement par points puis goal average\n5. Respect des règles FIFA 24",
+    reglement: "1. Format : Championnat\n2. Matchs : 2x12 minutes\n3. 3 points pour une victoire, 1 pour un nul\n4. Classement par points puis goal average\n5. Respect des règles EA Sports FC 24",
     equipesInscrites: []
   },
   {
@@ -74,7 +74,7 @@ const competitionsData = [
     inscriptionGratuite: false,
     montantInscription: 25,
     recompense: "🏆 Trophée Elite Cup\n💰 1000€ de récompenses\n🎮 Équipements ultra-rares\n📺 Diffusion professionnelle\n🌟 Statut VIP permanent",
-    reglement: "1. Format : Tournoi élite\n2. Matchs : 2x15 minutes\n3. Règles FIFA 24 strictes\n4. Arbitrage professionnel\n5. Vérification des compétences\n6. Zéro tolérance pour le manque de respect",
+    reglement: "1. Format : Tournoi élite\n2. Matchs : 2x15 minutes\n3. Règles EA Sports FC 24 strictes\n4. Arbitrage professionnel\n5. Vérification des compétences\n6. Zéro tolérance pour le manque de respect",
     equipesInscrites: []
   },
   {
