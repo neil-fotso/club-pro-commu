@@ -274,7 +274,7 @@ export default function CompetitionListPage() {
                       {competition.createurId?.pseudo}
                     </small>
                     <Link 
-                      to={`/competitions/${competition._id}`}
+                      to={`/competition/${competition._id}`}
                       className="btn btn-outline-primary btn-sm"
                     >
                       Voir détails

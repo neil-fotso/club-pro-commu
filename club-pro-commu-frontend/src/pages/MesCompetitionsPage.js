@@ -183,7 +183,7 @@ export default function MesCompetitionsPage() {
                         </button>
                         <ul className="dropdown-menu">
                           <li>
-                            <Link className="dropdown-item" to={`/competitions/${competition._id}`}>
+                            <Link className="dropdown-item" to={`/competition/${competition._id}`}>
                               <i className="fas fa-eye me-2"></i>
                               Voir détails
                             </Link>
@@ -246,7 +246,7 @@ export default function MesCompetitionsPage() {
 
                       <div className="d-grid">
                         <Link 
-                          to={`/competitions/${competition._id}`}
+                          to={`/competition/${competition._id}`}
                           className="btn btn-outline-primary"
                         >
                           <i className="fas fa-eye me-2"></i>
@@ -332,7 +332,7 @@ export default function MesCompetitionsPage() {
 
                         <div className="d-grid">
                           <Link 
-                            to={`/competitions/${competition._id}`}
+                            to={`/competition/${competition._id}`}
                             className="btn btn-outline-primary"
                           >
                             <i className="fas fa-eye me-2"></i>

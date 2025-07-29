@@ -6,7 +6,9 @@ export default function CompetitionPage() {
   const { user } = useAuth();
   const [form, setForm] = useState({
     nom: '',
-    type: 'tournoi',
+    type: 'championnat',
+    formatCoupe: 'elimination_directe',
+    visibilite: 'publique',
     dateDebut: '',
     dateFin: '',
     nombreEquipes: 8,
@@ -30,7 +32,7 @@ export default function CompetitionPage() {
             <div className="text-center mb-5">
               <i className="fas fa-trophy fa-3x text-warning mb-3"></i>
               <h2 className="fw-bold">Créer une Compétition</h2>
-              <p className="text-muted">Organisez des tournois et championnats pour votre communauté</p>
+              <p className="text-muted">Organisez des championnats et coupes pour votre communauté</p>
             </div>
             <div className="alert alert-warning text-center">
               <i className="fas fa-lock me-2"></i>
@@ -84,7 +86,9 @@ export default function CompetitionPage() {
   const resetForm = () => {
     setForm({
       nom: '',
-      type: 'tournoi',
+      type: 'championnat',
+      formatCoupe: 'elimination_directe',
+      visibilite: 'publique',
       dateDebut: '',
       dateFin: '',
       nombreEquipes: 8,
@@ -100,354 +104,311 @@ export default function CompetitionPage() {
     setSuccess(false);
   };
 
+  if (success) {
+    return (
+      <div className="container py-5">
+        <div className="row justify-content-center">
+          <div className="col-md-8 col-lg-6">
+            <div className="text-center">
+              <i className="fas fa-check-circle fa-3x text-success mb-3"></i>
+              <h2 className="fw-bold text-success">Compétition créée avec succès !</h2>
+              <p className="text-muted mb-4">Votre compétition a été créée et est maintenant visible par la communauté.</p>
+              <div className="d-flex gap-2 justify-content-center">
+                <button onClick={resetForm} className="btn btn-primary">
+                  <i className="fas fa-plus me-2"></i>
+                  Créer une autre compétition
+                </button>
+                <a href="/mes-competitions" className="btn btn-outline-primary">
+                  <i className="fas fa-list me-2"></i>
+                  Voir mes compétitions
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
-        <div className="col-lg-10">
-          {/* Header */}
+        <div className="col-lg-8">
           <div className="text-center mb-5">
-            <div className="position-relative d-inline-block mb-3">
-              <i className="fas fa-trophy fa-3x text-warning"></i>
-              <div className="position-absolute top-0 start-100 translate-middle">
-                <span className="badge bg-primary rounded-pill">
-                  <i className="fas fa-plus"></i>
-                </span>
-              </div>
-            </div>
-            <h2 className="fw-bold text-gradient">Créer une Compétition</h2>
-            <p className="text-muted">Organisez des tournois et championnats pour votre communauté EA Sports FC Pro Clubs</p>
+            <i className="fas fa-trophy fa-3x text-warning mb-3"></i>
+            <h2 className="fw-bold">Créer une Compétition</h2>
+            <p className="text-muted">Organisez des championnats et coupes pour votre communauté</p>
           </div>
 
-          {success ? (
-            <div className="card border-success">
-              <div className="card-body text-center p-5">
-                <i className="fas fa-check-circle fa-4x text-success mb-3"></i>
-                <h3 className="text-success mb-3">Compétition créée avec succès !</h3>
-                <p className="text-muted mb-4">Votre compétition a été créée et est maintenant visible par tous les clubs.</p>
-                <div className="d-flex justify-content-center gap-3">
-                  <button onClick={resetForm} className="btn btn-outline-primary">
-                    <i className="fas fa-plus me-2"></i>
-                    Créer une autre compétition
-                  </button>
-                  <a href="/mes-competitions" className="btn btn-primary">
-                    <i className="fas fa-trophy me-2"></i>
-                    Voir mes compétitions
-                  </a>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="card shadow-lg border-0">
-              <div className="card-body p-5">
-                <form onSubmit={handleSubmit}>
-                  <div className="row">
-                    {/* Informations générales */}
-                    <div className="col-lg-8">
-                      <h4 className="mb-4">
-                        <i className="fas fa-info-circle text-primary me-2"></i>
-                        Informations générales
-                      </h4>
-                      
-                      <div className="row">
-                        <div className="col-md-8 mb-3">
-                          <label htmlFor="nom" className="form-label">
-                            <i className="fas fa-trophy me-2"></i>
-                            Nom de la compétition *
-                          </label>
-                          <input 
-                            type="text" 
-                            className="form-control form-control-lg" 
-                            id="nom"
-                            name="nom" 
-                            value={form.nom} 
-                            onChange={handleChange} 
-                            placeholder="Ex: Coupe de France Pro Clubs 2024"
-                            required 
-                          />
-                        </div>
-                        <div className="col-md-4 mb-3">
-                          <label htmlFor="type" className="form-label">
-                            <i className="fas fa-flag me-2"></i>
-                            Type de compétition *
-                          </label>
-                          <select 
-                            className="form-select form-select-lg" 
-                            id="type"
-                            name="type" 
-                            value={form.type} 
-                            onChange={handleChange}
-                          >
-                            <option value="tournoi">Tournoi</option>
-                            <option value="championnat">Championnat</option>
-                            <option value="coupe">Coupe</option>
-                            <option value="friendly">Match amical</option>
-                          </select>
-                        </div>
-                      </div>
+          <div className="card shadow">
+            <div className="card-body p-4">
+              <form onSubmit={handleSubmit}>
+                <div className="row">
+                  {/* Informations de base */}
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-trophy me-2"></i>
+                      Nom de la compétition *
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="nom"
+                      value={form.nom}
+                      onChange={handleChange}
+                      required
+                      placeholder="Ex: Championnat D1 2024"
+                    />
+                  </div>
 
-                      <div className="mb-3">
-                        <label htmlFor="description" className="form-label">
-                          <i className="fas fa-align-left me-2"></i>
-                          Description
-                        </label>
-                        <textarea 
-                          className="form-control" 
-                          id="description"
-                          name="description" 
-                          value={form.description} 
-                          onChange={handleChange}
-                          rows="3"
-                          placeholder="Décrivez votre compétition, ses objectifs et son format..."
-                        />
-                      </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-gamepad me-2"></i>
+                      Type de compétition *
+                    </label>
+                    <select
+                      className="form-select"
+                      name="type"
+                      value={form.type}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="championnat">Championnat</option>
+                      <option value="coupe">Coupe</option>
+                    </select>
+                  </div>
 
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label htmlFor="dateDebut" className="form-label">
-                            <i className="fas fa-calendar-alt me-2"></i>
-                            Date de début *
-                          </label>
-                          <input 
-                            type="date" 
-                            className="form-control form-control-lg" 
-                            id="dateDebut"
-                            name="dateDebut" 
-                            value={form.dateDebut} 
-                            onChange={handleChange} 
-                            required 
-                          />
-                        </div>
-                        <div className="col-md-6 mb-3">
-                          <label htmlFor="dateFin" className="form-label">
-                            <i className="fas fa-calendar-check me-2"></i>
-                            Date de fin
-                          </label>
-                          <input 
-                            type="date" 
-                            className="form-control form-control-lg" 
-                            id="dateFin"
-                            name="dateFin" 
-                            value={form.dateFin} 
-                            onChange={handleChange} 
-                          />
-                        </div>
-                      </div>
+                  {/* Format de coupe (visible seulement si type = coupe) */}
+                  {form.type === 'coupe' && (
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">
+                        <i className="fas fa-sitemap me-2"></i>
+                        Format de la coupe *
+                      </label>
+                      <select
+                        className="form-select"
+                        name="formatCoupe"
+                        value={form.formatCoupe}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="elimination_directe">Élimination directe</option>
+                        <option value="poules_elimination">Phases de poules + Élimination directe</option>
+                      </select>
                     </div>
+                  )}
 
-                    {/* Paramètres techniques */}
-                    <div className="col-lg-4">
-                      <h4 className="mb-4">
-                        <i className="fas fa-cogs text-primary me-2"></i>
-                        Paramètres
-                      </h4>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-eye me-2"></i>
+                      Visibilité *
+                    </label>
+                    <select
+                      className="form-select"
+                      name="visibilite"
+                      value={form.visibilite}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="publique">Publique (inscription libre)</option>
+                      <option value="privee">Privée (demande d'inscription)</option>
+                    </select>
+                  </div>
 
-                      <div className="mb-3">
-                        <label htmlFor="nombreEquipes" className="form-label">
-                          <i className="fas fa-users me-2"></i>
-                          Nombre d'équipes *
-                        </label>
-                        <input 
-                          type="number" 
-                          className="form-control form-control-lg" 
-                          id="nombreEquipes"
-                          name="nombreEquipes" 
-                          min="2" 
-                          max="64" 
-                          value={form.nombreEquipes} 
-                          onChange={handleChange} 
-                          required 
-                        />
-                      </div>
+                  {/* Dates */}
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-calendar me-2"></i>
+                      Date de début *
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="form-control"
+                      name="dateDebut"
+                      value={form.dateDebut}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
 
-                      <div className="mb-3">
-                        <label htmlFor="niveau" className="form-label">
-                          <i className="fas fa-star me-2"></i>
-                          Niveau requis
-                        </label>
-                        <select 
-                          className="form-select form-select-lg" 
-                          id="niveau"
-                          name="niveau" 
-                          value={form.niveau} 
-                          onChange={handleChange}
-                        >
-                          <option value="Tous niveaux">Tous niveaux</option>
-                          <option value="Débutant">Débutant</option>
-                          <option value="Intermédiaire">Intermédiaire</option>
-                          <option value="Avancé">Avancé</option>
-                          <option value="Expert">Expert</option>
-                        </select>
-                      </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-calendar-check me-2"></i>
+                      Date de fin (optionnel)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="form-control"
+                      name="dateFin"
+                      value={form.dateFin}
+                      onChange={handleChange}
+                    />
+                  </div>
 
-                      <div className="mb-3">
-                        <label htmlFor="plateforme" className="form-label">
-                          <i className="fas fa-gamepad me-2"></i>
-                          Plateforme
-                        </label>
-                        <select 
-                          className="form-select form-select-lg" 
-                          id="plateforme"
-                          name="plateforme" 
-                          value={form.plateforme} 
-                          onChange={handleChange}
-                        >
-                          <option value="PS5">PlayStation 5</option>
-                          <option value="PS4">PlayStation 4</option>
-                          <option value="Xbox">Xbox</option>
-                          <option value="PC">PC</option>
-                          <option value="Cross-Platform">Cross-Platform</option>
-                        </select>
-                      </div>
+                  {/* Configuration */}
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-users me-2"></i>
+                      Nombre d'équipes *
+                    </label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="nombreEquipes"
+                      value={form.nombreEquipes}
+                      onChange={handleChange}
+                      min="2"
+                      max="64"
+                      required
+                    />
+                  </div>
 
-                      <div className="mb-3">
-                        <label htmlFor="statut" className="form-label">
-                          <i className="fas fa-toggle-on me-2"></i>
-                          Statut
-                        </label>
-                        <select 
-                          className="form-select form-select-lg" 
-                          id="statut"
-                          name="statut" 
-                          value={form.statut} 
-                          onChange={handleChange}
-                        >
-                          <option value="Ouvert">Ouvert aux inscriptions</option>
-                          <option value="Fermé">Fermé</option>
-                          <option value="En cours">En cours</option>
-                          <option value="Terminé">Terminé</option>
-                        </select>
-                      </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-star me-2"></i>
+                      Niveau
+                    </label>
+                    <select
+                      className="form-select"
+                      name="niveau"
+                      value={form.niveau}
+                      onChange={handleChange}
+                    >
+                      <option value="Tous niveaux">Tous niveaux</option>
+                      <option value="Débutant">Débutant</option>
+                      <option value="Intermédiaire">Intermédiaire</option>
+                      <option value="Avancé">Avancé</option>
+                      <option value="Expert">Expert</option>
+                    </select>
+                  </div>
+
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-gamepad me-2"></i>
+                      Plateforme
+                    </label>
+                    <select
+                      className="form-select"
+                      name="plateforme"
+                      value={form.plateforme}
+                      onChange={handleChange}
+                    >
+                      <option value="PS5">PS5</option>
+                      <option value="PS4">PS4</option>
+                      <option value="Xbox">Xbox</option>
+                      <option value="PC">PC</option>
+                      <option value="Cross-Platform">Cross-Platform</option>
+                    </select>
+                  </div>
+
+                  {/* Inscription */}
+                  <div className="col-md-6 mb-3">
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        name="inscriptionGratuite"
+                        checked={form.inscriptionGratuite}
+                        onChange={handleChange}
+                        id="inscriptionGratuite"
+                      />
+                      <label className="form-check-label" htmlFor="inscriptionGratuite">
+                        Inscription gratuite
+                      </label>
                     </div>
                   </div>
 
-                  {/* Inscriptions et récompenses */}
-                  <div className="row mt-4">
-                    <div className="col-lg-6">
-                      <h5 className="mb-3">
-                        <i className="fas fa-credit-card text-primary me-2"></i>
-                        Inscriptions
-                      </h5>
-                      
-                      <div className="form-check form-switch mb-3">
-                        <input 
-                          className="form-check-input" 
-                          type="checkbox" 
-                          id="inscriptionGratuite"
-                          name="inscriptionGratuite" 
-                          checked={form.inscriptionGratuite} 
-                          onChange={handleChange}
-                        />
-                        <label className="form-check-label" htmlFor="inscriptionGratuite">
-                          Inscription gratuite
-                        </label>
-                      </div>
-
-                      {!form.inscriptionGratuite && (
-                        <div className="mb-3">
-                          <label htmlFor="montantInscription" className="form-label">
-                            <i className="fas fa-euro-sign me-2"></i>
-                            Montant d'inscription (€)
-                          </label>
-                          <input 
-                            type="number" 
-                            className="form-control" 
-                            id="montantInscription"
-                            name="montantInscription" 
-                            min="0" 
-                            step="0.01"
-                            value={form.montantInscription} 
-                            onChange={handleChange} 
-                          />
-                        </div>
-                      )}
+                  {!form.inscriptionGratuite && (
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">
+                        <i className="fas fa-euro-sign me-2"></i>
+                        Montant d'inscription
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        name="montantInscription"
+                        value={form.montantInscription}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                      />
                     </div>
+                  )}
 
-                    <div className="col-lg-6">
-                      <h5 className="mb-3">
-                        <i className="fas fa-gift text-primary me-2"></i>
-                        Récompenses
-                      </h5>
-                      
-                      <div className="mb-3">
-                        <label htmlFor="recompense" className="form-label">
-                          <i className="fas fa-medal me-2"></i>
-                          Récompenses
-                        </label>
-                        <textarea 
-                          className="form-control" 
-                          id="recompense"
-                          name="recompense" 
-                          value={form.recompense} 
-                          onChange={handleChange}
-                          rows="3"
-                          placeholder="Décrivez les récompenses (trophées, prix, etc.)..."
-                        />
-                      </div>
-                    </div>
+                  {/* Description */}
+                  <div className="col-12 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-info-circle me-2"></i>
+                      Description
+                    </label>
+                    <textarea
+                      className="form-control"
+                      name="description"
+                      value={form.description}
+                      onChange={handleChange}
+                      rows="3"
+                      placeholder="Décrivez votre compétition..."
+                      maxLength="1000"
+                    ></textarea>
                   </div>
 
                   {/* Règlement */}
-                  <div className="mt-4">
-                    <h5 className="mb-3">
-                      <i className="fas fa-book text-primary me-2"></i>
+                  <div className="col-12 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-gavel me-2"></i>
                       Règlement
-                    </h5>
-                    <div className="mb-3">
-                      <label htmlFor="reglement" className="form-label">
-                        <i className="fas fa-clipboard-list me-2"></i>
-                        Règlement de la compétition
-                      </label>
-                      <textarea 
-                        className="form-control" 
-                        id="reglement"
-                        name="reglement" 
-                        value={form.reglement} 
-                        onChange={handleChange}
-                        rows="5"
-                        placeholder="Détaillez les règles, le format des matchs, les sanctions, etc..."
-                      />
-                    </div>
+                    </label>
+                    <textarea
+                      className="form-control"
+                      name="reglement"
+                      value={form.reglement}
+                      onChange={handleChange}
+                      rows="4"
+                      placeholder="Règlement de la compétition..."
+                      maxLength="2000"
+                    ></textarea>
                   </div>
 
-                  {/* Boutons d'action */}
-                  <div className="d-flex justify-content-between mt-5 pt-4 border-top">
-                    <button 
-                      type="button" 
-                      className="btn btn-outline-secondary"
-                      onClick={resetForm}
-                    >
-                      <i className="fas fa-undo me-2"></i>
-                      Réinitialiser
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary btn-lg"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Création en cours...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-plus me-2"></i>
-                          Créer la compétition
-                        </>
-                      )}
-                    </button>
+                  {/* Récompenses */}
+                  <div className="col-12 mb-3">
+                    <label className="form-label">
+                      <i className="fas fa-medal me-2"></i>
+                      Récompenses
+                    </label>
+                    <textarea
+                      className="form-control"
+                      name="recompense"
+                      value={form.recompense}
+                      onChange={handleChange}
+                      rows="2"
+                      placeholder="Récompenses pour les gagnants..."
+                      maxLength="500"
+                    ></textarea>
                   </div>
-                </form>
-              </div>
+                </div>
+
+                <div className="text-center mt-4">
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-lg"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Création en cours...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-plus me-2"></i>
+                        Créer la compétition
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
-
-          {/* Note sur les champs obligatoires */}
-          <div className="text-center mt-4">
-            <small className="text-muted">
-              <i className="fas fa-info-circle me-1"></i>
-              Les champs marqués d'un * sont obligatoires
-            </small>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI, clubAPI } from '../services/api';
@@ -7,117 +7,113 @@ export default function CompetitionDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const [competition, setCompetition] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [userClubs, setUserClubs] = useState([]);
   const [selectedClub, setSelectedClub] = useState('');
-  const [inscriptionLoading, setInscriptionLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const fetchCompetition = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await competitionAPI.getCompetition(id);
-      setCompetition(data);
-    } catch (error) {
-      console.error('Erreur récupération compétition:', error);
-      setError('Compétition non trouvée');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  const fetchUserClubs = useCallback(async () => {
-    try {
-      const data = await clubAPI.getMyClubs(user?.token);
-      setUserClubs(data);
-    } catch (error) {
-      console.error('Erreur récupération clubs:', error);
-    }
-  }, [user?.token]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [inscribing, setInscribing] = useState(false);
+  const [showInscriptionModal, setShowInscriptionModal] = useState(false);
+  const [inscriptionMessage, setInscriptionMessage] = useState('');
 
   useEffect(() => {
-    fetchCompetition();
-    if (user) {
-      fetchUserClubs();
-    }
-  }, [fetchCompetition, fetchUserClubs, user]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [competitionData, clubsData] = await Promise.all([
+          competitionAPI.getCompetition(id),
+          user ? clubAPI.getMyClubs() : Promise.resolve([])
+        ]);
+        
+        setCompetition(competitionData);
+        setUserClubs(clubsData);
+        setError(null);
+      } catch (err) {
+        setError('Erreur lors du chargement de la compétition');
+        console.error('Erreur chargement compétition:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id, user]);
 
   const handleInscription = async () => {
     if (!selectedClub) {
-      setError('Veuillez sélectionner un club');
+      alert('Veuillez sélectionner un club');
       return;
     }
 
     try {
-      setInscriptionLoading(true);
-      setError('');
+      setInscribing(true);
+      await competitionAPI.inscrireClub(id, selectedClub, inscriptionMessage, user.token);
       
-      await competitionAPI.registerClub(id, selectedClub, user?.token);
-
-      // Recharger la compétition pour mettre à jour les inscriptions
-      await fetchCompetition();
+      // Recharger la compétition pour voir les changements
+      const updatedCompetition = await competitionAPI.getCompetition(id);
+      setCompetition(updatedCompetition);
+      
+      setShowInscriptionModal(false);
       setSelectedClub('');
-      
-      // Afficher un message de succès
-      alert('Inscription réussie !');
+      setInscriptionMessage('');
+      alert(competition.visibilite === 'publique' ? 'Inscription réussie !' : 'Demande d\'inscription envoyée !');
     } catch (error) {
       console.error('Erreur inscription:', error);
-      setError(error.response?.data?.message || 'Erreur lors de l\'inscription');
+      alert('Erreur lors de l\'inscription: ' + (error.message || 'Erreur inconnue'));
     } finally {
-      setInscriptionLoading(false);
+      setInscribing(false);
     }
   };
 
-  const handleDesinscription = async (clubId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir vous désinscrire ?')) {
+  const handleLancerCompetition = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir lancer cette compétition ? Cette action est irréversible.')) {
       return;
     }
 
     try {
-      await competitionAPI.unregisterClub(id, clubId, user?.token);
-
-      await fetchCompetition();
-      alert('Désinscription réussie !');
+      await competitionAPI.lancerCompetition(id, user.token);
+      
+      // Recharger la compétition
+      const updatedCompetition = await competitionAPI.getCompetition(id);
+      setCompetition(updatedCompetition);
+      
+      alert('Compétition lancée avec succès !');
     } catch (error) {
-      console.error('Erreur désinscription:', error);
-      setError(error.response?.data?.message || 'Erreur lors de la désinscription');
+      console.error('Erreur lancement:', error);
+      alert('Erreur lors du lancement: ' + (error.message || 'Erreur inconnue'));
     }
   };
 
-  const isClubInscrit = (clubId) => {
-    return competition?.equipesInscrites.some(
-      equipe => equipe.clubId._id === clubId
-    );
+  const handleTraiterDemande = async (demandeId, action) => {
+    try {
+      await competitionAPI.traiterDemandeInscription(id, demandeId, action, user.token);
+      
+      // Recharger la compétition
+      const updatedCompetition = await competitionAPI.getCompetition(id);
+      setCompetition(updatedCompetition);
+      
+      alert(`Demande ${action === 'accepter' ? 'acceptée' : 'refusée'} avec succès !`);
+    } catch (error) {
+      console.error('Erreur traitement demande:', error);
+      alert('Erreur lors du traitement: ' + (error.message || 'Erreur inconnue'));
+    }
   };
 
   const getStatutBadge = (statut) => {
     const badges = {
-      'Ouvert': 'success',
-      'Fermé': 'secondary',
-      'En cours': 'warning',
-      'Terminé': 'info'
+      'Ouvert': 'bg-success',
+      'Fermé': 'bg-secondary',
+      'En cours': 'bg-warning',
+      'Terminé': 'bg-info'
     };
-    return badges[statut] || 'secondary';
+    return badges[statut] || 'bg-secondary';
   };
 
-  const getTypeIcon = (type) => {
-    const icons = {
-      'tournoi': 'fas fa-trophy',
-      'championnat': 'fas fa-medal',
-      'coupe': 'fas fa-crown',
-      'friendly': 'fas fa-handshake'
-    };
-    return icons[type] || 'fas fa-gamepad';
+  const getTypeBadge = (type) => {
+    return type === 'championnat' ? 'bg-primary' : 'bg-danger';
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const getVisibiliteBadge = (visibilite) => {
+    return visibilite === 'publique' ? 'bg-success' : 'bg-warning';
   };
 
   if (loading) {
@@ -127,110 +123,81 @@ export default function CompetitionDetailPage() {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Chargement...</span>
           </div>
-          <p className="mt-3">Chargement de la compétition...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !competition) {
     return (
       <div className="container py-5">
-        <div className="text-center">
-          <i className="fas fa-exclamation-triangle fa-4x text-warning mb-3"></i>
-          <h3 className="text-warning">{error}</h3>
-          <Link to="/competitions" className="btn btn-primary">
-            <i className="fas fa-arrow-left me-2"></i>
-            Retour aux compétitions
-          </Link>
+        <div className="alert alert-danger">
+          <i className="fas fa-exclamation-triangle me-2"></i>
+          {error || 'Compétition non trouvée'}
         </div>
       </div>
     );
   }
 
-  if (!competition) {
-    return null;
-  }
+  const isCreator = user && competition.createurId._id === user.id;
+  const isInscrit = competition.equipesInscrites.some(e => 
+    userClubs.some(club => club._id === e.clubId._id)
+  );
 
   return (
     <div className="container py-5">
       {/* Header */}
-      <div className="row mb-5">
+      <div className="row">
         <div className="col-lg-8">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <Link to="/competitions">Compétitions</Link>
-              </li>
-              <li className="breadcrumb-item active">{competition.nom}</li>
-            </ol>
-          </nav>
-          
-          <div className="d-flex align-items-center mb-3">
-            <i className={`${getTypeIcon(competition.type)} fa-3x text-primary me-3`}></i>
+          <div className="d-flex align-items-center mb-4">
+            <Link to="/competitions" className="btn btn-outline-secondary me-3">
+              <i className="fas fa-arrow-left me-2"></i>
+              Retour
+            </Link>
             <div>
-              <h1 className="display-5 fw-bold mb-2">{competition.nom}</h1>
-              <div className="d-flex gap-2">
-                <span className={`badge bg-${getStatutBadge(competition.statut)} fs-6`}>
+              <h1 className="mb-2">{competition.nom}</h1>
+              <div className="d-flex gap-2 flex-wrap">
+                <span className={`badge ${getTypeBadge(competition.type)}`}>
+                  {competition.type === 'championnat' ? 'Championnat' : 'Coupe'}
+                </span>
+                <span className={`badge ${getStatutBadge(competition.statut)}`}>
                   {competition.statut}
                 </span>
-                <span className="badge bg-secondary fs-6">
-                  {competition.plateforme}
+                <span className={`badge ${getVisibiliteBadge(competition.visibilite)}`}>
+                  {competition.visibilite === 'publique' ? 'Publique' : 'Privée'}
                 </span>
-                <span className="badge bg-info fs-6">
-                  {competition.niveau}
-                </span>
+                {competition.type === 'coupe' && (
+                  <span className="badge bg-info">
+                    {competition.formatCoupe === 'elimination_directe' ? 'Élimination directe' : 'Poules + Élimination'}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
         
         <div className="col-lg-4 text-end">
-          {user && competition.statut === 'Ouvert' && (
-            <div className="d-flex flex-column gap-2">
-              <select 
-                className="form-select"
-                value={selectedClub}
-                onChange={(e) => setSelectedClub(e.target.value)}
-              >
-                <option value="">Sélectionner un club</option>
-                {userClubs.map(club => (
-                  <option key={club._id} value={club._id}>
-                    {club.nom}
-                  </option>
-                ))}
-              </select>
-              
-              {selectedClub && !isClubInscrit(selectedClub) && (
-                <button 
-                  className="btn btn-success"
-                  onClick={handleInscription}
-                  disabled={inscriptionLoading}
-                >
-                  {inscriptionLoading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Inscription...
-                    </>
-                  ) : (
-                    <>
-                      <i className="fas fa-plus me-2"></i>
-                      S'inscrire
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+          {isCreator && competition.statut === 'Ouvert' && (
+            <button 
+              className="btn btn-success btn-lg"
+              onClick={handleLancerCompetition}
+            >
+              <i className="fas fa-play me-2"></i>
+              Lancer la compétition
+            </button>
+          )}
+          
+          {!isCreator && user && !isInscrit && (
+            <button 
+              className="btn btn-primary btn-lg"
+              onClick={() => setShowInscriptionModal(true)}
+            >
+              <i className="fas fa-user-plus me-2"></i>
+              S'inscrire
+            </button>
           )}
         </div>
       </div>
-
-      {error && (
-        <div className="alert alert-danger mb-4">
-          <i className="fas fa-exclamation-triangle me-2"></i>
-          {error}
-        </div>
-      )}
 
       <div className="row">
         {/* Informations principales */}
@@ -244,118 +211,57 @@ export default function CompetitionDetailPage() {
             </div>
             <div className="card-body">
               {competition.description && (
-                <p className="lead mb-4">{competition.description}</p>
+                <div className="mb-3">
+                  <strong>Description:</strong>
+                  <p className="mb-0">{competition.description}</p>
+                </div>
               )}
 
               <div className="row">
                 <div className="col-md-6">
-                  <h6>Dates</h6>
-                  <ul className="list-unstyled">
-                    <li><strong>Début:</strong> {formatDate(competition.dateDebut)}</li>
-                    {competition.dateFin && (
-                      <li><strong>Fin:</strong> {formatDate(competition.dateFin)}</li>
-                    )}
-                  </ul>
+                  <strong>Date de début:</strong>
+                  <p>{new Date(competition.dateDebut).toLocaleDateString('fr-FR')}</p>
+                </div>
+                {competition.dateFin && (
+                  <div className="col-md-6">
+                    <strong>Date de fin:</strong>
+                    <p>{new Date(competition.dateFin).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
+                <div className="col-md-6">
+                  <strong>Nombre d'équipes:</strong>
+                  <p>{competition.nombreEquipes}</p>
                 </div>
                 <div className="col-md-6">
-                  <h6>Détails</h6>
-                  <ul className="list-unstyled">
-                    <li><strong>Type:</strong> {competition.type}</li>
-                    <li><strong>Équipes:</strong> {competition.equipesInscrites.length}/{competition.nombreEquipes}</li>
-                    <li><strong>Inscription:</strong> {competition.inscriptionGratuite ? 'Gratuite' : `${competition.montantInscription}€`}</li>
-                  </ul>
+                  <strong>Plateforme:</strong>
+                  <p>{competition.plateforme}</p>
+                </div>
+                <div className="col-md-6">
+                  <strong>Niveau:</strong>
+                  <p>{competition.niveau}</p>
+                </div>
+                <div className="col-md-6">
+                  <strong>Inscription:</strong>
+                  <p>{competition.inscriptionGratuite ? 'Gratuite' : `${competition.montantInscription}€`}</p>
                 </div>
               </div>
+
+              {competition.reglement && (
+                <div className="mt-3">
+                  <strong>Règlement:</strong>
+                  <p className="mb-0">{competition.reglement}</p>
+                </div>
+              )}
+
+              {competition.recompense && (
+                <div className="mt-3">
+                  <strong>Récompenses:</strong>
+                  <p className="mb-0">{competition.recompense}</p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Règlement */}
-          {competition.reglement && (
-            <div className="card mb-4">
-              <div className="card-header">
-                <h5 className="mb-0">
-                  <i className="fas fa-book me-2"></i>
-                  Règlement
-                </h5>
-              </div>
-              <div className="card-body">
-                <div className="whitespace-pre-wrap">{competition.reglement}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Récompenses */}
-          {competition.recompense && (
-            <div className="card mb-4">
-              <div className="card-header">
-                <h5 className="mb-0">
-                  <i className="fas fa-gift me-2"></i>
-                  Récompenses
-                </h5>
-              </div>
-              <div className="card-body">
-                <div className="whitespace-pre-wrap">{competition.recompense}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Matchs */}
-          {competition.matchs && competition.matchs.length > 0 && (
-            <div className="card mb-4">
-              <div className="card-header">
-                <h5 className="mb-0">
-                  <i className="fas fa-gamepad me-2"></i>
-                  Matchs
-                </h5>
-              </div>
-              <div className="card-body">
-                <div className="table-responsive">
-                  <table className="table table-hover">
-                    <thead>
-                      <tr>
-                        <th>Phase</th>
-                        <th>Équipe 1</th>
-                        <th>Score</th>
-                        <th>Équipe 2</th>
-                        <th>Statut</th>
-                        <th>Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {competition.matchs.map((match, index) => (
-                        <tr key={index}>
-                          <td>
-                            <span className="badge bg-secondary">{match.phase}</span>
-                          </td>
-                          <td>{match.equipe1?.nom || 'TBD'}</td>
-                          <td>
-                            {match.statut === 'Terminé' ? (
-                              <strong>{match.score1} - {match.score2}</strong>
-                            ) : (
-                              <span className="text-muted">-</span>
-                            )}
-                          </td>
-                          <td>{match.equipe2?.nom || 'TBD'}</td>
-                          <td>
-                            <span className={`badge bg-${match.statut === 'Terminé' ? 'success' : 'warning'}`}>
-                              {match.statut}
-                            </span>
-                          </td>
-                          <td>
-                            {match.dateMatch ? formatDate(match.dateMatch) : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="col-lg-4">
           {/* Équipes inscrites */}
           <div className="card mb-4">
             <div className="card-header">
@@ -366,31 +272,21 @@ export default function CompetitionDetailPage() {
             </div>
             <div className="card-body">
               {competition.equipesInscrites.length === 0 ? (
-                <p className="text-muted text-center">Aucune équipe inscrite</p>
+                <p className="text-muted">Aucune équipe inscrite pour le moment.</p>
               ) : (
-                <div className="list-group list-group-flush">
+                <div className="row">
                   {competition.equipesInscrites.map((equipe, index) => (
-                    <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong>{equipe.clubId.nom}</strong>
-                        <br />
-                        <small className="text-muted">
-                          Inscrit le {formatDate(equipe.dateInscription)}
-                        </small>
-                      </div>
-                      <div className="d-flex gap-2">
-                        <span className={`badge bg-${equipe.statut === 'Gagnant' ? 'success' : 'primary'}`}>
+                    <div key={index} className="col-md-6 mb-3">
+                      <div className="d-flex align-items-center p-3 border rounded">
+                        <div className="flex-grow-1">
+                          <h6 className="mb-1">{equipe.clubId.nom}</h6>
+                          <small className="text-muted">
+                            Inscrit le {new Date(equipe.dateInscription).toLocaleDateString('fr-FR')}
+                          </small>
+                        </div>
+                        <span className={`badge ${equipe.statut === 'Inscrit' ? 'bg-success' : 'bg-warning'}`}>
                           {equipe.statut}
                         </span>
-                        {user && isClubInscrit(equipe.clubId._id) && competition.statut === 'Ouvert' && (
-                          <button 
-                            className="btn btn-outline-danger btn-sm"
-                            onClick={() => handleDesinscription(equipe.clubId._id)}
-                            title="Se désinscrire"
-                          >
-                            <i className="fas fa-times"></i>
-                          </button>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -399,7 +295,93 @@ export default function CompetitionDetailPage() {
             </div>
           </div>
 
-          {/* Informations créateur */}
+          {/* Demandes d'inscription (pour les compétitions privées) */}
+          {isCreator && competition.visibilite === 'privee' && competition.demandesInscription.length > 0 && (
+            <div className="card mb-4">
+              <div className="card-header">
+                <h5 className="mb-0">
+                  <i className="fas fa-clock me-2"></i>
+                  Demandes d'inscription ({competition.demandesInscription.filter(d => d.statut === 'En attente').length})
+                </h5>
+              </div>
+              <div className="card-body">
+                {competition.demandesInscription
+                  .filter(demande => demande.statut === 'En attente')
+                  .map((demande, index) => (
+                    <div key={index} className="border rounded p-3 mb-3">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h6 className="mb-1">{demande.clubId.nom}</h6>
+                          <small className="text-muted">
+                            Demande du {new Date(demande.dateDemande).toLocaleDateString('fr-FR')}
+                          </small>
+                          {demande.message && (
+                            <p className="mb-2 mt-2">{demande.message}</p>
+                          )}
+                        </div>
+                        <div className="d-flex gap-2">
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={() => handleTraiterDemande(demande._id, 'accepter')}
+                          >
+                            <i className="fas fa-check me-1"></i>
+                            Accepter
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => handleTraiterDemande(demande._id, 'refuser')}
+                          >
+                            <i className="fas fa-times me-1"></i>
+                            Refuser
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Matchs (si la compétition est lancée) */}
+          {competition.statut === 'En cours' && competition.matchs.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <h5 className="mb-0">
+                  <i className="fas fa-futbol me-2"></i>
+                  Matchs
+                </h5>
+              </div>
+              <div className="card-body">
+                {competition.matchs.map((match, index) => (
+                  <div key={index} className="border rounded p-3 mb-3">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div className="flex-grow-1">
+                        <div className="d-flex align-items-center">
+                          <span className="fw-bold">{match.equipe1.nom}</span>
+                          <span className="mx-3">
+                            {match.statut === 'Terminé' ? `${match.score1} - ${match.score2}` : 'vs'}
+                          </span>
+                          <span className="fw-bold">{match.equipe2.nom}</span>
+                        </div>
+                        <small className="text-muted">
+                          {match.phase} • {match.statut}
+                        </small>
+                      </div>
+                      <div>
+                        <span className={`badge ${match.statut === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
+                          {match.statut}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="col-lg-4">
           <div className="card mb-4">
             <div className="card-header">
               <h5 className="mb-0">
@@ -407,40 +389,91 @@ export default function CompetitionDetailPage() {
                 Organisateur
               </h5>
             </div>
-            <div className="card-body text-center">
-              <i className="fas fa-user-circle fa-3x text-primary mb-3"></i>
-              <h6>{competition.createurId?.pseudo}</h6>
-              <small className="text-muted">
-                Créé le {formatDate(competition.dateCreation)}
-              </small>
+            <div className="card-body">
+              <p className="mb-0">{competition.createurId.pseudo}</p>
             </div>
           </div>
 
-          {/* Actions */}
-          {user && competition.createurId?._id === user.id && (
-            <div className="card">
+          {competition.gagnant && (
+            <div className="card mb-4">
               <div className="card-header">
                 <h5 className="mb-0">
-                  <i className="fas fa-cog me-2"></i>
-                  Actions
+                  <i className="fas fa-trophy me-2"></i>
+                  Gagnant
                 </h5>
               </div>
               <div className="card-body">
-                <div className="d-grid gap-2">
-                  <button className="btn btn-outline-primary">
-                    <i className="fas fa-edit me-2"></i>
-                    Modifier
-                  </button>
-                  <button className="btn btn-outline-danger">
-                    <i className="fas fa-trash me-2"></i>
-                    Supprimer
-                  </button>
-                </div>
+                <p className="mb-0">{competition.gagnant.nom}</p>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Modal d'inscription */}
+      {showInscriptionModal && (
+        <div className="modal fade show" style={{display: 'block'}}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">S'inscrire à la compétition</h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowInscriptionModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Sélectionner un club</label>
+                  <select 
+                    className="form-select"
+                    value={selectedClub}
+                    onChange={(e) => setSelectedClub(e.target.value)}
+                  >
+                    <option value="">Choisir un club...</option>
+                    {userClubs.map(club => (
+                      <option key={club._id} value={club._id}>
+                        {club.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {competition.visibilite === 'privee' && (
+                  <div className="mb-3">
+                    <label className="form-label">Message (optionnel)</label>
+                    <textarea 
+                      className="form-control"
+                      rows="3"
+                      value={inscriptionMessage}
+                      onChange={(e) => setInscriptionMessage(e.target.value)}
+                      placeholder="Message pour l'organisateur..."
+                    ></textarea>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowInscriptionModal(false)}
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={handleInscription}
+                  disabled={inscribing || !selectedClub}
+                >
+                  {inscribing ? 'Inscription...' : 'S\'inscrire'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

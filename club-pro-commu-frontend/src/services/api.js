@@ -507,22 +507,43 @@ export const competitionAPI = {
     });
   },
 
-  // Inscrire un club à une compétition
-  registerClub: async (competitionId, clubId, token) => {
-    return apiCall(`/competitions/${competitionId}/inscrire`, {
+  // S'inscrire à une compétition
+  inscrireClub: async (competitionId, clubId, message = '', token) => {
+    return apiCall(`/competitions/${competitionId}/inscription`, {
       method: 'POST',
-      body: { clubId },
+      body: { clubId, message },
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
   },
 
-  // Désinscrire un club d'une compétition
-  unregisterClub: async (competitionId, clubId, token) => {
-    return apiCall(`/competitions/${competitionId}/desinscrire`, {
-      method: 'POST',
-      body: { clubId },
+  // Traiter une demande d'inscription
+  traiterDemandeInscription: async (competitionId, demandeId, action, token) => {
+    return apiCall(`/competitions/${competitionId}/demandes/${demandeId}`, {
+      method: 'PUT',
+      body: { action },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Lancer une compétition
+  lancerCompetition: async (competitionId, token) => {
+    return apiCall(`/competitions/${competitionId}/lancer`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Mettre à jour le score d'un match
+  mettreAJourScore: async (competitionId, matchId, scoreData, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/score`, {
+      method: 'PUT',
+      body: scoreData,
       headers: {
         'Authorization': `Bearer ${token}`,
       },
