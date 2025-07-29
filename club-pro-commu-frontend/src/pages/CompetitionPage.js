@@ -115,7 +115,7 @@ export default function CompetitionPage() {
               </div>
             </div>
             <h2 className="fw-bold text-gradient">Créer une Compétition</h2>
-            <p className="text-muted">Organisez des tournois et championnats pour votre communauté FIFA Pro Clubs</p>
+            <p className="text-muted">Organisez des tournois et championnats pour votre communauté EA Sports FC Pro Clubs</p>
           </div>
 
           {success ? (

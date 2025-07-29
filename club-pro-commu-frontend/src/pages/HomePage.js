@@ -130,7 +130,7 @@ const HomePage = () => {
                 🏆 Club Pro Communauté
               </h1>
               <p className="lead mb-4 text-white-90">
-                La plateforme ultime pour les joueurs FIFA Pro Clubs.
+                La plateforme ultime pour les joueurs EA Sports FC Pro Clubs.
                 Trouvez votre équipe, recrutez des talents et construisez votre légende.
               </p>
               {!user ? (
@@ -157,7 +157,7 @@ const HomePage = () => {
                 </div>
               )}
             </div>
-            <div className="col-lg-4 text-center">
+            <div className="col-lg-4 text-center mt-5">
               <div className="bg-white bg-opacity-10 rounded p-4 backdrop-blur mb-4 mb-lg-0">
                 <div className="mb-3" style={{fontSize: '4rem'}}>⚽</div>
                 <h3 className="text-white mb-3">📊 Statistiques</h3>
@@ -190,7 +190,7 @@ const HomePage = () => {
               🚀 Fonctionnalités principales
             </h2>
             <p className="lead text-muted">
-              Tout ce dont vous avez besoin pour exceller dans FIFA Pro Clubs
+              Tout ce dont vous avez besoin pour exceller dans EA Sports FC Pro Clubs
             </p>
           </div>
           
@@ -447,7 +447,7 @@ const HomePage = () => {
               <div className="card-body text-center p-5">
                 <h2 className="mb-4">Prêt à rejoindre la communauté ?</h2>
                 <p className="lead mb-4">
-                  Créez votre profil, trouvez votre équipe et commencez votre aventure FIFA Pro Clubs !
+                  Créez votre profil, trouvez votre équipe et commencez votre aventure EA Sports FC Pro Clubs !
                 </p>
                 {!user ? (
                   <div className="d-flex gap-3 justify-content-center">

@@ -96,7 +96,7 @@ export default function CompetitionListPage() {
             Compétitions
           </h1>
           <p className="lead text-muted">
-            Découvrez et participez aux meilleures compétitions FIFA Pro Clubs
+            Découvrez et participez aux meilleures compétitions EA Sports FC Pro Clubs
           </p>
         </div>
         <div className="col-lg-4 text-end">

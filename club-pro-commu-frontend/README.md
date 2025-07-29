@@ -1,6 +1,6 @@
 # 🏆 Club Pro Communauté
 
-Une plateforme moderne pour les joueurs FIFA Pro Clubs qui souhaitent trouver des clubs, des coéquipiers et améliorer leur expérience de jeu.
+Une plateforme moderne pour les joueurs EA Sports FC Pro Clubs qui souhaitent trouver des clubs, des coéquipiers et améliorer leur expérience de jeu.
 
 ## ✨ Fonctionnalités Principales
 
@@ -199,4 +199,4 @@ Pour toute question ou problème :
 
 ---
 
-**Développé avec ❤️ pour la communauté FIFA Pro Clubs** 🏆⚽
+**Développé avec ❤️ pour la communauté EA Sports FC Pro Clubs** 🏆⚽

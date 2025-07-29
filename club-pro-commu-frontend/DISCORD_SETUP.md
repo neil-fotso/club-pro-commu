@@ -12,7 +12,7 @@
 1. Va sur [Discord Developer Portal](https://discord.com/developers/applications)
 2. Clique **"New Application"**
 3. **Nom :** `Club Pro Communauté`
-4. **Description :** `Plateforme de gestion des clubs FIFA Pro Clubs`
+4. **Description :** `Plateforme de gestion des clubs EA Sports FC Pro Clubs`
 
 ### 2. Configurer le Bot
 

@@ -375,7 +375,7 @@ export default function CreateClubPage() {
                     <i className="fas fa-shield-alt"></i>
                   </div>
                   <h2>🏆 Créer un Club</h2>
-                  <p className="text-muted">Fondez votre équipe et commencez votre aventure FIFA Pro Clubs</p>
+                  <p className="text-muted">Fondez votre équipe et commencez votre aventure EA Sports FC Pro Clubs</p>
                 </div>
 
                 {error && (
