@@ -403,6 +403,367 @@ const clubSearchStyles = `
       justify-content: center;
     }
   }
+  
+  /* Optimisations mobile avancées */
+  @media (max-width: 768px) {
+    .club-search-container {
+      padding: 0.75rem 0;
+    }
+    
+    .club-search-content {
+      padding: 1.2rem;
+      margin: 0 1.2rem;
+      border-radius: 12px;
+    }
+    
+    .search-header {
+      margin-bottom: 1.5rem;
+    }
+    
+    .search-header h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+    
+    .search-header p {
+      font-size: 0.85rem;
+      margin-bottom: 1.2rem;
+      color: #6c757d;
+    }
+    
+    .search-filters {
+      padding: 0.8rem;
+      margin-bottom: 1.8rem;
+    }
+    
+    .search-filters .filter-row {
+      gap: 0.6rem;
+      margin-bottom: 0.6rem;
+    }
+    
+    .filter-group label {
+      font-size: 0.8rem;
+      margin-bottom: 0.2rem;
+      font-weight: 500;
+      color: #495057;
+    }
+    
+    .filter-group .form-control,
+    .filter-group .form-select {
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .filter-group .form-control:focus,
+    .filter-group .form-select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    /* Cartes optimisées pour mobile */
+    .club-card {
+      margin-bottom: 1.2rem;
+      border-radius: 12px;
+      min-height: auto;
+    }
+    
+    .club-header {
+      padding: 0.5rem;
+    }
+    
+    .club-avatar {
+      width: 32px;
+      height: 32px;
+    }
+    
+    .club-avatar i {
+      font-size: 0.9rem;
+    }
+    
+    .club-info h5 {
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+    
+    .club-info .badge {
+      font-size: 0.6rem;
+      padding: 0.15rem 0.35rem;
+    }
+    
+    .club-stats {
+      padding: 0.6rem;
+      gap: 0.4rem;
+    }
+    
+    .stat-item {
+      padding: 0.4rem;
+      margin: 0.2rem;
+    }
+    
+    .stat-label {
+      font-size: 0.65rem;
+    }
+    
+    .stat-value {
+      font-size: 0.8rem;
+    }
+    
+    .club-badges {
+      padding: 0.6rem;
+      gap: 0.4rem;
+    }
+    
+    .club-badges .badge {
+      font-size: 0.6rem;
+      padding: 0.15rem 0.3rem;
+    }
+    
+    .club-actions {
+      padding: 0.6rem;
+      gap: 0.6rem;
+    }
+    
+    .btn-view {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.75rem;
+      border-radius: 18px;
+    }
+    
+    .btn-join {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.75rem;
+      border-radius: 18px;
+    }
+    
+    /* Layout mobile : infos à gauche, boutons à droite */
+    .club-card .mobile-layout {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.5rem;
+    }
+    
+    .club-card .mobile-info {
+      flex: 1;
+    }
+    
+    .club-card .mobile-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    
+    .club-card .mobile-stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    
+    .club-card .mobile-stat-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #6c757d;
+    }
+    
+    .club-card .mobile-stat-value {
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    .club-card .mobile-platforms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem;
+      margin-top: 0.2rem;
+    }
+    
+    .club-card .mobile-platforms .badge {
+      font-size: 0.55rem;
+      padding: 0.1rem 0.25rem;
+    }
+    
+    .club-card .mobile-buttons {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    
+    .club-card .mobile-description {
+      padding: 0 0.5rem 0.5rem;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      margin-top: 0.35rem;
+    }
+    
+    /* Filtres mobile */
+    .filter-actions {
+      margin-top: 0.8rem;
+      gap: 0.6rem;
+    }
+    
+    .btn-filter, .btn-clear {
+      width: 100%;
+      font-size: 0.8rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    
+    /* Grille mobile optimisée */
+    .col-lg-6.col-xl-4 {
+      padding: 0 0.6rem;
+    }
+    
+    /* Espacement amélioré */
+    .mb-4 {
+      margin-bottom: 1.2rem !important;
+    }
+    
+    /* Résultats count */
+    .results-count {
+      margin-bottom: 1.2rem;
+      font-size: 0.85rem;
+      color: #6c757d;
+      font-weight: 500;
+    }
+    
+    /* No results */
+    .no-results {
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    
+    .no-results i {
+      font-size: 3rem;
+      color: #dee2e6;
+      margin-bottom: 1rem;
+    }
+    
+    .no-results h3 {
+      font-size: 1.2rem;
+      color: #495057;
+      margin-bottom: 0.5rem;
+    }
+    
+    .no-results p {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+  }
+  
+  /* Optimisations pour très petits écrans */
+  @media (max-width: 480px) {
+    .club-search-content {
+      padding: 1rem;
+      margin: 0 1rem;
+    }
+    
+    .search-header h1 {
+      font-size: 1.2rem;
+    }
+    
+    .search-header p {
+      font-size: 0.8rem;
+    }
+    
+    .search-filters {
+      padding: 0.7rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .filter-group label {
+      font-size: 0.75rem;
+    }
+    
+    .filter-group .form-control,
+    .filter-group .form-select {
+      font-size: 0.8rem;
+      padding: 0.45rem 0.65rem;
+    }
+    
+    .club-header {
+      padding: 0.45rem;
+    }
+    
+    .club-avatar {
+      width: 30px;
+      height: 30px;
+    }
+    
+    .club-avatar i {
+      font-size: 0.85rem;
+    }
+    
+    .club-info h5 {
+      font-size: 0.8rem;
+    }
+    
+    /* Layout mobile optimisé pour petits écrans */
+    .club-card .mobile-layout {
+      gap: 0.5rem;
+      padding: 0.45rem;
+    }
+    
+    .club-card .mobile-stat-item {
+      gap: 0.15rem;
+    }
+    
+    .club-card .mobile-stat-label {
+      font-size: 0.65rem;
+    }
+    
+    .club-card .mobile-stat-value {
+      font-size: 0.7rem;
+    }
+    
+    .club-card .mobile-platforms {
+      gap: 0.15rem;
+      margin-top: 0.15rem;
+    }
+    
+    .club-card .mobile-platforms .badge {
+      font-size: 0.5rem;
+      padding: 0.08rem 0.2rem;
+    }
+    
+    .club-card .mobile-description {
+      padding: 0 0.45rem 0.45rem;
+      margin-top: 0.25rem;
+    }
+    
+    .btn-view, .btn-join {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.7rem;
+    }
+    
+    /* Grille optimisée */
+    .col-lg-6.col-xl-4 {
+      padding: 0 0.5rem;
+    }
+    
+    .mb-4 {
+      margin-bottom: 1rem !important;
+    }
+    
+    /* Espacement des filtres */
+    .search-filters {
+      padding: 0.8rem;
+      margin-bottom: 1.8rem;
+    }
+    
+    .btn-filter, .btn-clear {
+      font-size: 0.75rem;
+      padding: 0.5rem 0.7rem;
+    }
+    
+    .results-count {
+      font-size: 0.8rem;
+    }
+  }
 `;
 
 export default function ClubSearchPage() {
@@ -743,102 +1104,155 @@ export default function ClubSearchPage() {
                       </div>
                     </div>
 
-                    <div className="club-stats">
-                      <div className="stat-item">
-                        <div className="stat-label">Membres</div>
-                        <div className="stat-value">{club.membres?.length || 0}/{club.effectifMax}</div>
-                      </div>
-                      
-                      <div className="stat-item">
-                        <div className="stat-label">Pays</div>
-                        <div className="stat-value">{club.pays}</div>
-                      </div>
-                      
-                      <div className="stat-item">
-                        <div className="stat-label">Créé le</div>
-                        <div className="stat-value">
-                          {new Date(club.dateCreation).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Stats desktop - supprimées pour éviter la duplication */}
 
-                    <div className="club-badges">
-                      {club.plateformes?.map(platform => (
-                        <span key={platform} className="badge bg-dark">
-                          {getPlatformIcon(platform)} {platform}
-                        </span>
-                      ))}
-                      {club.langues?.map((langue, index) => (
-                        <span key={index} className="badge bg-info">
-                          {langue}
-                        </span>
-                      ))}
-                    </div>
+                    {/* Plateformes et description desktop - supprimées pour éviter la duplication */}
 
-                    {club.description && (
-                      <p className="text-muted mb-3" style={{fontSize: '0.9rem'}}>
-                        {club.description.length > 100 
-                          ? club.description.substring(0, 100) + '...' 
-                          : club.description}
-                      </p>
-                    )}
-
-                    <div className="club-actions">
-                      <Link 
-                        to={`/club/${club._id}`} 
-                        className="btn-view"
-                      >
-                        <i className="fas fa-eye me-2"></i>
-                        Voir le club
-                      </Link>
-                      
-                      {club.recrute && !userClub && (
-                        <div>
-                          {loadingRequests[club._id] ? (
-                            <button className="btn-join" disabled>
-                              <span className="spinner-border spinner-border-sm me-2"></span>
-                              Vérification...
-                            </button>
-                          ) : userRequests[club._id] ? (
-                            <div className="alert alert-warning mb-0 p-2">
-                              <i className="fas fa-clock me-2"></i>
-                              <strong>Demande en attente</strong>
-                              <br />
-                              <small className="text-muted">
-                                Envoyée le {new Date(userRequests[club._id].dateDemande).toLocaleDateString()}
-                              </small>
-                              <div className="mt-2">
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => handleCancelRequest(club._id)}
-                                >
-                                  <i className="fas fa-times me-1"></i>
-                                  Annuler
-                                </button>
+                    {/* Layout desktop */}
+                    <div className="d-none d-md-block">
+                      <div className="club-actions">
+                        <Link 
+                          to={`/club/${club._id}`} 
+                          className="btn-view"
+                        >
+                          <i className="fas fa-eye me-2"></i>
+                          Voir le club
+                        </Link>
+                        
+                        {club.recrute && !userClub && (
+                          <div>
+                            {loadingRequests[club._id] ? (
+                              <button className="btn-join" disabled>
+                                <span className="spinner-border spinner-border-sm me-2"></span>
+                                Vérification...
+                              </button>
+                            ) : userRequests[club._id] ? (
+                              <div className="alert alert-warning mb-0 p-2">
+                                <i className="fas fa-clock me-2"></i>
+                                <strong>Demande en attente</strong>
+                                <br />
+                                <small className="text-muted">
+                                  Envoyée le {new Date(userRequests[club._id].dateDemande).toLocaleDateString()}
+                                </small>
+                                <div className="mt-2">
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleCancelRequest(club._id)}
+                                  >
+                                    <i className="fas fa-times me-1"></i>
+                                    Annuler
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <button
-                              className="btn-join"
-                              onClick={() => handleJoinRequest(club._id, club.nom)}
-                              disabled={joining}
-                            >
-                              {joining ? (
-                                <>
-                                  <span className="spinner-border spinner-border-sm me-2"></span>
-                                  Demande en cours...
-                                </>
-                              ) : (
-                                <>
-                                  <i className="fas fa-user-plus me-2"></i>
-                                  Demander à rejoindre
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      )}
+                            ) : (
+                              <button
+                                className="btn-join"
+                                onClick={() => handleJoinRequest(club._id, club.nom)}
+                                disabled={joining}
+                              >
+                                {joining ? (
+                                  <>
+                                    <span className="spinner-border spinner-border-sm me-2"></span>
+                                    Demande en cours...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fas fa-user-plus me-2"></i>
+                                    Demander à rejoindre
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Layout mobile */}
+                    <div className="d-md-none mobile-layout">
+                      <div className="mobile-info">
+                        <div className="mobile-stats">
+                          <div className="mobile-stat-item">
+                            <span className="mobile-stat-label">Membres:</span>
+                            <span className="mobile-stat-value">{club.membres?.length || 0}/{club.effectifMax}</span>
+                          </div>
+                          <div className="mobile-stat-item">
+                            <span className="mobile-stat-label">Pays:</span>
+                            <span className="mobile-stat-value">{club.pays}</span>
+                          </div>
+                          <div className="mobile-stat-item">
+                            <span className="mobile-stat-label">Langues:</span>
+                            <span className="mobile-stat-value">
+                              {club.langues?.length > 0 ? club.langues.join(', ') : 'Non renseigné'}
+                            </span>
+                          </div>
+                          <div className="mobile-platforms">
+                            {club.plateformes?.map(platform => (
+                              <span key={platform} className="badge bg-dark">
+                                {getPlatformIcon(platform)} {platform}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mobile-buttons">
+                        <Link 
+                          to={`/club/${club._id}`} 
+                          className="btn-view"
+                        >
+                          <i className="fas fa-eye me-1"></i>
+                          Voir
+                        </Link>
+                        
+                        {club.recrute && !userClub && (
+                          <div>
+                            {loadingRequests[club._id] ? (
+                              <button className="btn-join" disabled>
+                                <span className="spinner-border spinner-border-sm me-1"></span>
+                                Vérif...
+                              </button>
+                            ) : userRequests[club._id] ? (
+                              <button
+                                className="btn btn-sm btn-outline-warning"
+                                disabled
+                              >
+                                <i className="fas fa-clock me-1"></i>
+                                En attente
+                              </button>
+                            ) : (
+                              <button
+                                className="btn-join"
+                                onClick={() => handleJoinRequest(club._id, club.nom)}
+                                disabled={joining}
+                              >
+                                {joining ? (
+                                  <>
+                                    <span className="spinner-border spinner-border-sm me-1"></span>
+                                    En cours...
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fas fa-user-plus me-1"></i>
+                                    Rejoindre
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Description mobile */}
+                    {club.description && (
+                      <div className="d-md-none mobile-description">
+                        <p className="text-muted mb-0" style={{fontSize: '0.85rem'}}>
+                          {club.description.length > 80 
+                            ? club.description.substring(0, 80) + '...' 
+                            : club.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

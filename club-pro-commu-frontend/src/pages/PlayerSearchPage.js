@@ -306,6 +306,246 @@ const enhancedStyles = `
       padding: 1rem;
     }
   }
+  
+  /* Optimisations mobile avancées */
+  @media (max-width: 768px) {
+    .search-page-container {
+      padding: 1rem 0;
+    }
+    
+    .search-content {
+      padding: 1rem;
+      margin: 0 1rem;
+      border-radius: 12px;
+    }
+    
+    .search-header {
+      margin-bottom: 2rem;
+    }
+    
+    .search-header h2 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .search-header .lead {
+      font-size: 0.9rem;
+    }
+    
+    .filters-container {
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .filters-container h5 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    /* Cartes optimisées pour mobile */
+    .player-card {
+      margin-bottom: 1rem;
+      border-radius: 12px;
+    }
+    
+    .player-card .card-header {
+      padding: 0.75rem;
+    }
+    
+    .player-info {
+      gap: 0.75rem;
+      margin-bottom: 0;
+    }
+    
+    .avatar-default {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .avatar-default i {
+      font-size: 1.1rem;
+    }
+    
+    .player-details h5 {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .player-details .badge {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.5rem;
+    }
+    
+    .player-card .card-body {
+      padding: 1rem;
+    }
+    
+    /* Layout mobile : infos à gauche, bouton à droite */
+    .player-card .card-body .mobile-layout {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .player-card .card-body .mobile-info {
+      flex: 1;
+    }
+    
+    .player-card .card-body .mobile-info .row {
+      margin-bottom: 0.75rem;
+    }
+    
+    .player-card .card-body .mobile-info .col-6 {
+      margin-bottom: 0.5rem;
+    }
+    
+    .player-card .card-body .mobile-info small {
+      font-size: 0.75rem;
+    }
+    
+    .player-card .card-body .mobile-info strong {
+      font-size: 0.85rem;
+    }
+    
+    .player-card .card-body .mobile-button {
+      flex-shrink: 0;
+    }
+    
+    .btn-view {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    
+    /* Pagination mobile */
+    .pagination {
+      margin-top: 2rem;
+    }
+    
+    .pagination .page-link {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+    }
+    
+    /* Filtres mobile */
+    .filter-btn {
+      width: 100%;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+    }
+    
+    /* Grille mobile optimisée */
+    .col-md-6.col-lg-4 {
+      padding: 0 0.5rem;
+    }
+    
+    /* Espacement amélioré */
+    .mb-4 {
+      margin-bottom: 1rem !important;
+    }
+    
+    /* Réduction de la hauteur des cartes */
+    .player-card {
+      min-height: auto;
+    }
+    
+    /* Optimisation des statistiques */
+    .stat-item {
+      padding: 0.5rem;
+      margin: 0.25rem;
+      font-size: 0.75rem;
+    }
+    
+    .stat-item .stat-value {
+      font-size: 0.9rem;
+    }
+    
+    .stat-item .stat-label {
+      font-size: 0.65rem;
+    }
+  }
+  
+  /* Optimisations pour très petits écrans */
+  @media (max-width: 480px) {
+    .search-content {
+      padding: 0.75rem;
+      margin: 0 0.5rem;
+    }
+    
+    .search-header h2 {
+      font-size: 1.4rem;
+    }
+    
+    .player-card .card-header {
+      padding: 0.5rem;
+    }
+    
+    .avatar-default {
+      width: 35px;
+      height: 35px;
+    }
+    
+    .avatar-default i {
+      font-size: 1rem;
+    }
+    
+    .player-details h5 {
+      font-size: 0.9rem;
+    }
+    
+    .player-card .card-body {
+      padding: 0.75rem;
+    }
+    
+    /* Layout mobile optimisé pour petits écrans */
+    .player-card .card-body .mobile-layout {
+      gap: 0.75rem;
+    }
+    
+    .player-card .card-body .mobile-info .row {
+      margin-bottom: 0.5rem;
+    }
+    
+    .player-card .card-body .mobile-info .col-6 {
+      margin-bottom: 0.25rem;
+    }
+    
+    .player-card .card-body .mobile-info small {
+      font-size: 0.7rem;
+    }
+    
+    .player-card .card-body .mobile-info strong {
+      font-size: 0.8rem;
+    }
+    
+    .btn-view {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.75rem;
+    }
+    
+    /* Grille optimisée */
+    .col-md-6.col-lg-4 {
+      padding: 0 0.25rem;
+    }
+    
+    .mb-4 {
+      margin-bottom: 0.75rem !important;
+    }
+    
+    /* Espacement des filtres */
+    .filters-container {
+      padding: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .filter-btn {
+      font-size: 0.85rem;
+      padding: 0.6rem 1rem;
+    }
+  }
 `;
 
 const PlayerSearchPage = () => {
@@ -418,7 +658,7 @@ const PlayerSearchPage = () => {
             </h5>
             {/* Critères de base */}
             <div className="row g-3">
-              <div className="col-md-6">
+              <div className="col-md-6 col-12">
                 <label className="form-label">Pseudo</label>
                 <input
                   type="text"
@@ -428,7 +668,7 @@ const PlayerSearchPage = () => {
                   placeholder="Rechercher par pseudo..."
                 />
               </div>
-              <div className="col-md-6">
+              <div className="col-md-6 col-12">
                 <label className="form-label">Plateforme</label>
                 <select
                   className="form-select"
@@ -463,7 +703,7 @@ const PlayerSearchPage = () => {
                   Critères avancés
                 </h6>
                 <div className="row g-3">
-                  <div className="col-md-3">
+                  <div className="col-md-3 col-6">
                     <label className="form-label">Pays</label>
                     <input
                       type="text"
@@ -473,7 +713,7 @@ const PlayerSearchPage = () => {
                       placeholder="France, Belgique..."
                     />
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 col-6">
                     <label className="form-label">Position</label>
                     <select
                       className="form-select"
@@ -488,7 +728,7 @@ const PlayerSearchPage = () => {
                       <option value="Polyvalent">Polyvalent</option>
                     </select>
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 col-6">
                     <label className="form-label">Niveau</label>
                     <select
                       className="form-select"
@@ -503,7 +743,7 @@ const PlayerSearchPage = () => {
                       <option value="Pro">Pro</option>
                     </select>
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-3 col-6">
                     <label className="form-label">Disponibilité</label>
                     <select
                       className="form-select"
@@ -547,33 +787,65 @@ const PlayerSearchPage = () => {
                     </div>
                   </div>
                   <div className="card-body">
-                    <div className="row mb-3">
-                      <div className="col-6">
-                        <small className="text-muted d-block">
-                          <i className="fas fa-futbol me-1"></i>Position
-                        </small>
-                        <strong>{player.position || 'Non renseigné'}</strong>
+                    {/* Layout desktop */}
+                    <div className="d-none d-md-block">
+                      <div className="row mb-3">
+                        <div className="col-6">
+                          <small className="text-muted d-block">
+                            <i className="fas fa-futbol me-1"></i>Position
+                          </small>
+                          <strong>{player.position || 'Non renseigné'}</strong>
+                        </div>
+                        <div className="col-6">
+                          <small className="text-muted d-block">
+                            <i className="fas fa-gamepad me-1"></i>Plateforme
+                          </small>
+                          <strong>{player.plateforme}</strong>
+                        </div>
                       </div>
-                      <div className="col-6">
-                        <small className="text-muted d-block">
-                          <i className="fas fa-gamepad me-1"></i>Plateforme
+                      <div className="d-flex justify-content-between align-items-center">
+                        <small className="text-muted">
+                          <i className="fas fa-map-marker-alt me-1"></i>
+                          {player.pays || 'Non renseigné'}
+                          {player.ville && `, ${player.ville}`}
                         </small>
-                        <strong>{player.plateforme}</strong>
+                        <Link 
+                          to={`/player/${player._id}`}
+                          className="btn btn-view"
+                        >
+                          <i className="fas fa-eye me-1"></i>
+                          Voir profil
+                        </Link>
                       </div>
                     </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <small className="text-muted">
-                        <i className="fas fa-map-marker-alt me-1"></i>
-                        {player.pays || 'Non renseigné'}
-                        {player.ville && `, ${player.ville}`}
-                      </small>
-                      <Link 
-                        to={`/player/${player._id}`}
-                        className="btn btn-view"
-                      >
-                        <i className="fas fa-eye me-1"></i>
-                        Voir profil
-                      </Link>
+                    
+                    {/* Layout mobile */}
+                    <div className="d-md-none mobile-layout">
+                      <div className="mobile-info">
+                        <div className="row">
+                          <div className="col-6">
+                            <small className="text-muted d-block">
+                              <i className="fas fa-futbol me-1"></i>Position
+                            </small>
+                            <strong>{player.position || 'Non renseigné'}</strong>
+                          </div>
+                          <div className="col-6">
+                            <small className="text-muted d-block">
+                              <i className="fas fa-gamepad me-1"></i>Plateforme
+                            </small>
+                            <strong>{player.plateforme}</strong>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mobile-button">
+                        <Link 
+                          to={`/player/${player._id}`}
+                          className="btn btn-view"
+                        >
+                          <i className="fas fa-eye me-1"></i>
+                          Voir
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>

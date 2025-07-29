@@ -180,11 +180,252 @@ const profileStyles = `
   @media (max-width: 768px) {
     .profile-content {
       padding: 1rem;
-      margin: 1rem;
+      margin: 0.5rem;
+      border-radius: 15px;
     }
     
     .profile-header {
-      padding: 1.5rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .profile-info .row {
+      flex-direction: column;
+    }
+    
+    .profile-info .col-md-8 {
+      margin-bottom: 1rem;
+    }
+    
+    .profile-info .col-md-4 {
+      text-align: center;
+    }
+    
+    .profile-info h1 {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      margin-right: 1rem;
+    }
+    
+    .profile-badge {
+      font-size: 0.7rem;
+      padding: 0.3rem 0.6rem;
+      margin-bottom: 0.3rem;
+    }
+    
+    .action-btn {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    
+    .profile-card {
+      margin-bottom: 1rem;
+    }
+    
+    .profile-card .card-header {
+      padding: 0.8rem;
+    }
+    
+    .profile-card .card-header h5 {
+      font-size: 0.9rem;
+      margin: 0;
+    }
+    
+    .profile-card .card-body {
+      padding: 0.8rem;
+    }
+    
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+    
+    .stat-item {
+      padding: 0.8rem;
+      border-radius: 8px;
+    }
+    
+    .stat-value {
+      font-size: 1.2rem;
+      margin-bottom: 0.3rem;
+    }
+    
+    .stat-label {
+      font-size: 0.7rem;
+    }
+    
+    .row .col-md-4 {
+      margin-bottom: 0.5rem;
+    }
+    
+    .row .col-md-4 .d-flex {
+      font-size: 0.8rem;
+    }
+    
+    .row .col-md-4 strong {
+      font-size: 0.8rem;
+    }
+    
+    .badge {
+      font-size: 0.6rem;
+      padding: 0.2rem 0.4rem;
+    }
+    
+    .modal-dialog {
+      margin: 1rem;
+      max-width: calc(100% - 2rem);
+    }
+    
+    .modal-content {
+      border-radius: 12px;
+    }
+    
+    .modal-header {
+      padding: 0.8rem;
+    }
+    
+    .modal-header h5 {
+      font-size: 0.9rem;
+    }
+    
+    .modal-body {
+      padding: 0.8rem;
+    }
+    
+    .modal-footer {
+      padding: 0.8rem;
+    }
+    
+    .form-label {
+      font-size: 0.8rem;
+      margin-bottom: 0.3rem;
+    }
+    
+    .form-select, .form-control {
+      font-size: 0.85rem;
+      padding: 0.5rem 0.7rem;
+    }
+    
+    .btn {
+      font-size: 0.8rem;
+      padding: 0.5rem 1rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .profile-content {
+      padding: 0.8rem;
+      margin: 0.3rem;
+    }
+    
+    .profile-header {
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+    }
+    
+    .profile-info h1 {
+      font-size: 1.2rem;
+    }
+    
+    .profile-avatar {
+      width: 70px;
+      height: 70px;
+      margin-right: 0.8rem;
+    }
+    
+    .profile-badge {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+    }
+    
+    .action-btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+    }
+    
+    .profile-card .card-header {
+      padding: 0.6rem;
+    }
+    
+    .profile-card .card-header h5 {
+      font-size: 0.85rem;
+    }
+    
+    .profile-card .card-body {
+      padding: 0.6rem;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+    
+    .stat-item {
+      padding: 0.6rem;
+    }
+    
+    .stat-value {
+      font-size: 1rem;
+    }
+    
+    .stat-label {
+      font-size: 0.65rem;
+    }
+    
+    .row .col-md-4 .d-flex {
+      font-size: 0.75rem;
+    }
+    
+    .row .col-md-4 strong {
+      font-size: 0.75rem;
+    }
+    
+    .badge {
+      font-size: 0.55rem;
+      padding: 0.15rem 0.3rem;
+    }
+    
+    .modal-dialog {
+      margin: 0.5rem;
+      max-width: calc(100% - 1rem);
+    }
+    
+    .modal-header {
+      padding: 0.6rem;
+    }
+    
+    .modal-header h5 {
+      font-size: 0.85rem;
+    }
+    
+    .modal-body {
+      padding: 0.6rem;
+    }
+    
+    .modal-footer {
+      padding: 0.6rem;
+    }
+    
+    .form-label {
+      font-size: 0.75rem;
+    }
+    
+    .form-select, .form-control {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+    }
+    
+    .btn {
+      font-size: 0.75rem;
+      padding: 0.4rem 0.8rem;
     }
   }
 `;
