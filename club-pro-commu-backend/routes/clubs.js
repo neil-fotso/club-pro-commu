@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     
     // Filtre par plateforme
     if (plateforme) {
-      query.plateforme = plateforme;
+      query.plateformes = { $in: [plateforme] };
     }
     
     // Filtre par pays
@@ -50,7 +50,7 @@ router.get('/:id', async (req, res) => {
   try {
     const club = await Club.findById(req.params.id)
       .populate('createurId', 'pseudo email')
-      .populate('membres.userId', 'pseudo');
+      .populate('membres.userId', 'pseudo _id');
     
     if (!club) {
       return res.status(404).json({ message: 'Club non trouvé.' });
@@ -92,7 +92,7 @@ router.post('/', auth, async (req, res) => {
     
     const { 
       nom, 
-      plateforme, 
+      plateformes, 
       pays, 
       description, 
       effectifMax, 
@@ -122,7 +122,7 @@ router.post('/', auth, async (req, res) => {
     const club = new Club({
       nom,
       createurId: req.user.id,
-      plateforme: plateforme || user.plateforme, // Use form platform or user's
+      plateformes: plateformes || [user.plateforme], // Use form platforms or user's platform as array
       pays,
       description,
       effectifMax: effectifMax || 11, // Handle effectifMax from form
@@ -165,11 +165,31 @@ router.put('/:id', auth, async (req, res) => {
       return res.status(403).json({ message: 'Non autorisé.' });
     }
     
+    // Champs autorisés pour la modification
+    const allowedUpdates = {
+      nom: req.body.nom,
+      description: req.body.description,
+      plateformes: req.body.plateformes,
+      langues: req.body.langues,
+      effectifMax: req.body.effectifMax,
+      recrute: req.body.recrute,
+      pays: req.body.pays,
+      niveauRecherche: req.body.niveauRecherche,
+      postesRecherches: req.body.postesRecherches,
+      horaires: req.body.horaires
+    };
+    
+    // Filtrer les champs undefined
+    const updates = Object.fromEntries(
+      Object.entries(allowedUpdates).filter(([_, value]) => value !== undefined)
+    );
+    
     const updatedClub = await Club.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updates,
       { new: true }
-    );
+    ).populate('createurId', 'pseudo email')
+     .populate('membres.userId', 'pseudo _id');
     
     res.json(updatedClub);
   } catch (error) {
@@ -196,6 +216,15 @@ router.post('/:id/join', auth, async (req, res) => {
       return res.status(400).json({ message: 'Vous êtes déjà membre de ce club.' });
     }
     
+    // Vérifier si l'utilisateur a déjà une demande en attente
+    const hasPendingRequest = club.demandesAdhesion.some(demande => 
+      demande.userId.toString() === req.user.id && demande.statut === 'En attente'
+    );
+    
+    if (hasPendingRequest) {
+      return res.status(400).json({ message: 'Vous avez déjà une demande d\'adhésion en attente pour ce club.' });
+    }
+    
     // Vérifier si l'utilisateur est déjà membre d'un autre club
     const existingClub = await Club.findOne({
       'membres.userId': req.user.id
@@ -212,23 +241,39 @@ router.post('/:id/join', auth, async (req, res) => {
       return res.status(400).json({ message: 'Ce club ne recrute pas actuellement.' });
     }
     
-    // Ajouter l'utilisateur comme membre
-    club.membres.push({
+    // Créer une demande d'adhésion
+    const message = req.body.message || '';
+    const nouvelleDemande = {
       userId: req.user.id,
-      role: 'Joueur',
-      dateAdhesion: new Date()
-    });
+      message: message,
+      dateDemande: new Date(),
+      statut: 'En attente'
+    };
     
-    club.effectifActuel += 1;
-    
+    club.demandesAdhesion.push(nouvelleDemande);
     await club.save();
     
-    // Mettre à jour la disponibilité du joueur
-    await updatePlayerAvailability(req.user.id, require('../models/Player'));
+    // Créer des notifications pour tous les admins du club
+    const Notification = require('../models/Notification');
+    const admins = club.membres.filter(membre => membre.role === 'Admin');
     
-    res.json({ message: 'Vous avez rejoint le club avec succès !' });
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin.userId,
+        type: 'demande_adhesion',
+        titre: 'Nouvelle demande d\'adhésion',
+        message: `${req.user.pseudo} souhaite rejoindre votre club "${club.nom}"`,
+        donnees: {
+          clubId: club._id,
+          demandeurId: req.user.id,
+          demandeId: nouvelleDemande._id
+        }
+      });
+    }
+    
+    res.json({ message: 'Demande d\'adhésion envoyée ! Les administrateurs du club vont l\'examiner.' });
   } catch (error) {
-    console.error('Erreur rejoindre club:', error);
+    console.error('Erreur demande adhésion:', error);
     res.status(500).json({ message: 'Erreur serveur.' });
   }
 });
@@ -264,6 +309,23 @@ router.post('/:id/leave', auth, async (req, res) => {
     club.effectifActuel -= 1;
     
     await club.save();
+    
+    // Créer des notifications pour tous les admins du club
+    const Notification = require('../models/Notification');
+    const admins = club.membres.filter(membre => membre.role === 'Admin');
+    
+    for (const admin of admins) {
+      await Notification.create({
+        userId: admin.userId,
+        type: 'exclusion_club',
+        titre: 'Membre parti du club',
+        message: `${req.user.pseudo} a quitté le club "${club.nom}"`,
+        donnees: {
+          clubId: club._id,
+          membreId: req.user.id
+        }
+      });
+    }
     
     // Mettre à jour la disponibilité du joueur
     await updatePlayerAvailability(req.user.id, require('../models/Player'));
@@ -378,6 +440,224 @@ router.delete('/:id/exclure/:userId', auth, async (req, res) => {
     res.json({ message: 'Membre exclu avec succès.' });
   } catch (error) {
     console.error('Erreur exclusion membre:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Accepter une demande d'adhésion
+router.put('/:id/demandes/:demandeId/accept', auth, async (req, res) => {
+  try {
+    const { id, demandeId } = req.params;
+    const club = await Club.findById(id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    // Vérifier que l'utilisateur est admin du club
+    const currentMember = club.membres.find(m => m.userId.toString() === req.user.id);
+    if (!currentMember || currentMember.role !== 'Admin') {
+      return res.status(403).json({ message: 'Vous devez être admin pour accepter une demande.' });
+    }
+    
+    // Trouver la demande
+    const demande = club.demandesAdhesion.find(d => d._id.toString() === demandeId);
+    if (!demande) {
+      return res.status(404).json({ message: 'Demande non trouvée.' });
+    }
+    
+    if (demande.statut !== 'En attente') {
+      return res.status(400).json({ message: 'Cette demande a déjà été traitée.' });
+    }
+    
+    // Vérifier si le club a de la place
+    if (club.effectifActuel >= club.effectifMax) {
+      return res.status(400).json({ message: 'Le club est complet.' });
+    }
+    
+    // Accepter la demande
+    demande.statut = 'Acceptée';
+    
+    // Ajouter l'utilisateur comme membre
+    club.membres.push({
+      userId: demande.userId,
+      role: 'Joueur',
+      dateAdhesion: new Date()
+    });
+    
+    club.effectifActuel += 1;
+    
+    await club.save();
+    
+    // Créer une notification pour le demandeur
+    const Notification = require('../models/Notification');
+    await Notification.create({
+      userId: demande.userId,
+      type: 'invitation_acceptee',
+      titre: 'Demande d\'adhésion acceptée',
+      message: `Votre demande d'adhésion au club "${club.nom}" a été acceptée !`,
+      donnees: {
+        clubId: club._id
+      }
+    });
+    
+    // Mettre à jour la disponibilité du joueur
+    await updatePlayerAvailability(demande.userId.toString(), require('../models/Player'));
+    
+    res.json({ message: 'Demande acceptée avec succès.' });
+  } catch (error) {
+    console.error('Erreur acceptation demande:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Refuser une demande d'adhésion
+router.put('/:id/demandes/:demandeId/refuse', auth, async (req, res) => {
+  try {
+    const { id, demandeId } = req.params;
+    const club = await Club.findById(id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    // Vérifier que l'utilisateur est admin du club
+    const currentMember = club.membres.find(m => m.userId.toString() === req.user.id);
+    if (!currentMember || currentMember.role !== 'Admin') {
+      return res.status(403).json({ message: 'Vous devez être admin pour refuser une demande.' });
+    }
+    
+    // Trouver la demande
+    const demande = club.demandesAdhesion.find(d => d._id.toString() === demandeId);
+    if (!demande) {
+      return res.status(404).json({ message: 'Demande non trouvée.' });
+    }
+    
+    if (demande.statut !== 'En attente') {
+      return res.status(400).json({ message: 'Cette demande a déjà été traitée.' });
+    }
+    
+    // Refuser la demande
+    demande.statut = 'Refusée';
+    
+    await club.save();
+    
+    // Créer une notification pour le demandeur
+    const Notification = require('../models/Notification');
+    await Notification.create({
+      userId: demande.userId,
+      type: 'invitation_refusee',
+      titre: 'Demande d\'adhésion refusée',
+      message: `Votre demande d'adhésion au club "${club.nom}" a été refusée.`,
+      donnees: {
+        clubId: club._id
+      }
+    });
+    
+    res.json({ message: 'Demande refusée avec succès.' });
+  } catch (error) {
+    console.error('Erreur refus demande:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Récupérer les demandes d'adhésion d'un club
+router.get('/:id/demandes', auth, async (req, res) => {
+  try {
+    console.log('Demande de récupération des demandes pour le club:', req.params.id);
+    console.log('Utilisateur connecté:', req.user.id);
+    
+    const club = await Club.findById(req.params.id)
+      .populate('demandesAdhesion.userId', 'pseudo email')
+      .populate('membres.userId', 'pseudo email');
+    
+    if (!club) {
+      console.log('Club non trouvé');
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    console.log('Club trouvé:', club.nom);
+    console.log('Membres du club:', club.membres.map(m => ({ userId: m.userId._id, role: m.role })));
+    
+    // Vérifier que l'utilisateur est admin du club
+    const currentMember = club.membres.find(m => m.userId._id.toString() === req.user.id);
+    console.log('Membre actuel:', currentMember);
+    
+    if (!currentMember || currentMember.role !== 'Admin') {
+      console.log('Utilisateur non admin ou non membre');
+      return res.status(403).json({ message: 'Vous devez être admin pour voir les demandes.' });
+    }
+    
+    // Filtrer seulement les demandes en attente
+    const demandesEnAttente = club.demandesAdhesion.filter(demande => demande.statut === 'En attente');
+    
+    console.log('Demandes en attente trouvées:', demandesEnAttente.length);
+    
+    res.json({
+      demandes: demandesEnAttente,
+      effectifActuel: club.effectifActuel,
+      effectifMax: club.effectifMax
+    });
+  } catch (error) {
+    console.error('Erreur récupération demandes:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Vérifier si l'utilisateur a une demande en attente pour ce club
+router.get('/:id/demande-utilisateur', auth, async (req, res) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    // Chercher une demande en attente de cet utilisateur
+    const demandeEnAttente = club.demandesAdhesion.find(
+      demande => demande.userId.toString() === req.user.id && demande.statut === 'En attente'
+    );
+    
+    res.json({
+      hasPendingRequest: !!demandeEnAttente,
+      demande: demandeEnAttente ? {
+        _id: demandeEnAttente._id,
+        message: demandeEnAttente.message,
+        dateDemande: demandeEnAttente.dateDemande,
+        statut: demandeEnAttente.statut
+      } : null
+    });
+  } catch (error) {
+    console.error('Erreur vérification demande utilisateur:', error);
+    res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// Annuler une demande d'adhésion
+router.delete('/:id/demande-utilisateur', auth, async (req, res) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé.' });
+    }
+    
+    // Chercher la demande en attente de cet utilisateur
+    const demandeIndex = club.demandesAdhesion.findIndex(
+      demande => demande.userId.toString() === req.user.id && demande.statut === 'En attente'
+    );
+    
+    if (demandeIndex === -1) {
+      return res.status(404).json({ message: 'Aucune demande en attente trouvée.' });
+    }
+    
+    // Supprimer la demande
+    club.demandesAdhesion.splice(demandeIndex, 1);
+    await club.save();
+    
+    res.json({ message: 'Demande d\'adhésion annulée avec succès.' });
+  } catch (error) {
+    console.error('Erreur annulation demande:', error);
     res.status(500).json({ message: 'Erreur serveur.' });
   }
 });

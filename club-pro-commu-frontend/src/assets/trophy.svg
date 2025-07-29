@@ -1,1 +1,30 @@
- 
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="trophyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffb347;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="baseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b4513;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#654321;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Base du trophée -->
+  <rect x="45" y="100" width="30" height="15" fill="url(#baseGradient)" rx="3"/>
+  
+  <!-- Corps du trophée -->
+  <ellipse cx="60" cy="85" rx="20" ry="25" fill="url(#trophyGradient)"/>
+  
+  <!-- Coupe du trophée -->
+  <path d="M 40 85 Q 40 60 60 50 Q 80 60 80 85 L 75 85 Q 75 65 60 58 Q 45 65 45 85 Z" fill="url(#trophyGradient)"/>
+  
+  <!-- Anses du trophée -->
+  <path d="M 40 75 Q 35 75 35 70 Q 35 65 40 65" fill="none" stroke="url(#trophyGradient)" stroke-width="3"/>
+  <path d="M 80 75 Q 85 75 85 70 Q 85 65 80 65" fill="none" stroke="url(#trophyGradient)" stroke-width="3"/>
+  
+  <!-- Étoiles décoratives -->
+  <polygon points="60,45 62,50 67,50 63,53 65,58 60,55 55,58 57,53 53,50 58,50" fill="#ffffff"/>
+  <polygon points="50,70 51,72 53,72 51.5,74 52,76 50,74.5 48,76 48.5,74 47,72 49,72" fill="#ffffff"/>
+  <polygon points="70,70 71,72 73,72 71.5,74 72,76 70,74.5 68,76 68.5,74 67,72 69,72" fill="#ffffff"/>
+</svg> 

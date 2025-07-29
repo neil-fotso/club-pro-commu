@@ -48,11 +48,7 @@ const registerSchema = yup.object({
     .required('Le poste principal est obligatoire'),
   
   age: yup
-    .number()
-    .typeError('L\'âge doit être un nombre')
-    .min(13, 'L\'âge minimum est de 13 ans')
-    .max(100, 'L\'âge maximum est de 100 ans')
-    .nullable()
+    .mixed()
     .optional(),
   
   pays: yup
@@ -205,12 +201,7 @@ export default function RegisterPage() {
             <p className="text-muted">Rejoignez la communauté Club Pro</p>
           </div>
 
-          {success && (
-            <div className="alert alert-success alert-dismissible fade show" role="alert">
-              <i className="fas fa-check-circle me-2"></i>
-              {success}
-            </div>
-          )}
+
 
           {serverError && (
             <div className="alert alert-danger alert-dismissible fade show" role="alert">
@@ -495,6 +486,13 @@ export default function RegisterPage() {
                 )}
               </button>
             </div>
+
+            {success && (
+              <div className="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                <i className="fas fa-check-circle me-2"></i>
+                {success}
+              </div>
+            )}
 
             <div className="text-center mt-4">
               <p className="text-muted mb-0">

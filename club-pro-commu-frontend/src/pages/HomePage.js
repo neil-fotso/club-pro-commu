@@ -5,34 +5,110 @@ import { playerAPI, clubAPI } from '../services/api';
 import Avatar from '../components/Avatar';
 import bgHeader from '../assets/bg-header.jpg';
 
+// Styles pour les cartes de fonctionnalités
+const featureCardStyles = `
+  .feature-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: 2px solid transparent;
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border-color: #667eea;
+    background: linear-gradient(135deg, #ffffff 0%, #e8f2ff 100%);
+  }
+  
+  .feature-icon {
+    transition: all 0.3s ease;
+  }
+  
+  .feature-card:hover .feature-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  }
+  
+  .feature-card:hover h4 {
+    color: #667eea !important;
+  }
+  
+  .feature-card:hover .btn {
+    background-color: #667eea;
+    border-color: #667eea;
+    color: white;
+  }
+  
+  .hover-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+  
+  .hover-card:hover {
+    background-color: #f8f9fa;
+    border-color: #667eea;
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  }
+`;
+
 const HomePage = () => {
   const { user } = useAuth();
   const [recentPlayers, setRecentPlayers] = useState([]);
   const [recentClubs, setRecentClubs] = useState([]);
+  const [topPlayers, setTopPlayers] = useState([]);
+  const [topClubs, setTopClubs] = useState([]);
   const [, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRecentData = async () => {
+    const fetchData = async () => {
       try {
         const [playersResponse, clubsResponse] = await Promise.all([
           playerAPI.getPlayers(),
           clubAPI.getClubs()
         ]);
 
+        // Données récentes
         setRecentPlayers(playersResponse.slice(0, 3));
         setRecentClubs(clubsResponse.slice(0, 3));
+
+        // Meilleurs joueurs (par ratio de victoire)
+        const sortedPlayers = playersResponse
+          .filter(player => player.winRate && player.winRate > 0)
+          .sort((a, b) => b.winRate - a.winRate)
+          .slice(0, 3);
+        setTopPlayers(sortedPlayers);
+
+        // Meilleurs clubs (par ratio de victoire)
+        const sortedClubs = clubsResponse
+          .filter(club => club.winRate && club.winRate > 0)
+          .sort((a, b) => b.winRate - a.winRate)
+          .slice(0, 3);
+        setTopClubs(sortedClubs);
       } catch (error) {
-        console.error('Erreur lors du chargement des données récentes:', error);
+        console.error('Erreur lors du chargement des données:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRecentData();
+    fetchData();
   }, []);
 
   return (
     <div className="min-vh-100">
+      <style>{featureCardStyles}</style>
       {/* Hero Section */}
       <div className="text-white py-4 position-relative overflow-hidden" 
            style={{
@@ -119,47 +195,172 @@ const HomePage = () => {
           </div>
           
           <div className="col-lg-4 col-md-6 mb-4">
-            <div className="card border-0 shadow-sm h-100 text-center p-4">
-              <div className="mb-3" style={{fontSize: '3rem'}}>🔍</div>
-              <h4 className="text-primary mb-3">Recherche de Joueurs</h4>
-              <p className="text-muted">
-                Trouvez des joueurs selon leurs compétences, plateforme et disponibilité.
-                Filtres avancés pour des résultats précis.
-              </p>
-              <Link to="/recherche-joueur" className="btn btn-outline-primary">
-                <i className="fas fa-search me-2"></i>
-                Rechercher
-              </Link>
-            </div>
+            <Link to="/recherche-joueur" className="text-decoration-none">
+              <div className="card border-0 shadow-sm h-100 text-center p-4 feature-card">
+                <div className="mb-3 feature-icon" style={{fontSize: '3rem'}}>🔍</div>
+                <h4 className="text-primary mb-3">Recherche de Joueurs</h4>
+                <p className="text-muted">
+                  Trouvez des joueurs selon leurs compétences, plateforme et disponibilité.
+                  Filtres avancés pour des résultats précis.
+                </p>
+                <div className="btn btn-outline-primary">
+                  <i className="fas fa-search me-2"></i>
+                  Rechercher
+                </div>
+              </div>
+            </Link>
           </div>
 
           <div className="col-lg-4 col-md-6 mb-4">
-            <div className="card border-0 shadow-sm h-100 text-center p-4">
-              <div className="mb-3" style={{fontSize: '3rem'}}>🏆</div>
-              <h4 className="text-primary mb-3">Gestion de Clubs</h4>
-              <p className="text-muted">
-                Créez votre club, recrutez des membres et gérez votre équipe.
-                Système de rôles et permissions avancé.
-              </p>
-              <Link to="/clubs" className="btn btn-outline-primary">
-                <i className="fas fa-shield-alt me-2"></i>
-                Voir les clubs
-              </Link>
-            </div>
+            <Link to="/clubs" className="text-decoration-none">
+              <div className="card border-0 shadow-sm h-100 text-center p-4 feature-card">
+                <div className="mb-3 feature-icon" style={{fontSize: '3rem'}}>🏆</div>
+                <h4 className="text-primary mb-3">Gestion de Clubs</h4>
+                <p className="text-muted">
+                  Créez votre club, recrutez des membres et gérez votre équipe.
+                  Système de rôles et permissions avancé.
+                </p>
+                <div className="btn btn-outline-primary">
+                  <i className="fas fa-shield-alt me-2"></i>
+                  Voir les clubs
+                </div>
+              </div>
+            </Link>
           </div>
 
           <div className="col-lg-4 col-md-6 mb-4">
-            <div className="card border-0 shadow-sm h-100 text-center p-4">
-              <div className="mb-3" style={{fontSize: '3rem'}}>🎮</div>
-              <h4 className="text-primary mb-3">Compétitions</h4>
-              <p className="text-muted">
-                Organisez et participez à des tournois. Système de récompenses
-                et classements en temps réel.
-              </p>
-              <Link to="/competitions" className="btn btn-outline-primary">
-                <i className="fas fa-trophy me-2"></i>
-                Voir les compétitions
-              </Link>
+            <Link to="/competitions" className="text-decoration-none">
+              <div className="card border-0 shadow-sm h-100 text-center p-4 feature-card">
+                <div className="mb-3 feature-icon" style={{fontSize: '3rem'}}>🎮</div>
+                <h4 className="text-primary mb-3">Compétitions</h4>
+                <p className="text-muted">
+                  Organisez et participez à des tournois. Système de récompenses
+                  et classements en temps réel.
+                </p>
+                <div className="btn btn-outline-primary">
+                  <i className="fas fa-trophy me-2"></i>
+                  Voir les compétitions
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* Section Meilleurs Performeurs */}
+        <div className="row mb-5">
+          <div className="col-12 text-center mb-4">
+            <h2 className="display-5 fw-bold text-primary mb-3">
+              🏆 Meilleurs Performeurs
+            </h2>
+            <p className="lead text-muted">
+              Découvrez les joueurs et clubs avec les meilleurs ratios de victoire
+            </p>
+          </div>
+
+          {/* Meilleurs Joueurs */}
+          <div className="col-lg-6 mb-4">
+            <div className="card border-0 shadow-lg h-100">
+              <div className="card-header bg-gradient-primary text-white">
+                <h4 className="mb-0">
+                  <i className="fas fa-crown me-2"></i>
+                  Top 3 Joueurs
+                </h4>
+              </div>
+              <div className="card-body">
+                {topPlayers.length > 0 ? (
+                  <div className="row">
+                    {topPlayers.map((player, index) => (
+                      <div key={player._id} className="col-12 mb-3">
+                        <Link to={`/player/${player._id}`} className="text-decoration-none">
+                          <div className="d-flex align-items-center p-3 rounded-3 hover-card">
+                            <div className="position-relative me-3">
+                              <Avatar
+                                src={player.photoProfil}
+                                name={player.pseudo}
+                                size="md"
+                              />
+                              <div className="position-absolute top-0 start-100 translate-middle badge bg-warning text-dark rounded-pill">
+                                #{index + 1}
+                              </div>
+                            </div>
+                            <div className="flex-grow-1">
+                              <h6 className="mb-1 text-dark">{player.pseudo}</h6>
+                              <p className="text-muted mb-0 small">
+                                {player.plateforme} • {player.pays || 'Non renseigné'}
+                              </p>
+                            </div>
+                            <div className="text-end">
+                              <div className="h5 mb-0 text-success fw-bold">
+                                {player.winRate}%
+                              </div>
+                              <small className="text-muted">Victoires</small>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <i className="fas fa-trophy text-muted" style={{fontSize: '3rem'}}></i>
+                    <p className="text-muted mt-2">Aucun joueur avec des statistiques disponibles</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Meilleurs Clubs */}
+          <div className="col-lg-6 mb-4">
+            <div className="card border-0 shadow-lg h-100">
+              <div className="card-header bg-gradient-success text-white">
+                <h4 className="mb-0">
+                  <i className="fas fa-shield-alt me-2"></i>
+                  Top 3 Clubs
+                </h4>
+              </div>
+              <div className="card-body">
+                {topClubs.length > 0 ? (
+                  <div className="row">
+                    {topClubs.map((club, index) => (
+                      <div key={club._id} className="col-12 mb-3">
+                        <Link to={`/club/${club._id}`} className="text-decoration-none">
+                          <div className="d-flex align-items-center p-3 rounded-3 hover-card">
+                            <div className="position-relative me-3">
+                              <Avatar
+                                src={club.logo}
+                                name={club.nom}
+                                size="md"
+                                type="club"
+                              />
+                              <div className="position-absolute top-0 start-100 translate-middle badge bg-warning text-dark rounded-pill">
+                                #{index + 1}
+                              </div>
+                            </div>
+                            <div className="flex-grow-1">
+                              <h6 className="mb-1 text-dark">{club.nom}</h6>
+                              <p className="text-muted mb-0 small">
+                                {club.plateforme} • {club.pays || 'Non renseigné'}
+                              </p>
+                            </div>
+                            <div className="text-end">
+                              <div className="h5 mb-0 text-success fw-bold">
+                                {club.winRate}%
+                              </div>
+                              <small className="text-muted">Victoires</small>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <i className="fas fa-shield-alt text-muted" style={{fontSize: '3rem'}}></i>
+                    <p className="text-muted mt-2">Aucun club avec des statistiques disponibles</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

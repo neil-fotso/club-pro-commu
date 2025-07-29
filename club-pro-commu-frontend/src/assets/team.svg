@@ -1,1 +1,52 @@
- 
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="player1Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a90e2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357abd;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="player2Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e74c3c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c0392b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="player3Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#27ae60;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#229954;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="player4Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f39c12;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e67e22;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Joueur 1 (Gardien) -->
+  <circle cx="30" cy="60" r="12" fill="url(#player1Gradient)"/>
+  <rect x="25" y="72" width="10" height="15" fill="url(#player1Gradient)" rx="5"/>
+  
+  <!-- Joueur 2 (Défenseur) -->
+  <circle cx="60" cy="40" r="12" fill="url(#player2Gradient)"/>
+  <rect x="55" y="52" width="10" height="15" fill="url(#player2Gradient)" rx="5"/>
+  
+  <!-- Joueur 3 (Milieu) -->
+  <circle cx="90" cy="60" r="12" fill="url(#player3Gradient)"/>
+  <rect x="85" y="72" width="10" height="15" fill="url(#player3Gradient)" rx="5"/>
+  
+  <!-- Joueur 4 (Attaquant) -->
+  <circle cx="60" cy="80" r="12" fill="url(#player4Gradient)"/>
+  <rect x="55" y="92" width="10" height="15" fill="url(#player4Gradient)" rx="5"/>
+  
+  <!-- Lignes de connexion -->
+  <line x1="42" y1="60" x2="48" y2="40" stroke="#666" stroke-width="1" opacity="0.5"/>
+  <line x1="72" y1="40" x2="78" y2="60" stroke="#666" stroke-width="1" opacity="0.5"/>
+  <line x1="72" y1="80" x2="78" y2="60" stroke="#666" stroke-width="1" opacity="0.5"/>
+  <line x1="42" y1="60" x2="48" y2="80" stroke="#666" stroke-width="1" opacity="0.5"/>
+  
+  <!-- Ballon au centre -->
+  <circle cx="60" cy="60" r="6" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <path d="M 60 54 L 60 66 M 54 60 L 66 60" stroke="#000000" stroke-width="1"/>
+  
+  <!-- Étoiles pour l'effet -->
+  <circle cx="20" cy="30" r="1" fill="#ffffff" opacity="0.6"/>
+  <circle cx="100" cy="30" r="1" fill="#ffffff" opacity="0.6"/>
+  <circle cx="20" cy="90" r="1" fill="#ffffff" opacity="0.6"/>
+  <circle cx="100" cy="90" r="1" fill="#ffffff" opacity="0.6"/>
+</svg> 

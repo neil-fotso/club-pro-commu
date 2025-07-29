@@ -11,11 +11,11 @@ const clubSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  plateforme: {
+  plateformes: [{
     type: String,
     required: true,
     enum: ['PS5', 'Xbox', 'PC']
-  },
+  }],
   pays: {
     type: String,
     required: true
@@ -58,6 +58,26 @@ const clubSchema = new mongoose.Schema({
     dateAdhesion: {
       type: Date,
       default: Date.now
+    }
+  }],
+  demandesAdhesion: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    message: {
+      type: String,
+      maxlength: 500
+    },
+    dateDemande: {
+      type: Date,
+      default: Date.now
+    },
+    statut: {
+      type: String,
+      enum: ['En attente', 'Acceptée', 'Refusée'],
+      default: 'En attente'
     }
   }],
   langues: [{

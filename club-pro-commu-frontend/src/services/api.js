@@ -23,8 +23,15 @@ const apiCall = async (endpoint, options = {}) => {
   const defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    ...getAuthHeaders(),
   };
+  
+  // Ajouter les headers d'authentification seulement si pas explicitement désactivé et si un token existe
+  if (!options.skipAuth) {
+    const authHeaders = getAuthHeaders();
+    if (authHeaders.Authorization) {
+      defaultHeaders['Authorization'] = authHeaders.Authorization;
+    }
+  }
   
   // Fusionner les headers en s'assurant que Content-Type reste application/json
   const headers = {
@@ -117,6 +124,18 @@ export const userAPI = {
   
   getDataRightsStatus: async () => {
     return apiCall('/api/user/data-rights-status');
+  },
+
+  // Récupérer les notifications non lues
+  getUnreadNotifications: async () => {
+    return apiCall('/notifications/non-lues');
+  },
+
+  // Marquer une notification comme lue
+  markNotificationAsRead: async (notificationId) => {
+    return apiCall(`/notifications/lire/${notificationId}`, {
+      method: 'PUT',
+    });
   }
 };
 
@@ -135,7 +154,9 @@ export const playerAPI = {
 
   // Récupérer un joueur spécifique
   getPlayer: async (id) => {
-    return apiCall(`/players/${id}`);
+    return apiCall(`/players/${id}`, {
+      skipAuth: true
+    });
   },
 
   // Mettre à jour un profil joueur
@@ -209,52 +230,121 @@ export const clubAPI = {
     });
   },
 
-  // Rejoindre un club
-  joinClub: async (clubId, token) => {
-    return apiCall(`/clubs/${clubId}/join`, {
+  // Demander à rejoindre un club
+  joinClub: async (clubId, message = '', token) => {
+    const options = {
       method: 'POST',
-      headers: {
+      body: { message }
+    };
+    
+    if (token) {
+      options.headers = {
         'Authorization': `Bearer ${token}`,
-      },
+      };
+    }
+    
+    return apiCall(`/clubs/${clubId}/join`, options);
+  },
+
+  // Récupérer les demandes d'adhésion d'un club
+  getClubRequests: async (clubId) => {
+    return apiCall(`/clubs/${clubId}/demandes`);
+  },
+
+  // Accepter une demande d'adhésion
+  acceptRequest: async (clubId, demandeId) => {
+    return apiCall(`/clubs/${clubId}/demandes/${demandeId}/accept`, {
+      method: 'PUT',
+    });
+  },
+
+  // Refuser une demande d'adhésion
+  refuseRequest: async (clubId, demandeId) => {
+    return apiCall(`/clubs/${clubId}/demandes/${demandeId}/refuse`, {
+      method: 'PUT',
+    });
+  },
+
+  // Vérifier si l'utilisateur a une demande en attente pour un club
+  checkUserRequest: async (clubId) => {
+    return apiCall(`/clubs/${clubId}/demande-utilisateur`);
+  },
+
+  // Annuler une demande d'adhésion
+  cancelUserRequest: async (clubId) => {
+    return apiCall(`/clubs/${clubId}/demande-utilisateur`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Récupérer les notifications non lues
+  getUnreadNotifications: async () => {
+    return apiCall('/notifications/non-lues');
+  },
+
+  // Marquer une notification comme lue
+  markNotificationAsRead: async (notificationId) => {
+    return apiCall(`/notifications/lire/${notificationId}`, {
+      method: 'PUT',
     });
   },
 
   // Quitter un club
   leaveClub: async (clubId, token) => {
+    if (token) {
+      return apiCall(`/clubs/${clubId}/leave`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    }
     return apiCall(`/clubs/${clubId}/leave`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   },
 
   // Récupérer les clubs de l'utilisateur connecté
   getMyClubs: async (token) => {
-    return apiCall('/clubs/user/my-clubs', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    // Si un token est fourni explicitement, l'utiliser
+    if (token) {
+      return apiCall('/clubs/user/my-clubs', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    }
+    // Sinon, utiliser l'authentification automatique
+    return apiCall('/clubs/user/my-clubs');
   },
 
   // Promouvoir un membre en admin
   promoteMember: async (clubId, userId, token) => {
+    if (token) {
+      return apiCall(`/clubs/${clubId}/promouvoir/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    }
     return apiCall(`/clubs/${clubId}/promouvoir/${userId}`, {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   },
 
   // Exclure un membre du club
   excludeMember: async (clubId, userId, token) => {
+    if (token) {
+      return apiCall(`/clubs/${clubId}/exclure/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    }
     return apiCall(`/clubs/${clubId}/exclure/${userId}`, {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   },
 }; 

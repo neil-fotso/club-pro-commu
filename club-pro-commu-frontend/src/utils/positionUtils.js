@@ -37,6 +37,9 @@ export const getPositionIcon = (code) => {
 
 // Fonction pour obtenir l'affichage complet d'un poste
 export const getPositionDisplay = (code) => {
+  if (!code || code === '' || code === null || code === undefined) {
+    return 'Non renseigné';
+  }
   const position = positions[code];
   if (!position) return code;
   return `${position.icon} ${position.name}`;

@@ -99,7 +99,7 @@ const NotificationsPage = () => {
       'invitation_acceptee': 'text-success',
       'invitation_refusee': 'text-danger',
       'promotion_admin': 'text-warning',
-      'exclusion_club': 'text-danger'
+      'exclusion_club': 'text-warning'
     };
     return colors[type] || 'text-secondary';
   };

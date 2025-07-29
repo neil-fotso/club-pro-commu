@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['invitation_club', 'invitation_acceptee', 'invitation_refusee', 'promotion_admin', 'exclusion_club'],
+    enum: ['invitation_club', 'invitation_acceptee', 'invitation_refusee', 'promotion_admin', 'exclusion_club', 'demande_adhesion'],
     required: true
   },
   titre: {
@@ -22,7 +22,9 @@ const notificationSchema = new mongoose.Schema({
   donnees: {
     clubId: mongoose.Schema.Types.ObjectId,
     inviteurId: mongoose.Schema.Types.ObjectId,
-    invitationId: mongoose.Schema.Types.ObjectId
+    invitationId: mongoose.Schema.Types.ObjectId,
+    demandeId: mongoose.Schema.Types.ObjectId,
+    demandeurId: mongoose.Schema.Types.ObjectId
   },
   lue: {
     type: Boolean,

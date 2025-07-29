@@ -228,8 +228,17 @@ router.get('/me', auth, async (req, res) => {
 // GET /api/players/:id - Récupérer un joueur spécifique
 router.get('/:id', async (req, res) => {
   try {
-    const player = await Player.findById(req.params.id)
+    let player;
+    
+    // D'abord essayer de trouver par ID direct du joueur
+    player = await Player.findById(req.params.id)
       .populate('userId', 'pseudo email');
+
+    // Si pas trouvé, essayer de trouver par userId
+    if (!player) {
+      player = await Player.findOne({ userId: req.params.id })
+        .populate('userId', 'pseudo email');
+    }
 
     if (!player) {
       return res.status(404).json({ message: 'Joueur non trouvé' });

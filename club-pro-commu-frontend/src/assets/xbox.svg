@@ -1,1 +1,20 @@
- 
+<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="xboxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#107c10;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a5a0a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Console Xbox -->
+  <rect x="10" y="15" width="40" height="30" fill="url(#xboxGradient)" rx="5"/>
+  
+  <!-- Écran -->
+  <rect x="15" y="20" width="30" height="20" fill="#000000" rx="2"/>
+  
+  <!-- Logo Xbox -->
+  <text x="30" y="45" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="bold">XBOX</text>
+  
+  <!-- Croix Xbox -->
+  <path d="M 25 30 L 35 30 M 30 25 L 30 35" stroke="#ffffff" stroke-width="1" opacity="0.7"/>
+</svg> 
