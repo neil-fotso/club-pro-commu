@@ -1,11 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import NotificationPopup from '../components/NotificationPopup';
 
 export default function MainLayout({ children }) {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Forcer le re-rendu quand l'URL change
+  useEffect(() => {
+    // Scroll vers le haut de la page
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div>

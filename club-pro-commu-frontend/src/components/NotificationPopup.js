@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userAPI } from '../services/api';
 
@@ -8,6 +8,7 @@ export default function NotificationPopup() {
   const [showPopup, setShowPopup] = useState(false);
   const [currentNotification, setCurrentNotification] = useState(null);
   const [shownNotifications, setShownNotifications] = useState(new Set());
+  const loadNotificationsRef = useRef();
 
   const loadNotifications = useCallback(async () => {
     if (!user) return;
@@ -19,31 +20,26 @@ export default function NotificationPopup() {
       const notificationsImportantes = data.filter(notif => 
         ['demande_adhesion', 'invitation_acceptee', 'invitation_refusee', 'exclusion_club'].includes(notif.type)
       );
-      setNotifications(notificationsImportantes);
       
-      // Trouver la première notification non affichée
-      const nouvelleNotification = notificationsImportantes.find(notif => 
-        !shownNotifications.has(notif._id)
-      );
-      
-      if (nouvelleNotification) {
+      // Vérifier s'il y a une nouvelle notification à afficher
+      if (notificationsImportantes.length > 0) {
+        const nouvelleNotification = notificationsImportantes[0];
         console.log('🎉 Nouvelle notification détectée:', nouvelleNotification.message);
         setCurrentNotification(nouvelleNotification);
         setShowPopup(true);
         setShownNotifications(prev => new Set([...prev, nouvelleNotification._id]));
       }
+      
+      setNotifications(notificationsImportantes);
     } catch (err) {
       console.error('Erreur chargement notifications:', err);
     }
-  }, [user, shownNotifications]);
+  }, [user]);
 
-  // Debounce pour éviter les appels trop fréquents
-  const debouncedLoadNotifications = useCallback(() => {
-    if (loadNotifications.timeout) {
-      clearTimeout(loadNotifications.timeout);
-    }
-    loadNotifications.timeout = setTimeout(loadNotifications, 1000);
-  }, [loadNotifications]);
+  // Stocker la fonction dans useRef pour éviter les re-créations
+  loadNotificationsRef.current = loadNotifications;
+
+
 
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -106,39 +102,24 @@ export default function NotificationPopup() {
     return colors[type] || 'text-secondary';
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (user) {
       // Réinitialiser les notifications affichées quand l'utilisateur change
       setShownNotifications(new Set());
+      setNotifications([]);
+      setCurrentNotification(null);
+      setShowPopup(false);
       
       // Chargement initial avec un délai pour éviter les conflits
-      const initialTimeout = setTimeout(debouncedLoadNotifications, 2000);
+      const initialTimeout = setTimeout(() => loadNotificationsRef.current(), 2000);
       
       // Vérifier les nouvelles notifications toutes les 60 secondes
-      const interval = setInterval(debouncedLoadNotifications, 60000);
-      
-      // Écouter les événements de focus pour recharger quand l'utilisateur revient sur la page
-      const handleFocus = () => {
-        debouncedLoadNotifications();
-      };
-      window.addEventListener('focus', handleFocus);
-      
-      // Écouter les événements de visibilité pour recharger quand l'utilisateur revient sur l'onglet
-      const handleVisibilityChange = () => {
-        if (!document.hidden) {
-          debouncedLoadNotifications();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+      const interval = setInterval(() => loadNotificationsRef.current(), 60000);
       
       return () => {
         clearTimeout(initialTimeout);
         clearInterval(interval);
-        if (loadNotifications.timeout) {
-          clearTimeout(loadNotifications.timeout);
-        }
-        window.removeEventListener('focus', handleFocus);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     } else {
       // Réinitialiser quand l'utilisateur se déconnecte
@@ -147,7 +128,7 @@ export default function NotificationPopup() {
       setCurrentNotification(null);
       setShowPopup(false);
     }
-  }, [user, loadNotifications, debouncedLoadNotifications]);
+  }, [user]);
 
   // Fermer la popup et passer à la notification suivante si il y en a une
   const handleClosePopup = () => {

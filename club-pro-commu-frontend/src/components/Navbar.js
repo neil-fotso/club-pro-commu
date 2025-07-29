@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Avatar from './Avatar';
 import { userAPI } from '../services/api';
@@ -7,12 +7,23 @@ import { userAPI } from '../services/api';
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleNavigation = (path) => {
+    setIsMenuOpen(false);
+    // Forcer la navigation même si on est déjà sur la même page
+    if (location.pathname === path) {
+      window.location.reload();
+    } else {
+      navigate(path);
+    }
   };
 
   const loadNotificationCount = useCallback(async () => {
@@ -68,31 +79,31 @@ export default function Navbar() {
         <div className={`collapse navbar-collapse ${isMenuOpen ? 'show' : ''}`}>
           <ul className="navbar-nav me-auto">
             <li className="nav-item">
-              <Link className="nav-link" to="/" onClick={() => setIsMenuOpen(false)}>
+              <Link className="nav-link" to="/" onClick={() => handleNavigation('/')}>
                 <i className="fas fa-home me-1"></i>
                 Accueil
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/recherche-joueur" onClick={() => setIsMenuOpen(false)}>
+              <Link className="nav-link" to="/recherche-joueur" onClick={() => handleNavigation('/recherche-joueur')}>
                 <i className="fas fa-search me-1"></i>
                 Recherche Joueurs
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/recommandations" onClick={() => setIsMenuOpen(false)}>
+              <Link className="nav-link" to="/recommandations" onClick={() => handleNavigation('/recommandations')}>
                 <i className="fas fa-star me-1"></i>
                 Recommandations
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/clubs" onClick={() => setIsMenuOpen(false)}>
+              <Link className="nav-link" to="/clubs" onClick={() => handleNavigation('/clubs')}>
                 <i className="fas fa-shield-alt me-1"></i>
                 Clubs
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/competitions" onClick={() => setIsMenuOpen(false)}>
+              <Link className="nav-link" to="/competitions" onClick={() => handleNavigation('/competitions')}>
                 <i className="fas fa-trophy me-1"></i>
                 Compétitions
               </Link>
@@ -125,38 +136,38 @@ export default function Navbar() {
                   </button>
                   <ul className="dropdown-menu">
                     <li>
-                      <Link className="dropdown-item" to="/mon-profil" onClick={() => setIsMenuOpen(false)}>
+                      <Link className="dropdown-item" to="/mon-profil" onClick={() => handleNavigation('/mon-profil')}>
                         <i className="fas fa-user me-2"></i>
                         Mon Profil
                       </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/mes-clubs" onClick={() => setIsMenuOpen(false)}>
+                      <Link className="dropdown-item" to="/mes-clubs" onClick={() => handleNavigation('/mes-clubs')}>
                         <i className="fas fa-shield-alt me-2"></i>
                         Mes Clubs
                       </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/mes-competitions" onClick={() => setIsMenuOpen(false)}>
+                      <Link className="dropdown-item" to="/mes-competitions" onClick={() => handleNavigation('/mes-competitions')}>
                         <i className="fas fa-trophy me-2"></i>
                         Mes Compétitions
                       </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/invitations" onClick={() => setIsMenuOpen(false)}>
+                      <Link className="dropdown-item" to="/invitations" onClick={() => handleNavigation('/invitations')}>
                         <i className="fas fa-envelope me-2"></i>
                         Invitations
                       </Link>
                     </li>
                     <li>
-                      <Link className="dropdown-item" to="/notifications" onClick={() => setIsMenuOpen(false)}>
+                      <Link className="dropdown-item" to="/notifications" onClick={() => handleNavigation('/notifications')}>
                         <i className="fas fa-bell me-2"></i>
                         Notifications
                       </Link>
                     </li>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
-                      <Link className="dropdown-item" to="/compte" onClick={() => setIsMenuOpen(false)}>
+                      <Link className="dropdown-item" to="/compte" onClick={() => handleNavigation('/compte')}>
                         <i className="fas fa-cog me-2"></i>
                         Paramètres
                       </Link>
@@ -176,13 +187,13 @@ export default function Navbar() {
             ) : (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/login" onClick={() => setIsMenuOpen(false)}>
+                  <Link className="nav-link" to="/login" onClick={() => handleNavigation('/login')}>
                     <i className="fas fa-sign-in-alt me-1"></i>
                     Connexion
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/register" onClick={() => setIsMenuOpen(false)}>
+                  <Link className="nav-link" to="/register" onClick={() => handleNavigation('/register')}>
                     <i className="fas fa-user-plus me-1"></i>
                     Inscription
                   </Link>
