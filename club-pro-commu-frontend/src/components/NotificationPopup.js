@@ -39,13 +39,9 @@ export default function NotificationPopup() {
       if (storedShown) {
         try {
           const oldNotifications = JSON.parse(storedShown);
-          const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
           
-          // Garder seulement les notifications récentes
-          const recentNotifications = oldNotifications.filter(id => {
-            // Pour simplifier, on garde seulement les 50 plus récentes
-            return true; // On pourrait ajouter une logique de date si nécessaire
-          });
+          // Garder seulement les notifications récentes (limite à 50)
+          const recentNotifications = oldNotifications.slice(0, 50);
           
           if (recentNotifications.length < oldNotifications.length) {
             localStorage.setItem(`shownNotifications_${user.id}`, JSON.stringify(recentNotifications));

@@ -195,7 +195,7 @@ const Chatbot = () => {
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen]);
+  }, [isOpen, messages.length]);
 
   const suggestions = [
     "Comment créer un club ?",
