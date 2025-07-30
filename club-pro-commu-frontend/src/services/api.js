@@ -3,6 +3,13 @@ const API_URL = process.env.NODE_ENV === 'production'
   ? 'https://club-pro-commu.onrender.com/api'
   : 'http://localhost:3001/api';
 
+// Debug: Afficher l'URL utilisée
+console.log('🔧 Configuration API:', {
+  NODE_ENV: process.env.NODE_ENV,
+  API_URL: API_URL,
+  isProduction: process.env.NODE_ENV === 'production'
+});
+
 // Fonction utilitaire pour récupérer le token
 const getToken = () => {
   return localStorage.getItem('token');
@@ -11,7 +18,6 @@ const getToken = () => {
 // Fonction utilitaire pour les headers d'authentification
 const getAuthHeaders = () => {
   const token = getToken();
-  console.log('🔐 Token récupéré:', token ? token.substring(0, 20) + '...' : 'Aucun token');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
@@ -192,6 +198,18 @@ export const playerAPI = {
   getMyProfile: async () => {
     return apiCall('/players/me');
   },
+
+  // Supprimer un joueur (admin uniquement)
+  deletePlayer: async (playerId) => {
+    return apiCall(`/players/${playerId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Récupérer tous les joueurs (admin uniquement)
+  getAllPlayers: async () => {
+    return apiCall('/players');
+  },
 };
 
 // API clubs
@@ -290,6 +308,23 @@ export const clubAPI = {
   },
 
   // Quitter un club
+  quitClub: async (clubId) => {
+    return apiCall(`/clubs/${clubId}/quit`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Supprimer un club (admin uniquement)
+  deleteClub: async (clubId) => {
+    return apiCall(`/clubs/${clubId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Récupérer tous les clubs (admin uniquement)
+  getAllClubs: async () => {
+    return apiCall('/clubs');
+  },
   leaveClub: async (clubId, token) => {
     if (token) {
       return apiCall(`/clubs/${clubId}/leave`, {
@@ -512,6 +547,17 @@ export const competitionAPI = {
     return apiCall(`/competitions/${competitionId}/inscription`, {
       method: 'POST',
       body: { clubId, message },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Quitter une compétition
+  quitterCompetition: async (competitionId, clubId, token) => {
+    return apiCall(`/competitions/${competitionId}/inscription`, {
+      method: 'DELETE',
+      body: { clubId },
       headers: {
         'Authorization': `Bearer ${token}`,
       },

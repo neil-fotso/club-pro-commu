@@ -4,7 +4,7 @@ require('dotenv').config();
 const clearDatabase = async () => {
   try {
     // Connexion à MongoDB
-    await mongoose.connect(process.env.MONGO_URI, {
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

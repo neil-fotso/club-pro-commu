@@ -1,28 +1,36 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-module.exports = function(req, res, next) {
-  const authHeader = req.header('Authorization');
-  console.log('🔐 Auth header:', authHeader);
-  
-  const token = authHeader?.replace('Bearer ', '');
-  console.log('🔐 Token extrait:', token ? token.substring(0, 20) + '...' : 'Aucun token');
-  
-  if (!token) {
-    console.log('❌ Aucun token fourni');
-    return res.status(401).json({ message: 'Accès refusé. Aucun token fourni.' });
-  }
-  
+const auth = async (req, res, next) => {
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise_pour_le_developpement_local';
-    console.log('🔐 JWT Secret utilisé:', jwtSecret.substring(0, 20) + '...');
-    
+    const authHeader = req.header('Authorization');
+    // console.log('🔐 Auth header:', authHeader);
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // console.log('❌ Aucun token fourni');
+      return res.status(401).json({ message: 'Access denied. No token provided.' });
+    }
+
+    const token = authHeader.substring(7);
+    // console.log('🔐 Token extrait:', token ? token.substring(0, 20) + '...' : 'Aucun token');
+
+    if (!token) {
+      // console.log('❌ Aucun token fourni');
+      return res.status(401).json({ message: 'Access denied. No token provided.' });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || 'supersecretjwtkey';
+    // console.log('🔐 JWT Secret utilisé:', jwtSecret.substring(0, 20) + '...');
+
     const decoded = jwt.verify(token, jwtSecret);
-    console.log('✅ Token décodé:', decoded);
+    // console.log('✅ Token décodé:', decoded);
     
     req.user = decoded;
     next();
-  } catch (err) {
-    console.error('❌ Erreur vérification token:', err.message);
-    res.status(401).json({ message: 'Token invalide.' });
+  } catch (error) {
+    console.log('❌ Token invalide:', error.message);
+    res.status(400).json({ message: 'Invalid token.' });
   }
-}; 
+};
+
+module.exports = auth; 

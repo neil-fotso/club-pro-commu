@@ -157,10 +157,30 @@ export default function MyClubsPage() {
               <div className="row g-4">
                 {clubs.map((club) => {
                   // Trouver le rôle de l'utilisateur dans ce club
-                  const userMember = club.membres.find(membre => 
-                    membre.userId._id === user.id || membre.userId === user.id
-                  );
-                  const userRole = userMember ? userMember.role : 'Membre';
+                  const userMember = club.membres.find(membre => {
+                    const membreUserId = membre.userId._id || membre.userId;
+                    const currentUserId = user.id || user._id;
+                    return membreUserId === currentUserId;
+                  });
+                  
+                  const isCreateur = (() => {
+                    const createurId = club.createurId?._id || club.createurId;
+                    const currentUserId = user.id || user._id;
+                    return createurId === currentUserId;
+                  })();
+                  
+                  const userRole = isCreateur ? 'Admin' : (userMember ? userMember.role : 'Membre');
+
+                  // Debug: afficher les informations pour comprendre le problème
+                  console.log('Debug rôle utilisateur:', {
+                    userId: user.id,
+                    user_id: user._id,
+                    userMember,
+                    isCreateur,
+                    userRole,
+                    membres: club.membres.map(m => ({ userId: m.userId._id, role: m.role })),
+                    createurId: club.createurId?._id
+                  });
 
                   return (
                     <div key={club._id} className="col-lg-6 col-xl-4">
@@ -187,11 +207,6 @@ export default function MyClubsPage() {
                               <small className="text-white-75">
                                 {getPlatformIcon(club.plateforme)} {club.plateforme} • {club.pays}
                               </small>
-                            </div>
-                            <div className="text-end">
-                              <span className={`badge bg-${getRoleBadgeColor(userRole)}`}>
-                                {userRole}
-                              </span>
                             </div>
                           </div>
                           

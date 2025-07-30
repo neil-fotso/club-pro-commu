@@ -381,6 +381,8 @@ const clubSearchStyles = `
     font-weight: 600;
   }
   
+
+  
   @media (max-width: 768px) {
     .club-search-content {
       padding: 1rem;
@@ -763,6 +765,29 @@ const clubSearchStyles = `
     .results-count {
       font-size: 0.8rem;
     }
+    
+    /* Pagination mobile */
+    .pagination-container {
+      margin-top: 2rem;
+      padding: 1rem 0;
+    }
+    
+    .pagination {
+      margin-top: 1rem;
+    }
+    
+    .pagination .page-link {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      margin: 0 0.1rem;
+    }
+    
+    /* Masquer certaines pages sur mobile pour économiser l'espace */
+    @media (max-width: 576px) {
+      .pagination .page-item:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) {
+        display: none;
+      }
+    }
   }
 `;
 
@@ -783,6 +808,7 @@ export default function ClubSearchPage() {
     niveau: '',
     recrute: ''
   });
+
 
   const loadClubs = useCallback(async () => {
     try {
@@ -1110,6 +1136,11 @@ export default function ClubSearchPage() {
 
                     {/* Layout desktop */}
                     <div className="d-none d-md-block">
+                      <div className="club-details mb-2">
+                        <div><strong>Membres :</strong> {club.membres?.length || 0}/{club.effectifMax}</div>
+                        <div><strong>Plateformes :</strong> {club.plateformes?.length > 0 ? club.plateformes.join(', ') : 'Non renseigné'}</div>
+                        <div><strong>Langues :</strong> {club.langues?.length > 0 ? club.langues.join(', ') : 'Non renseigné'}</div>
+                      </div>
                       <div className="club-actions">
                         <Link 
                           to={`/club/${club._id}`} 
@@ -1243,16 +1274,7 @@ export default function ClubSearchPage() {
                       </div>
                     </div>
                     
-                    {/* Description mobile */}
-                    {club.description && (
-                      <div className="d-md-none mobile-description">
-                        <p className="text-muted mb-0" style={{fontSize: '0.85rem'}}>
-                          {club.description.length > 80 
-                            ? club.description.substring(0, 80) + '...' 
-                            : club.description}
-                        </p>
-                      </div>
-                    )}
+
                   </div>
                 </div>
               ))}

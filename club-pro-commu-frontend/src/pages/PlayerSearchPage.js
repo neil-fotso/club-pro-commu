@@ -419,14 +419,73 @@ const enhancedStyles = `
       white-space: nowrap;
     }
     
-    /* Pagination mobile */
-    .pagination {
+      /* Pagination améliorée */
+  .pagination-container {
+    margin-top: 3rem;
+    padding: 2rem 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .pagination {
+    margin-top: 1rem;
+  }
+  
+  .pagination .page-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    color: #667eea;
+    font-weight: 600;
+  }
+  
+  .pagination .page-link:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .pagination .page-item.disabled .page-link {
+    background: rgba(255, 255, 255, 0.5);
+    color: #6c757d;
+    cursor: not-allowed;
+  }
+  
+      /* Pagination mobile */
+    .pagination-container {
       margin-top: 2rem;
+      padding: 1rem 0;
+    }
+    
+    .pagination {
+      margin-top: 1rem;
     }
     
     .pagination .page-link {
       padding: 0.5rem 0.75rem;
       font-size: 0.85rem;
+      margin: 0 0.1rem;
+    }
+    
+    /* Masquer certaines pages sur mobile pour économiser l'espace */
+    @media (max-width: 576px) {
+      .pagination .page-item:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) {
+        display: none;
+      }
     }
     
     /* Filtres mobile */
@@ -583,7 +642,7 @@ const PlayerSearchPage = () => {
         setLoading(true);
         const params = new URLSearchParams({
           page: currentPage,
-          limit: 20,
+          limit: 9,
           tri: sortBy,
           ordre: sortOrder,
           ...filters
@@ -853,43 +912,111 @@ const PlayerSearchPage = () => {
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination améliorée */}
           {pagination.totalPages > 1 && (
-            <nav aria-label="Pagination des joueurs">
-              <ul className="pagination justify-content-center">
-                <li className={`page-item ${!pagination.hasPrev ? 'disabled' : ''}`}>
-                  <button
-                    className="page-link"
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    disabled={!pagination.hasPrev}
-                  >
-                    Précédent
-                  </button>
-                </li>
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  const page = i + 1;
-                  return (
-                    <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+            <div className="pagination-container">
+              {/* Informations sur la pagination */}
+              <div className="text-center mb-3">
+                <small className="text-muted">
+                  Affichage de {((currentPage - 1) * 9) + 1} à {Math.min(currentPage * 9, pagination.totalDocs)} 
+                  sur {pagination.totalDocs} joueurs
+                </small>
+              </div>
+              
+              <nav aria-label="Pagination des joueurs">
+                <ul className="pagination justify-content-center">
+                  {/* Bouton Précédent */}
+                  <li className={`page-item ${!pagination.hasPrev ? 'disabled' : ''}`}>
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={!pagination.hasPrev}
+                    >
+                      <i className="fas fa-chevron-left"></i>
+                      Précédent
+                    </button>
+                  </li>
+                  
+                  {/* Première page */}
+                  {currentPage > 3 && (
+                    <li className="page-item">
                       <button
                         className="page-link"
-                        onClick={() => setCurrentPage(page)}
+                        onClick={() => setCurrentPage(1)}
                       >
-                        {page}
+                        1
                       </button>
                     </li>
-                  );
-                })}
-                <li className={`page-item ${!pagination.hasNext ? 'disabled' : ''}`}>
-                  <button
-                    className="page-link"
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    disabled={!pagination.hasNext}
-                  >
-                    Suivant
-                  </button>
-                </li>
-              </ul>
-            </nav>
+                  )}
+                  
+                  {/* Ellipsis si nécessaire */}
+                  {currentPage > 4 && (
+                    <li className="page-item disabled">
+                      <span className="page-link">...</span>
+                    </li>
+                  )}
+                  
+                  {/* Pages autour de la page courante */}
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let page;
+                    if (pagination.totalPages <= 5) {
+                      page = i + 1;
+                    } else if (currentPage <= 3) {
+                      page = i + 1;
+                    } else if (currentPage >= pagination.totalPages - 2) {
+                      page = pagination.totalPages - 4 + i;
+                    } else {
+                      page = currentPage - 2 + i;
+                    }
+                    
+                    if (page > 0 && page <= pagination.totalPages) {
+                      return (
+                        <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
+                          <button
+                            className="page-link"
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </button>
+                        </li>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {/* Ellipsis si nécessaire */}
+                  {currentPage < pagination.totalPages - 3 && (
+                    <li className="page-item disabled">
+                      <span className="page-link">...</span>
+                    </li>
+                  )}
+                  
+                  {/* Dernière page */}
+                  {currentPage < pagination.totalPages - 2 && (
+                    <li className="page-item">
+                      <button
+                        className="page-link"
+                        onClick={() => setCurrentPage(pagination.totalPages)}
+                      >
+                        {pagination.totalPages}
+                      </button>
+                    </li>
+                  )}
+                  
+                  {/* Bouton Suivant */}
+                  <li className={`page-item ${!pagination.hasNext ? 'disabled' : ''}`}>
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={!pagination.hasNext}
+                    >
+                      Suivant
+                      <i className="fas fa-chevron-right"></i>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           )}
 
           {players.length === 0 && !loading && (

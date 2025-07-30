@@ -46,7 +46,6 @@ const testFullAuth = async () => {
         });
         console.log('✅ Connexion réussie avec pseudo:', loginResponse1.data.message);
         console.log('👤 Utilisateur connecté:', loginResponse1.data.user.pseudo);
-        console.log('🔑 Token:', loginResponse1.data.user.token.substring(0, 20) + '...');
       } catch (error) {
         console.log('❌ Échec connexion avec pseudo:', error.response?.data?.message || error.message);
       }
@@ -59,7 +58,6 @@ const testFullAuth = async () => {
         });
         console.log('✅ Connexion réussie avec email:', loginResponse2.data.message);
         console.log('👤 Utilisateur connecté:', loginResponse2.data.user.pseudo);
-        console.log('🔑 Token:', loginResponse2.data.user.token.substring(0, 20) + '...');
       } catch (error) {
         console.log('❌ Échec connexion avec email:', error.response?.data?.message || error.message);
       }

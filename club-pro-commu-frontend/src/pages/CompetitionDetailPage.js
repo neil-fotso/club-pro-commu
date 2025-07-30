@@ -44,6 +44,11 @@ export default function CompetitionDetailPage() {
       return;
     }
 
+    if (competition.equipesInscrites.length >= competition.nombreEquipes) {
+      alert('Cette compétition a atteint son maximum d\'équipes');
+      return;
+    }
+
     try {
       setInscribing(true);
       await competitionAPI.inscrireClub(id, selectedClub, inscriptionMessage, user.token);
@@ -98,6 +103,39 @@ export default function CompetitionDetailPage() {
     }
   };
 
+  const handleQuitterCompetition = async (clubId = null) => {
+    console.log('Debug - userClubs:', userClubs);
+    console.log('Debug - competition.equipesInscrites:', competition.equipesInscrites);
+    console.log('Debug - clubInscrit:', clubInscrit);
+    console.log('Debug - clubId parameter:', clubId);
+    
+    const clubToQuit = clubId ? userClubs.find(club => compareClubIds(club._id, clubId)) : clubInscrit;
+    
+    console.log('Debug - clubToQuit:', clubToQuit);
+    
+    if (!clubToQuit) {
+      alert('Aucun club inscrit trouvé');
+      return;
+    }
+
+    if (!window.confirm(`Êtes-vous sûr de vouloir quitter la compétition "${competition.nom}" avec le club "${clubToQuit.nom}" ?`)) {
+      return;
+    }
+
+    try {
+      await competitionAPI.quitterCompetition(id, clubToQuit._id, user.token);
+      
+      // Recharger la compétition
+      const updatedCompetition = await competitionAPI.getCompetition(id);
+      setCompetition(updatedCompetition);
+      
+      alert('Club retiré de la compétition avec succès !');
+    } catch (error) {
+      console.error('Erreur désinscription:', error);
+      alert('Erreur lors de la désinscription: ' + (error.message || 'Erreur inconnue'));
+    }
+  };
+
   const getStatutBadge = (statut) => {
     const badges = {
       'Ouvert': 'bg-success',
@@ -140,8 +178,21 @@ export default function CompetitionDetailPage() {
   }
 
   const isCreator = user && competition.createurId._id === user.id;
+  
+  // Fonction helper pour comparer les IDs de clubs
+  const compareClubIds = (clubId1, clubId2) => {
+    const id1 = typeof clubId1 === 'object' ? clubId1._id : clubId1;
+    const id2 = typeof clubId2 === 'object' ? clubId2._id : clubId2;
+    return id1 === id2;
+  };
+  
   const isInscrit = competition.equipesInscrites.some(e => 
-    userClubs.some(club => club._id === e.clubId._id)
+    userClubs.some(club => compareClubIds(club._id, e.clubId))
+  );
+  
+  // Trouver le club inscrit de l'utilisateur
+  const clubInscrit = userClubs.find(club => 
+    competition.equipesInscrites.some(e => compareClubIds(club._id, e.clubId))
   );
 
   return (
@@ -189,11 +240,22 @@ export default function CompetitionDetailPage() {
           
           {!isCreator && user && !isInscrit && (
             <button 
-              className="btn btn-primary btn-lg"
+              className={`btn btn-lg ${competition.equipesInscrites.length >= competition.nombreEquipes ? 'btn-secondary disabled' : 'btn-primary'}`}
               onClick={() => setShowInscriptionModal(true)}
+              disabled={competition.equipesInscrites.length >= competition.nombreEquipes}
             >
               <i className="fas fa-user-plus me-2"></i>
-              S'inscrire
+              {competition.equipesInscrites.length >= competition.nombreEquipes ? 'Complet' : 'S\'inscrire'}
+            </button>
+          )}
+          
+          {!isCreator && user && isInscrit && competition.statut === 'Ouvert' && (
+            <button 
+              className="btn btn-danger btn-lg"
+              onClick={handleQuitterCompetition}
+            >
+              <i className="fas fa-sign-out-alt me-2"></i>
+              Quitter
             </button>
           )}
         </div>
@@ -230,7 +292,12 @@ export default function CompetitionDetailPage() {
                 )}
                 <div className="col-md-6">
                   <strong>Nombre d'équipes:</strong>
-                  <p>{competition.nombreEquipes}</p>
+                  <p>
+                    {competition.equipesInscrites.length} / {competition.nombreEquipes}
+                    {competition.equipesInscrites.length >= competition.nombreEquipes && (
+                      <span className="badge bg-danger ms-2">Complet</span>
+                    )}
+                  </p>
                 </div>
                 <div className="col-md-6">
                   <strong>Plateforme:</strong>
@@ -275,21 +342,39 @@ export default function CompetitionDetailPage() {
                 <p className="text-muted">Aucune équipe inscrite pour le moment.</p>
               ) : (
                 <div className="row">
-                  {competition.equipesInscrites.map((equipe, index) => (
-                    <div key={index} className="col-md-6 mb-3">
-                      <div className="d-flex align-items-center p-3 border rounded">
-                        <div className="flex-grow-1">
-                          <h6 className="mb-1">{equipe.clubId.nom}</h6>
-                          <small className="text-muted">
-                            Inscrit le {new Date(equipe.dateInscription).toLocaleDateString('fr-FR')}
-                          </small>
+                  {competition.equipesInscrites.map((equipe, index) => {
+                    const isAdminDeCeClub = userClubs.some(club => 
+                      compareClubIds(club._id, equipe.clubId) && 
+                      club.membres.some(m => m.userId._id === user?.id && m.role === 'Admin')
+                    );
+                    
+                    return (
+                      <div key={index} className="col-md-6 mb-3">
+                        <div className="d-flex align-items-center p-3 border rounded">
+                          <div className="flex-grow-1">
+                            <h6 className="mb-1">{equipe.clubId.nom}</h6>
+                            <small className="text-muted">
+                              Inscrit le {new Date(equipe.dateInscription).toLocaleDateString('fr-FR')}
+                            </small>
+                          </div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className={`badge ${equipe.statut === 'Inscrit' ? 'bg-success' : 'bg-warning'}`}>
+                              {equipe.statut}
+                            </span>
+                            {isAdminDeCeClub && competition.statut === 'Ouvert' && (
+                              <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => handleQuitterCompetition(typeof equipe.clubId === 'object' ? equipe.clubId._id : equipe.clubId)}
+                                title="Quitter cette compétition"
+                              >
+                                <i className="fas fa-times"></i>
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <span className={`badge ${equipe.statut === 'Inscrit' ? 'bg-success' : 'bg-warning'}`}>
-                          {equipe.statut}
-                        </span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -424,21 +509,30 @@ export default function CompetitionDetailPage() {
                 ></button>
               </div>
               <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label">Sélectionner un club</label>
-                  <select 
-                    className="form-select"
-                    value={selectedClub}
-                    onChange={(e) => setSelectedClub(e.target.value)}
-                  >
-                    <option value="">Choisir un club...</option>
-                    {userClubs.map(club => (
-                      <option key={club._id} value={club._id}>
-                        {club.nom}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {competition.equipesInscrites.length >= competition.nombreEquipes ? (
+                  <div className="alert alert-warning">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    Cette compétition a atteint son maximum de {competition.nombreEquipes} équipes.
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <label className="form-label">Sélectionner un club</label>
+                      <select 
+                        className="form-select"
+                        value={selectedClub}
+                        onChange={(e) => setSelectedClub(e.target.value)}
+                      >
+                        <option value="">Choisir un club...</option>
+                        {userClubs.map(club => (
+                          <option key={club._id} value={club._id}>
+                            {club.nom}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
                 
                 {competition.visibilite === 'privee' && (
                   <div className="mb-3">
@@ -465,7 +559,7 @@ export default function CompetitionDetailPage() {
                   type="button" 
                   className="btn btn-primary"
                   onClick={handleInscription}
-                  disabled={inscribing || !selectedClub}
+                  disabled={inscribing || !selectedClub || competition.equipesInscrites.length >= competition.nombreEquipes}
                 >
                   {inscribing ? 'Inscription...' : 'S\'inscrire'}
                 </button>

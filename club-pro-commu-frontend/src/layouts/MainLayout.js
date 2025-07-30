@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import NotificationPopup from '../components/NotificationPopup';
+import Chatbot from '../components/Chatbot';
 
 export default function MainLayout({ children }) {
   const { user } = useAuth();
@@ -19,6 +20,7 @@ export default function MainLayout({ children }) {
       <Navbar />
       <main>{children}</main>
       <NotificationPopup />
+      <Chatbot />
       
       {/* Footer avec liens légaux */}
       <footer className="bg-dark text-white py-4 mt-5">

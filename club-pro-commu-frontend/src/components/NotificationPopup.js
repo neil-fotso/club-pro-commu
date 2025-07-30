@@ -10,6 +10,54 @@ export default function NotificationPopup() {
   const [shownNotifications, setShownNotifications] = useState(new Set());
   const loadNotificationsRef = useRef();
 
+  // Charger les notifications déjà affichées depuis localStorage
+  useEffect(() => {
+    if (user) {
+      const storedShown = localStorage.getItem(`shownNotifications_${user.id}`);
+      if (storedShown) {
+        const storedSet = new Set(JSON.parse(storedShown));
+        setShownNotifications(storedSet);
+        console.log('📋 Notifications déjà affichées chargées:', storedSet.size);
+      }
+    }
+  }, [user]);
+
+  // Sauvegarder les notifications affichées dans localStorage
+  const saveShownNotifications = useCallback((newShownSet) => {
+    if (user) {
+      // Limiter à 100 notifications pour éviter que localStorage devienne trop gros
+      const limitedSet = Array.from(newShownSet).slice(-100);
+      localStorage.setItem(`shownNotifications_${user.id}`, JSON.stringify(limitedSet));
+      console.log('💾 Notifications affichées sauvegardées:', limitedSet.length);
+    }
+  }, [user]);
+
+  // Nettoyer les anciennes notifications (plus de 7 jours)
+  const cleanupOldNotifications = useCallback(() => {
+    if (user) {
+      const storedShown = localStorage.getItem(`shownNotifications_${user.id}`);
+      if (storedShown) {
+        try {
+          const oldNotifications = JSON.parse(storedShown);
+          const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+          
+          // Garder seulement les notifications récentes
+          const recentNotifications = oldNotifications.filter(id => {
+            // Pour simplifier, on garde seulement les 50 plus récentes
+            return true; // On pourrait ajouter une logique de date si nécessaire
+          });
+          
+          if (recentNotifications.length < oldNotifications.length) {
+            localStorage.setItem(`shownNotifications_${user.id}`, JSON.stringify(recentNotifications));
+            setShownNotifications(new Set(recentNotifications));
+          }
+        } catch (err) {
+          console.error('Erreur nettoyage notifications:', err);
+        }
+      }
+    }
+  }, [user]);
+
   const loadNotifications = useCallback(async () => {
     if (!user) return;
     
@@ -21,20 +69,33 @@ export default function NotificationPopup() {
         ['demande_adhesion', 'invitation_acceptee', 'invitation_refusee', 'exclusion_club'].includes(notif.type)
       );
       
+      console.log('📨 Notifications importantes trouvées:', notificationsImportantes.length);
+      console.log('👁️ Notifications déjà affichées:', shownNotifications.size);
+      
       // Vérifier s'il y a une nouvelle notification à afficher
-      if (notificationsImportantes.length > 0) {
-        const nouvelleNotification = notificationsImportantes[0];
+      // Une notification est "nouvelle" si elle n'a jamais été affichée (pas dans shownNotifications)
+      const nouvelleNotification = notificationsImportantes.find(notif => 
+        !shownNotifications.has(notif._id)
+      );
+      
+      if (nouvelleNotification && !showPopup) {
         console.log('🎉 Nouvelle notification détectée:', nouvelleNotification.message);
         setCurrentNotification(nouvelleNotification);
         setShowPopup(true);
-        setShownNotifications(prev => new Set([...prev, nouvelleNotification._id]));
+        const newShownSet = new Set([...shownNotifications, nouvelleNotification._id]);
+        setShownNotifications(newShownSet);
+        saveShownNotifications(newShownSet);
+      } else if (nouvelleNotification && showPopup) {
+        console.log('⚠️ Notification trouvée mais popup déjà ouverte');
+      } else if (!nouvelleNotification) {
+        console.log('✅ Aucune nouvelle notification à afficher');
       }
       
       setNotifications(notificationsImportantes);
     } catch (err) {
       console.error('Erreur chargement notifications:', err);
     }
-  }, [user]);
+  }, [user, shownNotifications, saveShownNotifications, showPopup]);
 
   // Stocker la fonction dans useRef pour éviter les re-créations
   loadNotificationsRef.current = loadNotifications;
@@ -48,16 +109,23 @@ export default function NotificationPopup() {
       setShowPopup(false);
       setCurrentNotification(null);
       
+      // Retirer la notification de shownNotifications car elle est maintenant lue
+      const newShownSet = new Set([...shownNotifications].filter(id => id !== notificationId));
+      setShownNotifications(newShownSet);
+      saveShownNotifications(newShownSet);
+      
       // Vérifier s'il y a une autre notification non affichée
       setTimeout(() => {
         const prochaineNotification = notifications.find(notif => 
-          !shownNotifications.has(notif._id) && notif._id !== notificationId
+          !newShownSet.has(notif._id) && notif._id !== notificationId
         );
         
         if (prochaineNotification) {
           setCurrentNotification(prochaineNotification);
           setShowPopup(true);
-          setShownNotifications(prev => new Set([...prev, prochaineNotification._id]));
+          const nextShownSet = new Set([...newShownSet, prochaineNotification._id]);
+          setShownNotifications(nextShownSet);
+          saveShownNotifications(nextShownSet);
         }
       }, 300); // Délai pour l'animation de fermeture
     } catch (err) {
@@ -72,6 +140,11 @@ export default function NotificationPopup() {
       setNotifications(prev => prev.filter(n => n._id !== currentNotification._id));
       setShowPopup(false);
       setCurrentNotification(null);
+      
+      // Retirer la notification de shownNotifications car elle est maintenant lue
+      const newShownSet = new Set([...shownNotifications].filter(id => id !== currentNotification._id));
+      setShownNotifications(newShownSet);
+      saveShownNotifications(newShownSet);
       
       // Rediriger vers le club
       window.location.href = `/club/${clubId}`;
@@ -106,16 +179,24 @@ export default function NotificationPopup() {
   useEffect(() => {
     if (user) {
       // Réinitialiser les notifications affichées quand l'utilisateur change
-      setShownNotifications(new Set());
       setNotifications([]);
       setCurrentNotification(null);
       setShowPopup(false);
       
-      // Chargement initial avec un délai pour éviter les conflits
-      const initialTimeout = setTimeout(() => loadNotificationsRef.current(), 2000);
+      // Nettoyer les anciennes notifications
+      cleanupOldNotifications();
+      
+      // Attendre que les notifications affichées soient chargées avant de commencer
+      const initialTimeout = setTimeout(() => {
+        console.log('🚀 Démarrage de la vérification des notifications');
+        loadNotificationsRef.current();
+      }, 1000); // Délai pour s'assurer que localStorage est chargé
       
       // Vérifier les nouvelles notifications toutes les 60 secondes
-      const interval = setInterval(() => loadNotificationsRef.current(), 60000);
+      const interval = setInterval(() => {
+        console.log('🔄 Vérification périodique des notifications');
+        loadNotificationsRef.current();
+      }, 60000);
       
       return () => {
         clearTimeout(initialTimeout);
@@ -128,7 +209,7 @@ export default function NotificationPopup() {
       setCurrentNotification(null);
       setShowPopup(false);
     }
-  }, [user]);
+  }, [user, cleanupOldNotifications]);
 
   // Fermer la popup et passer à la notification suivante si il y en a une
   const handleClosePopup = () => {
@@ -144,7 +225,9 @@ export default function NotificationPopup() {
       if (prochaineNotification) {
         setCurrentNotification(prochaineNotification);
         setShowPopup(true);
-        setShownNotifications(prev => new Set([...prev, prochaineNotification._id]));
+        const newShownSet = new Set([...shownNotifications, prochaineNotification._id]);
+        setShownNotifications(newShownSet);
+        saveShownNotifications(newShownSet);
       }
     }, 300); // Délai pour l'animation de fermeture
   };

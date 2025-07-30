@@ -66,8 +66,6 @@ router.get('/:id', async (req, res) => {
       .populate('demandesInscription.clubId', 'nom')
       .populate('matchs.equipe1', 'nom')
       .populate('matchs.equipe2', 'nom')
-      .populate('matchs.statsJoueurs.joueurId', 'pseudo')
-      .populate('matchs.statsJoueurs.clubId', 'nom')
       .populate('gagnant', 'nom');
 
     if (!competition) {
@@ -137,7 +135,7 @@ router.post('/', auth, async (req, res) => {
 
     // Notification Discord
     try {
-      await discordSimple.sendMessage(
+      await discordSimple.sendNotification(
         `🏆 **Nouvelle compétition créée !**\n` +
         `**${nom}** (${type})\n` +
         `Par ${req.user.pseudo}\n` +
@@ -199,6 +197,13 @@ router.post('/:id/inscription', auth, async (req, res) => {
       return res.status(403).json({ message: 'Seuls les admins peuvent inscrire un club' });
     }
 
+    // Vérifier si la compétition a atteint son maximum d'équipes
+    if (competition.equipesInscrites.length >= competition.nombreEquipes) {
+      return res.status(400).json({ 
+        message: `Cette compétition a atteint son maximum de ${competition.nombreEquipes} équipes` 
+      });
+    }
+
     if (competition.visibilite === 'publique') {
       // Inscription directe pour les compétitions publiques
       competition.equipesInscrites.push({
@@ -257,6 +262,13 @@ router.put('/:id/demandes/:demandeId', auth, async (req, res) => {
     }
 
     if (action === 'accepter') {
+      // Vérifier si la compétition a atteint son maximum d'équipes
+      if (competition.equipesInscrites.length >= competition.nombreEquipes) {
+        return res.status(400).json({ 
+          message: `Cette compétition a atteint son maximum de ${competition.nombreEquipes} équipes` 
+        });
+      }
+
       // Accepter la demande
       demande.statut = 'Acceptée';
       competition.equipesInscrites.push({
@@ -439,6 +451,60 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
   } catch (error) {
     console.error('Erreur mise à jour score:', error);
     res.status(500).json({ message: 'Erreur lors de la mise à jour du score' });
+  }
+});
+
+// DELETE /api/competitions/:id/inscription - Quitter une compétition
+router.delete('/:id/inscription', auth, async (req, res) => {
+  try {
+    const { clubId } = req.body;
+    const competitionId = req.params.id;
+
+    if (!clubId) {
+      return res.status(400).json({ message: 'ID du club obligatoire' });
+    }
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    // Vérifier que l'utilisateur est admin du club
+    const club = await Club.findById(clubId);
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé' });
+    }
+
+    const membre = club.membres.find(m => m.userId.toString() === req.user.id);
+    const estAdmin = membre && membre.role === 'Admin';
+    if (!estAdmin) {
+      return res.status(403).json({ message: 'Seuls les admins peuvent quitter une compétition' });
+    }
+
+    // Vérifier si le club est inscrit à cette compétition
+    const equipeInscrite = competition.equipesInscrites.find(
+      equipe => equipe.clubId.toString() === clubId
+    );
+    
+    if (!equipeInscrite) {
+      return res.status(400).json({ message: 'Ce club n\'est pas inscrit à cette compétition' });
+    }
+
+    // Empêcher de quitter si la compétition est en cours ou terminée
+    if (competition.statut === 'En cours' || competition.statut === 'Terminé') {
+      return res.status(400).json({ message: 'Impossible de quitter une compétition en cours ou terminée' });
+    }
+
+    // Retirer le club de la compétition
+    competition.equipesInscrites = competition.equipesInscrites.filter(
+      equipe => equipe.clubId.toString() !== clubId
+    );
+
+    await competition.save();
+    res.json({ message: 'Club retiré de la compétition avec succès' });
+  } catch (error) {
+    console.error('Erreur désinscription compétition:', error);
+    res.status(500).json({ message: 'Erreur lors de la désinscription' });
   }
 });
 

@@ -441,6 +441,7 @@ const PlayerProfilePage = () => {
   const [selectedClub, setSelectedClub] = useState('');
   const [inviteMessage, setInviteMessage] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [isUserAdminOfClub, setIsUserAdminOfClub] = useState(false);
 
   useEffect(() => {
     const fetchPlayer = async () => {
@@ -467,6 +468,23 @@ const PlayerProfilePage = () => {
     try {
       const clubs = await clubAPI.getMyClubs();
       setUserClubs(clubs);
+      
+      // Vérifier si l'utilisateur est admin d'au moins un club
+      const hasAdminClub = clubs.some(club => {
+        const userMember = club.membres.find(membre => {
+          const membreUserId = membre.userId._id || membre.userId;
+          const currentUserId = user.id || user._id;
+          return membreUserId === currentUserId;
+        });
+        const isCreateur = (() => {
+          const createurId = club.createurId?._id || club.createurId;
+          const currentUserId = user.id || user._id;
+          return createurId === currentUserId;
+        })();
+        return isCreateur || (userMember && userMember.role === 'Admin');
+      });
+      
+      setIsUserAdminOfClub(hasAdminClub);
     } catch (err) {
       console.error('Erreur chargement clubs:', err);
     }
@@ -594,7 +612,7 @@ const PlayerProfilePage = () => {
                   </div>
                 </div>
                 <div className="col-md-4 text-end">
-                  {!isOwnProfile && (
+                  {!isOwnProfile && isUserAdminOfClub && (
                     <button
                       className="btn action-btn btn-lg"
                       onClick={handleInvite}
