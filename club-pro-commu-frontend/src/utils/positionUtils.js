@@ -10,14 +10,17 @@ export const positions = {
   'MG': { name: 'Milieu Gauche', description: 'Milieu côté gauche', icon: '🎯' },
   'MD': { name: 'Milieu Droit', description: 'Milieu côté droit', icon: '🎯' },
   'MC': { name: 'Milieu Central', description: 'Milieu central', icon: '🎯' },
-  'MDC': { name: 'Milieu Défensif Central', description: 'Milieu défensif', icon: '🛡️' },
+  'MDC': { name: 'Milieu Défensif Central', description: 'Milieu défensif', icon: '🎯' },
   
   // Défenseurs
   'DD': { name: 'Défenseur Droit', description: 'Défenseur côté droit', icon: '🛡️' },
   'DG': { name: 'Défenseur Gauche', description: 'Défenseur côté gauche', icon: '🛡️' },
   'DC': { name: 'Défenseur Central', description: 'Défenseur central', icon: '🛡️' },
   'DLD': { name: 'Défenseur Latéral Droit', description: 'Latéral droit', icon: '🛡️' },
-  'DLG': { name: 'Défenseur Latéral Gauche', description: 'Latéral gauche', icon: '🛡️' }
+  'DLG': { name: 'Défenseur Latéral Gauche', description: 'Latéral gauche', icon: '🛡️' },
+  
+  // Gardien
+  'GB': { name: 'Gardien de But', description: 'Gardien de but', icon: '🥅' }
 };
 
 // Fonction pour obtenir le nom complet d'un poste
@@ -49,7 +52,8 @@ export const getPositionDisplay = (code) => {
 export const positionGroups = {
   'Attaquants': ['BU', 'AG', 'AD'],
   'Milieux': ['MOC', 'MG', 'MD', 'MC', 'MDC'],
-  'Défenseurs': ['DD', 'DG', 'DC', 'DLD', 'DLG']
+  'Défenseurs': ['DD', 'DG', 'DC', 'DLD', 'DLG'],
+  'Gardiens': ['GB']
 };
 
 // Liste complète des postes pour les formulaires

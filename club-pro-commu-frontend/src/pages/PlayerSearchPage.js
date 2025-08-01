@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { playerAPI } from '../services/api';
+import { getAllCountries } from '../utils/countryUtils';
+import Avatar from '../components/Avatar';
 
 // Styles améliorés pour la page de recherche
 const enhancedStyles = `
@@ -110,39 +112,60 @@ const enhancedStyles = `
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
   }
   
-  /* Cartes de joueurs améliorées */
-  .player-card {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 20px;
-    border: 2px solid transparent;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    animation: cardEntrance 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
+  /* Options de tri */
+  .sorting-options {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
   
-  .player-card::before {
+  .sorting-options .btn-group .btn {
+    border-radius: 8px;
+    margin: 0 2px;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.3s ease;
+  }
+  
+  .sorting-options .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Cartes de joueurs uniformisées avec les clubs */
+  .club-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .club-card::before {
     content: '';
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.05), transparent);
+    transition: left 0.5s ease;
   }
   
-  .player-card:hover::before {
-    transform: scaleX(1);
+  .club-card:hover::before {
+    left: 100%;
   }
   
-  .player-card:hover {
-    transform: translateY(-12px) scale(1.02);
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  .club-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
     border-color: #667eea;
-    background: linear-gradient(135deg, #ffffff 0%, #e8f2ff 100%);
   }
   
   @keyframes cardEntrance {
@@ -163,70 +186,13 @@ const enhancedStyles = `
   .player-card:nth-child(5) { animation-delay: 0.5s; }
   .player-card:nth-child(6) { animation-delay: 0.6s; }
   
-  .player-card .card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .player-card .card-header::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    animation: shimmer 3s infinite;
-  }
-  
-  @keyframes shimmer {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .player-card .stats-grid {
-    margin: 1.5rem 0;
-  }
-  
-  .player-card .stat-item {
-    text-align: center;
-    padding: 1rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    max-width: 140px;
-    margin: 0 auto;
-    border: 1px solid rgba(0,0,0,0.05);
-  }
-  
-  .player-card:hover .stat-item {
-    background: linear-gradient(135deg, #e8f2ff 0%, #d1e7ff 100%);
-    transform: scale(1.08);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
-  }
-  
-  .player-card .badge {
-    font-size: 0.75rem;
-    padding: 0.6rem 1rem;
-    border-radius: 25px;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  
-  .player-card .player-info {
+  .club-header {
     display: flex;
     align-items: center;
-    gap: 1.2rem;
     margin-bottom: 1rem;
-    position: relative;
-    z-index: 1;
   }
   
-  .avatar-default {
+  .club-avatar {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -234,29 +200,75 @@ const enhancedStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-  }
-  
-  .avatar-default i {
+    margin-right: 1rem;
+    color: white;
     font-size: 1.5rem;
-    color: white;
   }
   
-  .player-card:hover .avatar-default {
-    transform: scale(1.1);
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+  .club-info h5 {
+    margin: 0;
+    font-weight: 600;
+    color: #333;
   }
   
-  .player-card .player-details {
-    flex-grow: 1;
+  .club-info h5 a {
+    color: #333;
+    text-decoration: none;
+    transition: color 0.3s ease;
   }
   
-  .player-card .btn-view {
+  .club-info h5 a:hover {
+    color: #667eea;
+  }
+  
+  .club-badges {
+    margin-top: 0.5rem;
+  }
+  
+  .club-badges .badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+  }
+  
+  .club-details {
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .club-details div {
+    margin-bottom: 0.5rem;
+  }
+  
+  .club-details strong {
+    color: #333;
+  }
+  
+  .club-actions {
+    margin-top: 1rem;
+  }
+  
+  .btn-view {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
     color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  }
+  
+  .btn-view:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
+    text-decoration: none;
+  }
+  
+
     border-radius: 30px;
     padding: 0.75rem 2rem;
     font-weight: 600;
@@ -614,14 +626,18 @@ const PlayerSearchPage = () => {
   const [, setError] = useState(null);
   const [pagination, setPagination] = useState({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Liste des pays pour la liste déroulante (même que l'inscription)
+  const paysList = getAllCountries();
   
   // Filtres avancés
   const [filters, setFilters] = useState({
     pseudo: '',
+    pseudoPlateforme: '',
     pays: '',
     plateforme: '',
     position: '',
-    niveau: '',
+
     disponibilite: '',
     ageMin: '',
     ageMax: '',
@@ -632,9 +648,10 @@ const PlayerSearchPage = () => {
     langue: ''
   });
   
-  const [sortBy] = useState('derniereActivite');
-  const [sortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState('pseudo');
+  const [sortOrder, setSortOrder] = useState('asc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -660,12 +677,28 @@ const PlayerSearchPage = () => {
       }
     };
 
+    // Charger les joueurs au montage du composant et quand searchTrigger change
     fetchPlayers();
-  }, [filters, sortBy, sortOrder, currentPage]);
+  }, [searchTrigger, sortBy, sortOrder, currentPage, filters]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
-    setCurrentPage(1); // Reset à la première page
+    // Ne pas déclencher la recherche automatiquement
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(1);
+    setSearchTrigger(prev => prev + 1);
+  };
+
+  const handleSortChange = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+    setCurrentPage(1);
   };
 
 
@@ -673,9 +706,7 @@ const PlayerSearchPage = () => {
   const getDisponibiliteColor = (disponibilite) => {
     const colors = {
       'Disponible': 'success',
-      'Occupé': 'warning',
-      'Absent': 'danger',
-      'Recherche équipe': 'info'
+      'Indisponible': 'danger'
     };
     return colors[disponibilite] || 'secondary';
   };
@@ -717,7 +748,7 @@ const PlayerSearchPage = () => {
             </h5>
             {/* Critères de base */}
             <div className="row g-3">
-              <div className="col-md-6 col-12">
+              <div className="col-md-4 col-12">
                 <label className="form-label">Pseudo</label>
                 <input
                   type="text"
@@ -727,7 +758,17 @@ const PlayerSearchPage = () => {
                   placeholder="Rechercher par pseudo..."
                 />
               </div>
-              <div className="col-md-6 col-12">
+              <div className="col-md-4 col-12">
+                <label className="form-label">Pseudo de plateforme</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={filters.pseudoPlateforme}
+                  onChange={(e) => handleFilterChange('pseudoPlateforme', e.target.value)}
+                  placeholder="Rechercher par pseudo de plateforme..."
+                />
+              </div>
+              <div className="col-md-4 col-12">
                 <label className="form-label">Plateforme</label>
                 <select
                   className="form-select"
@@ -764,13 +805,18 @@ const PlayerSearchPage = () => {
                 <div className="row g-3">
                   <div className="col-md-3 col-6">
                     <label className="form-label">Pays</label>
-                    <input
-                      type="text"
-                      className="form-control"
+                    <select
+                      className="form-select"
                       value={filters.pays}
                       onChange={(e) => handleFilterChange('pays', e.target.value)}
-                      placeholder="France, Belgique..."
-                    />
+                    >
+                      <option value="">Tous les pays</option>
+                      {paysList.map((pays, index) => (
+                        <option key={index} value={pays.name}>
+                          {pays.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="col-md-3 col-6">
                     <label className="form-label">Position</label>
@@ -787,21 +833,7 @@ const PlayerSearchPage = () => {
                       <option value="Polyvalent">Polyvalent</option>
                     </select>
                   </div>
-                  <div className="col-md-3 col-6">
-                    <label className="form-label">Niveau</label>
-                    <select
-                      className="form-select"
-                      value={filters.niveau}
-                      onChange={(e) => handleFilterChange('niveau', e.target.value)}
-                    >
-                      <option value="">Tous les niveaux</option>
-                      <option value="Débutant">Débutant</option>
-                      <option value="Intermédiaire">Intermédiaire</option>
-                      <option value="Avancé">Avancé</option>
-                      <option value="Expert">Expert</option>
-                      <option value="Pro">Pro</option>
-                    </select>
-                  </div>
+
                   <div className="col-md-3 col-6">
                     <label className="form-label">Disponibilité</label>
                     <select
@@ -811,100 +843,146 @@ const PlayerSearchPage = () => {
                     >
                       <option value="">Toutes</option>
                       <option value="Disponible">Disponible</option>
-                      <option value="Occupé">Occupé</option>
-                      <option value="Absent">Absent</option>
-                      <option value="Recherche équipe">Recherche équipe</option>
+                      <option value="Indisponible">Indisponible</option>
                     </select>
                   </div>
                 </div>
               </div>
             )}
+            
+
+          </div>
+
+          {/* Options de tri */}
+          <div className="row mb-4">
+            <div className="col-12">
+              <div className="d-flex justify-content-between align-items-center">
+                <h6 className="mb-0">
+                  <i className="fas fa-sort me-2"></i>
+                  Trier par :
+                </h6>
+                <div className="btn-group" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${sortBy === 'pseudo' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => handleSortChange('pseudo')}
+                  >
+                    <i className="fas fa-user me-1"></i>
+                    Nom
+                    {sortBy === 'pseudo' && (
+                      <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${sortBy === 'derniereActivite' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => handleSortChange('derniereActivite')}
+                  >
+                    <i className="fas fa-clock me-1"></i>
+                    Activité
+                    {sortBy === 'derniereActivite' && (
+                      <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                    )}
+                  </button>
+
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bouton de recherche */}
+          <div className="row mb-4">
+            <div className="col text-center">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSearch}
+                disabled={loading}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  borderRadius: '25px',
+                  padding: '0.75rem 1.5rem',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                  fontSize: '1rem'
+                }}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Recherche en cours...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-search me-2"></i>
+                    Rechercher
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Liste des joueurs */}
           <div className="row">
             {players.map((player) => (
-              <div key={player._id} className="col-md-6 col-lg-4 mb-4">
-                <div className="card h-100 player-card">
-                  <div className="card-header">
-                    <div className="player-info">
-                      <div className="avatar-default">
-                        <i className="fas fa-user"></i>
-                      </div>
-                      <div className="player-details">
-                        <h5 className="mb-1 text-white">
-                          <Link to={`/player/${player._id}`} className="text-white text-decoration-none">
-                            {player.pseudo}
-                          </Link>
-                        </h5>
-                        <div className="d-flex gap-2">
-                          <span className={`badge bg-${getDisponibiliteColor(player.disponibilite)}`}>
-                            {player.disponibilite}
-                          </span>
-                        </div>
+              <div key={player._id} className="col-lg-6 col-xl-4">
+                <div className="club-card">
+                  <div className="club-header">
+                    <Avatar 
+                      src={player.photoProfil}
+                      name={player.pseudo}
+                      size="md"
+                      className="club-avatar"
+                    />
+                    <div className="club-info">
+                      <h5>
+                        <Link to={`/player/${player._id}`}>
+                          {player.pseudo}
+                        </Link>
+                      </h5>
+                      <div className="club-badges">
+                        <span className={`badge bg-${getDisponibiliteColor(player.disponibilite)}`}>
+                          {player.disponibilite}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <div className="card-body">
-                    {/* Layout desktop */}
-                    <div className="d-none d-md-block">
-                      <div className="row mb-3">
-                        <div className="col-6">
-                          <small className="text-muted d-block">
-                            <i className="fas fa-futbol me-1"></i>Position
-                          </small>
-                          <strong>{player.position || 'Non renseigné'}</strong>
-                        </div>
-                        <div className="col-6">
-                          <small className="text-muted d-block">
-                            <i className="fas fa-gamepad me-1"></i>Plateforme
-                          </small>
-                          <strong>{player.plateforme}</strong>
-                        </div>
-                      </div>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <small className="text-muted">
-                          <i className="fas fa-map-marker-alt me-1"></i>
-                          {player.pays || 'Non renseigné'}
-                          {player.ville && `, ${player.ville}`}
-                        </small>
-                        <Link 
-                          to={`/player/${player._id}`}
-                          className="btn btn-view"
-                        >
-                          <i className="fas fa-eye me-1"></i>
-                          Voir profil
-                        </Link>
-                      </div>
+
+                  {/* Layout desktop */}
+                  <div className="d-none d-md-block">
+                    <div className="club-details mb-2">
+                      <div><strong>Position :</strong> {player.position || 'Non renseigné'}</div>
+                      <div><strong>Plateforme :</strong> {player.plateforme}</div>
+                      <div><strong>Localisation :</strong> {player.pays || 'Non renseigné'}{player.ville && `, ${player.ville}`}</div>
                     </div>
-                    
-                    {/* Layout mobile */}
-                    <div className="d-md-none mobile-layout">
-                      <div className="mobile-info">
-                        <div className="row">
-                          <div className="col-6">
-                            <small className="text-muted d-block">
-                              <i className="fas fa-futbol me-1"></i>Position
-                            </small>
-                            <strong>{player.position || 'Non renseigné'}</strong>
-                          </div>
-                          <div className="col-6">
-                            <small className="text-muted d-block">
-                              <i className="fas fa-gamepad me-1"></i>Plateforme
-                            </small>
-                            <strong>{player.plateforme}</strong>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mobile-button">
-                        <Link 
-                          to={`/player/${player._id}`}
-                          className="btn btn-view"
-                        >
-                          <i className="fas fa-eye me-1"></i>
-                          Voir
-                        </Link>
-                      </div>
+                    <div className="club-actions">
+                      <Link 
+                        to={`/player/${player._id}`} 
+                        className="btn-view"
+                      >
+                        <i className="fas fa-eye me-2"></i>
+                        Voir le profil
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Layout mobile */}
+                  <div className="d-md-none">
+                    <div className="club-details mb-2">
+                      <div><strong>Position :</strong> {player.position || 'Non renseigné'}</div>
+                      <div><strong>Plateforme :</strong> {player.plateforme}</div>
+                      <div><strong>Localisation :</strong> {player.pays || 'Non renseigné'}{player.ville && `, ${player.ville}`}</div>
+                    </div>
+                    <div className="club-actions">
+                      <Link 
+                        to={`/player/${player._id}`} 
+                        className="btn-view"
+                      >
+                        <i className="fas fa-eye me-2"></i>
+                        Voir le profil
+                      </Link>
                     </div>
                   </div>
                 </div>

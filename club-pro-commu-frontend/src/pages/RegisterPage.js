@@ -72,6 +72,8 @@ export default function RegisterPage() {
   const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState('');
   const [useSamePseudo, setUseSamePseudo] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const allCountries = getAllCountries();
   const allPositions = getAllPositions();
@@ -318,12 +320,21 @@ export default function RegisterPage() {
                   <i className="fas fa-lock me-1"></i>
                   Mot de passe *
                 </label>
-                <input
-                  type="password"
-                  className={`form-control form-control-lg ${errors.password ? 'is-invalid' : ''}`}
-                  {...register('password')}
-                  placeholder="Mot de passe"
-                />
+                <div className="input-group">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className={`form-control form-control-lg ${errors.password ? 'is-invalid' : ''}`}
+                    {...register('password')}
+                    placeholder="Mot de passe"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  </button>
+                </div>
                 {errors.password && (
                   <div className="invalid-feedback">
                     <i className="fas fa-exclamation-circle me-1"></i>
@@ -338,12 +349,21 @@ export default function RegisterPage() {
                   <i className="fas fa-lock me-1"></i>
                   Confirmer le mot de passe *
                 </label>
-                <input
-                  type="password"
-                  className={`form-control form-control-lg ${errors.confirmPassword ? 'is-invalid' : ''}`}
-                  {...register('confirmPassword')}
-                  placeholder="Confirmer le mot de passe"
-                />
+                <div className="input-group">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`form-control form-control-lg ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                    {...register('confirmPassword')}
+                    placeholder="Confirmer le mot de passe"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  </button>
+                </div>
                 {errors.confirmPassword && (
                   <div className="invalid-feedback">
                     <i className="fas fa-exclamation-circle me-1"></i>

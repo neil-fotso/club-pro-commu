@@ -848,65 +848,121 @@ export default function ClubProfilePage() {
             )}
           </div>
 
-          {/* Statistiques du club */}
-          <div className="club-stats">
-            <div className="stat-card">
-              <h6><i className="fas fa-users me-2"></i>Effectif</h6>
-              <div className="d-flex align-items-center">
-                <span className="badge bg-success me-2">
-                  {club.membres?.length || 0}/{club.effectifMax}
+          {/* Statistiques du club - Desktop */}
+          <div className="d-none d-md-block">
+            <div className="club-stats">
+              <div className="stat-card">
+                <h6><i className="fas fa-users me-2"></i>Effectif</h6>
+                <div className="d-flex align-items-center">
+                  <span className="badge bg-success me-2">
+                    {club.membres?.length || 0}/{club.effectifMax}
+                  </span>
+                  <small className="text-muted">membres</small>
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <h6><i className="fas fa-gamepad me-2"></i>Plateformes</h6>
+                <div className="d-flex flex-wrap gap-1">
+                  {club.plateformes?.map(platform => (
+                    <span key={platform} className="badge bg-dark">
+                      {getPlatformIcon(platform)} {platform}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="stat-card">
+                <h6><i className="fas fa-flag me-2"></i>Pays</h6>
+                <span className="badge bg-info">{club.pays}</span>
+              </div>
+              
+              <div className="stat-card">
+                <h6><i className="fas fa-calendar me-2"></i>Créé le</h6>
+                <span className="badge bg-secondary">
+                  {new Date(club.dateCreation).toLocaleDateString()}
                 </span>
-                <small className="text-muted">membres</small>
               </div>
-            </div>
-            
-            <div className="stat-card">
-              <h6><i className="fas fa-gamepad me-2"></i>Plateformes</h6>
-              <div className="d-flex flex-wrap gap-1">
-                {club.plateformes?.map(platform => (
-                  <span key={platform} className="badge bg-dark">
-                    {getPlatformIcon(platform)} {platform}
-                  </span>
-                ))}
+              
+              <div className="stat-card">
+                <h6><i className="fas fa-user-plus me-2"></i>Recrutement</h6>
+                {club.recrute ? (
+                  <span className="badge bg-success">✅ Ouvert</span>
+                ) : (
+                  <span className="badge bg-secondary">❌ Fermé</span>
+                )}
               </div>
-            </div>
-            
-            <div className="stat-card">
-              <h6><i className="fas fa-flag me-2"></i>Pays</h6>
-              <span className="badge bg-info">{club.pays}</span>
-            </div>
-            
-            <div className="stat-card">
-              <h6><i className="fas fa-calendar me-2"></i>Créé le</h6>
-              <span className="badge bg-secondary">
-                {new Date(club.dateCreation).toLocaleDateString()}
-              </span>
-            </div>
-            
-            <div className="stat-card">
-              <h6><i className="fas fa-user-plus me-2"></i>Recrutement</h6>
-              {club.recrute ? (
-                <span className="badge bg-success">✅ Ouvert</span>
-              ) : (
-                <span className="badge bg-secondary">❌ Fermé</span>
-              )}
-            </div>
-            
-            <div className="stat-card">
-              <h6><i className="fas fa-language me-2"></i>Langues</h6>
-              <div className="mt-1">
-                {club.langues?.map((langue, index) => (
-                  <span key={index} className="badge bg-info me-1">
-                    {langue}
-                  </span>
-                )) || <span className="text-muted">Non spécifié</span>}
+              
+              <div className="stat-card">
+                <h6><i className="fas fa-language me-2"></i>Langues</h6>
+                <div className="mt-1">
+                  {club.langues?.map((langue, index) => (
+                    <span key={index} className="badge bg-info me-1">
+                      {langue}
+                    </span>
+                  )) || <span className="text-muted">Non spécifié</span>}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Description */}
+          {/* Infos club - Mobile */}
+          <div className="d-md-none">
+            <div className="card bg-light border-0 shadow-sm mb-4">
+              <div className="card-body">
+                <h5 className="text-primary mb-3">
+                  <i className="fas fa-shield-alt me-2"></i>
+                  Informations du club
+                </h5>
+                <div className="row">
+                  <div className="col-6 mb-2">
+                    <strong>Effectif :</strong><br/>
+                    <span className="badge bg-success">{club.membres?.length || 0}/{club.effectifMax}</span>
+                  </div>
+                  <div className="col-6 mb-2">
+                    <strong>Pays :</strong><br/>
+                    <span className="badge bg-info">{club.pays}</span>
+                  </div>
+                  <div className="col-6 mb-2">
+                    <strong>Créé le :</strong><br/>
+                    <span className="badge bg-secondary">{new Date(club.dateCreation).toLocaleDateString()}</span>
+                  </div>
+                  <div className="col-6 mb-2">
+                    <strong>Recrutement :</strong><br/>
+                    {club.recrute ? (
+                      <span className="badge bg-success">✅ Ouvert</span>
+                    ) : (
+                      <span className="badge bg-secondary">❌ Fermé</span>
+                    )}
+                  </div>
+                  <div className="col-12 mb-2">
+                    <strong>Plateformes :</strong><br/>
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      {club.plateformes?.map(platform => (
+                        <span key={platform} className="badge bg-dark">
+                          {getPlatformIcon(platform)} {platform}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="col-12">
+                    <strong>Langues :</strong><br/>
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      {club.langues?.map((langue, index) => (
+                        <span key={index} className="badge bg-info">
+                          {langue}
+                        </span>
+                      )) || <span className="text-muted">Non spécifié</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description - Desktop */}
           {club.description && (
-            <div className="mt-4">
+            <div className="d-none d-md-block mt-4">
               <h5 className="text-primary mb-3">
                 <i className="fas fa-comment me-2"></i>
                 Description
@@ -919,9 +975,24 @@ export default function ClubProfilePage() {
             </div>
           )}
 
-          {/* Membres */}
+          {/* Description - Mobile */}
+          {club.description && (
+            <div className="d-md-none mt-4">
+              <div className="card bg-light border-0 shadow-sm">
+                <div className="card-body">
+                  <h6 className="text-primary mb-2">
+                    <i className="fas fa-comment me-2"></i>
+                    Description
+                  </h6>
+                  <p className="mb-0">{club.description}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Membres - Desktop */}
           {club.membres && club.membres.length > 0 && (
-            <div className="mt-4">
+            <div className="d-none d-md-block mt-4">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="text-primary mb-0">
                   <i className="fas fa-users me-2"></i>
@@ -981,6 +1052,59 @@ export default function ClubProfilePage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Membres - Mobile */}
+          {club.membres && club.membres.length > 0 && (
+            <div className="d-md-none mt-4">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h5 className="text-primary mb-0">
+                  <i className="fas fa-users me-2"></i>
+                  Membres ({club.membres.length})
+                </h5>
+                {isCurrentUserAdmin && (
+                  <div className="d-flex gap-2">
+                    <button 
+                      className="btn btn-sm action-btn"
+                      onClick={() => setShowMemberModal(true)}
+                    >
+                      <i className="fas fa-cog me-1"></i>
+                      Gérer
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="card bg-light border-0 shadow-sm">
+                <div className="card-body">
+                  <div className="list-group list-group-flush">
+                    {club.membres.sort((a, b) => (a.postePrincipal || '').localeCompare(b.postePrincipal || '')).map((membre, index) => {
+                      if (!membre.userId?._id) {
+                        console.warn('ID manquant pour le membre:', membre);
+                        return null;
+                      }
+                      
+                      return (
+                        <Link 
+                          key={index}
+                          to={`/player/${membre.userId._id}`} 
+                          className="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3"
+                        >
+                          <div className="flex-grow-1">
+                            <div className="fw-bold text-break">{membre.userId?.pseudo}</div>
+                            <div className="small text-muted">
+                              {membre.role} {membre.postePrincipal ? `• ${membre.postePrincipal}` : ''}
+                            </div>
+                          </div>
+                          <span className={getRoleBadge(membre.role)}>
+                            {membre.role}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           )}

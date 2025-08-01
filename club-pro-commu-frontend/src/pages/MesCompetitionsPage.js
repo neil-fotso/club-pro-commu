@@ -239,8 +239,7 @@ export default function MesCompetitionsPage() {
                           <strong>{formatDate(competition.dateDebut)}</strong>
                         </div>
                         <div className="col-4">
-                          <small className="text-muted d-block">Niveau</small>
-                          <strong>{competition.niveau}</strong>
+                          
                         </div>
                       </div>
 

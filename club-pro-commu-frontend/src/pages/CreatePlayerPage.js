@@ -12,7 +12,7 @@ export default function CreatePlayerPage() {
     age: '',
     pays: '',
     description: '',
-    niveau: 'Intermédiaire',
+
     langues: []
   });
   const [loading, setLoading] = useState(false);
@@ -123,20 +123,7 @@ export default function CreatePlayerPage() {
                     />
                   </div>
 
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">Niveau</label>
-                    <select
-                      className="form-select"
-                      name="niveau"
-                      value={formData.niveau}
-                      onChange={handleChange}
-                    >
-                      <option value="Débutant">Débutant</option>
-                      <option value="Intermédiaire">Intermédiaire</option>
-                      <option value="Avancé">Avancé</option>
-                      <option value="Expert">Expert</option>
-                    </select>
-                  </div>
+
                 </div>
 
                 <div className="mb-3">

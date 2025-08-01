@@ -216,7 +216,26 @@ export const playerAPI = {
 export const clubAPI = {
   // Récupérer tous les clubs avec filtres
   getClubs: async (filters = {}) => {
-    const params = new URLSearchParams(filters);
+    // Mapper les filtres frontend vers les paramètres backend
+    const backendFilters = {};
+    
+    if (filters.nom) {
+      backendFilters.search = filters.nom;
+    }
+    if (filters.plateforme) {
+      backendFilters.plateforme = filters.plateforme;
+    }
+    if (filters.pays) {
+      backendFilters.pays = filters.pays;
+    }
+    if (filters.recrute) {
+      backendFilters.recrute = filters.recrute;
+    }
+    if (filters.langue) {
+      backendFilters.langue = filters.langue;
+    }
+    
+    const params = new URLSearchParams(backendFilters);
     return apiCall(`/clubs?${params}`);
   },
 
@@ -499,7 +518,7 @@ export const notificationAPI = {
 
 // API compétitions
 export const competitionAPI = {
-  // Récupérer toutes les compétitions avec filtres
+  // Récupérer toutes les compétitions
   getCompetitions: async (filters = {}) => {
     const params = new URLSearchParams(filters);
     return apiCall(`/competitions?${params}`);
@@ -565,10 +584,10 @@ export const competitionAPI = {
   },
 
   // Traiter une demande d'inscription
-  traiterDemandeInscription: async (competitionId, demandeId, action, token) => {
+  traiterDemandeInscription: async (competitionId, demandeId, action, reponse = '', token) => {
     return apiCall(`/competitions/${competitionId}/demandes/${demandeId}`, {
       method: 'PUT',
-      body: { action },
+      body: { action, reponse },
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -594,6 +613,27 @@ export const competitionAPI = {
         'Authorization': `Bearer ${token}`,
       },
     });
+  },
+
+  // Programmer une date pour un match
+  programmerMatch: async (competitionId, matchId, dateMatch, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/date`, {
+      method: 'PUT',
+      body: { dateMatch },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Récupérer le classement d'une compétition
+  getClassement: async (competitionId) => {
+    return apiCall(`/competitions/${competitionId}/classement`);
+  },
+
+  // Récupérer les statistiques d'une compétition
+  getStatistiques: async (competitionId) => {
+    return apiCall(`/competitions/${competitionId}/statistiques`);
   },
 
   // Récupérer les compétitions de l'utilisateur connecté

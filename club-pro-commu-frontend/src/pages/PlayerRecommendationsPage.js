@@ -279,9 +279,7 @@ const PlayerRecommendationsPage = () => {
   const getDisponibiliteColor = (disponibilite) => {
     const colors = {
       'Disponible': 'success',
-      'Occupé': 'warning',
-      'Absent': 'danger',
-      'Recherche équipe': 'info'
+      'Indisponible': 'danger'
     };
     return colors[disponibilite] || 'secondary';
   };
@@ -389,6 +387,7 @@ const PlayerRecommendationsPage = () => {
                         <Avatar 
                           src={player.photoProfil} 
                           alt={player.pseudo}
+                          name={player.pseudo}
                           size="md"
                           className="me-3 recommendation-avatar"
                         />

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { playerAPI, clubAPI } from '../services/api';
 import Avatar from '../components/Avatar';
+import APITest from '../components/APITest';
 import bgHeader from '../assets/bg-header.jpg';
 import logo from '../assets/logo.png';
 
@@ -433,6 +434,15 @@ const HomePage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section Diagnostic pour utilisateurs non connectés */}
+        {!user && (
+          <div className="row mb-5">
+            <div className="col-12">
+              <APITest />
             </div>
           </div>
         )}

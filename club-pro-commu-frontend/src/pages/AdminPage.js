@@ -137,7 +137,7 @@ export default function AdminPage() {
                         <th>Pseudo</th>
                         <th>Plateforme</th>
                         <th>Position</th>
-                        <th>Niveau</th>
+
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -147,7 +147,7 @@ export default function AdminPage() {
                           <td>{player.pseudo}</td>
                           <td>{player.plateforme}</td>
                           <td>{player.position}</td>
-                          <td>{player.niveau}</td>
+
                           <td>
                             <button
                               className="btn btn-danger btn-sm"

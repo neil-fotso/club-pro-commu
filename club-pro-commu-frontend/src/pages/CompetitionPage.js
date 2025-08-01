@@ -193,7 +193,7 @@ export default function CompetitionPage() {
                         required
                       >
                         <option value="elimination_directe">Élimination directe</option>
-                        <option value="poules_elimination">Phases de poules + Élimination directe</option>
+                        <option value="poule_elimination">Phases de poules + Élimination directe</option>
                       </select>
                     </div>
                   )}
@@ -211,7 +211,7 @@ export default function CompetitionPage() {
                       required
                     >
                       <option value="publique">Publique (inscription libre)</option>
-                      <option value="privee">Privée (demande d'inscription)</option>
+                      <option value="privée">Privée (demande d'inscription)</option>
                     </select>
                   </div>
 

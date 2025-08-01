@@ -23,14 +23,16 @@ const Avatar = ({
   const getDefaultColors = (type, name) => {
     const colors = {
       player: [
-        'bg-blue-500 text-white',
-        'bg-green-500 text-white',
-        'bg-purple-500 text-white',
-        'bg-red-500 text-white',
-        'bg-yellow-500 text-white',
-        'bg-indigo-500 text-white',
-        'bg-pink-500 text-white',
-        'bg-teal-500 text-white'
+        'bg-gradient-to-br from-blue-500 to-blue-600 text-white',
+        'bg-gradient-to-br from-green-500 to-green-600 text-white',
+        'bg-gradient-to-br from-purple-500 to-purple-600 text-white',
+        'bg-gradient-to-br from-red-500 to-red-600 text-white',
+        'bg-gradient-to-br from-yellow-500 to-yellow-600 text-white',
+        'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white',
+        'bg-gradient-to-br from-pink-500 to-pink-600 text-white',
+        'bg-gradient-to-br from-teal-500 to-teal-600 text-white',
+        'bg-gradient-to-br from-orange-500 to-orange-600 text-white',
+        'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white'
       ],
       club: [
         'bg-gradient-to-br from-blue-600 to-blue-800 text-white',
@@ -40,7 +42,9 @@ const Avatar = ({
         'bg-gradient-to-br from-yellow-600 to-yellow-800 text-white',
         'bg-gradient-to-br from-indigo-600 to-indigo-800 text-white',
         'bg-gradient-to-br from-pink-600 to-pink-800 text-white',
-        'bg-gradient-to-br from-teal-600 to-teal-800 text-white'
+        'bg-gradient-to-br from-teal-600 to-teal-800 text-white',
+        'bg-gradient-to-br from-orange-600 to-orange-800 text-white',
+        'bg-gradient-to-br from-cyan-600 to-cyan-800 text-white'
       ]
     };
 
@@ -51,7 +55,7 @@ const Avatar = ({
 
   // Générer les initiales
   const getInitials = (name) => {
-    if (!name) return '?';
+    if (!name || name.trim() === '') return '';
     
     const words = name.trim().split(' ');
     if (words.length === 1) {
@@ -101,10 +105,10 @@ const Avatar = ({
         } ${defaultColors}`}
         style={{ display: src ? 'none' : 'flex' }}
       >
-        {initials.length > 0 ? (
-          <span>{initials}</span>
+        {initials && initials.length > 0 ? (
+          <span className="font-bold">{initials}</span>
         ) : (
-          <i className={defaultIcon}></i>
+          <i className={`${defaultIcon} text-white`}></i>
         )}
       </div>
     </div>

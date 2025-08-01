@@ -97,11 +97,37 @@ export default function Navbar() {
                 Recommandations
               </Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/clubs" onClick={() => handleNavigation('/clubs')}>
+            <li className="nav-item dropdown">
+              <button
+                className="nav-link dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                style={{ background: 'none', border: 'none' }}
+              >
                 <i className="fas fa-shield-alt me-1"></i>
                 Clubs
-              </Link>
+              </button>
+              <ul className="dropdown-menu">
+                <li>
+                  <Link className="dropdown-item" to="/create-club" onClick={() => handleNavigation('/create-club')}>
+                    <i className="fas fa-plus me-2"></i>
+                    Créer un club
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/clubs" onClick={() => handleNavigation('/clubs')}>
+                    <i className="fas fa-search me-2"></i>
+                    Rechercher un club
+                  </Link>
+                </li>
+                <li>
+                  <Link className="dropdown-item" to="/mes-clubs" onClick={() => handleNavigation('/mes-clubs')}>
+                    <i className="fas fa-user-friends me-2"></i>
+                    Mon club
+                  </Link>
+                </li>
+              </ul>
             </li>
             <li className="nav-item">
               <Link className="nav-link" to="/competitions" onClick={() => handleNavigation('/competitions')}>
@@ -166,6 +192,17 @@ export default function Navbar() {
                         Notifications
                       </Link>
                     </li>
+                    {user.isAdmin && (
+                      <>
+                        <li><hr className="dropdown-divider" /></li>
+                        <li>
+                          <Link className="dropdown-item text-danger" to="/admin" onClick={() => handleNavigation('/admin')}>
+                            <i className="fas fa-cog me-2"></i>
+                            Administration
+                          </Link>
+                        </li>
+                      </>
+                    )}
                     <li><hr className="dropdown-divider" /></li>
                     <li>
                       <Link className="dropdown-item" to="/compte" onClick={() => handleNavigation('/compte')}>

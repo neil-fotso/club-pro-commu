@@ -12,6 +12,8 @@ import ClubSearchPage from '../pages/ClubSearchPage';
 import ClubProfilePage from '../pages/ClubProfilePage';
 import CompetitionListPage from '../pages/CompetitionListPage';
 import CompetitionDetailPage from '../pages/CompetitionDetailPage';
+import CompetitionMatchesPage from '../pages/CompetitionMatchesPage';
+import CompetitionStatsPage from '../pages/CompetitionStatsPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsPage from '../pages/TermsPage';
 
@@ -22,12 +24,14 @@ import CreatePlayerPage from '../pages/CreatePlayerPage';
 import MyClubsPage from '../pages/MyClubsPage';
 import CreateClubPage from '../pages/CreateClubPage';
 import CompetitionPage from '../pages/CompetitionPage';
+import CreateCompetitionPage from '../pages/CreateCompetitionPage';
 import MesCompetitionsPage from '../pages/MesCompetitionsPage';
 import InvitationsPage from '../pages/InvitationsPage';
 import NotificationsPage from '../pages/NotificationsPage';
 import DiscussionsPage from '../pages/DiscussionsPage';
 import DataRights from '../components/DataRights';
 import APITest from '../components/APITest';
+import AdminPage from '../pages/AdminPage';
 
 // Composants
 import MainLayout from '../layouts/MainLayout';
@@ -88,9 +92,19 @@ export default function AppRoutes() {
           <CompetitionDetailPage />
         </MainLayout>
       } />
+      <Route path="/competition/:id/matchs" element={
+        <MainLayout>
+          <CompetitionMatchesPage />
+        </MainLayout>
+      } />
+      <Route path="/competition/:id/stats" element={
+        <MainLayout>
+          <CompetitionStatsPage />
+        </MainLayout>
+      } />
       <Route path="/competitions/creer" element={
         <MainLayout>
-          <CompetitionPage />
+          <CreateCompetitionPage />
         </MainLayout>
       } />
       <Route path="/privacy" element={
@@ -159,6 +173,13 @@ export default function AppRoutes() {
       <Route path="/droits-donnees" element={
         <MainLayout>
           <DataRights />
+        </MainLayout>
+      } />
+
+      {/* Route d'administration (admin uniquement) */}
+      <Route path="/admin" element={
+        <MainLayout>
+          <AdminPage />
         </MainLayout>
       } />
 

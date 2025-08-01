@@ -150,8 +150,7 @@ export default function MyProfilePage() {
   const getAvailabilityBadge = (availability) => {
     const badges = {
       'Disponible': 'bg-success',
-      'Occupé': 'bg-danger',
-      'Partiellement disponible': 'bg-warning'
+      'Indisponible': 'bg-danger'
     };
     return badges[availability] || 'bg-secondary';
   };

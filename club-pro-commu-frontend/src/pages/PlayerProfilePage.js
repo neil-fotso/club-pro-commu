@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { playerAPI, clubAPI, invitationAPI } from '../services/api';
-import Avatar from '../components/Avatar';
 
 // Styles améliorés pour la page de profil
 const profileStyles = `
@@ -103,40 +102,45 @@ const profileStyles = `
   
   .profile-card .card-header {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-bottom: 2px solid #667eea;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+    padding: 1.5rem;
+  }
+  
+  .profile-card .card-body {
     padding: 1.5rem;
   }
   
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
-    margin: 1rem 0;
+    margin-bottom: 1.5rem;
   }
   
   .stat-item {
+    text-align: center;
+    padding: 1rem;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
     transition: all 0.3s ease;
     border: 1px solid rgba(0,0,0,0.05);
   }
   
   .stat-item:hover {
+    background: linear-gradient(135deg, #e8f2ff 0%, #d1e7ff 100%);
     transform: scale(1.05);
     box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
   }
   
   .stat-value {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
   }
   
   .stat-label {
-    color: #6c757d;
     font-size: 0.9rem;
+    color: #6c757d;
     font-weight: 500;
   }
   
@@ -144,28 +148,30 @@ const profileStyles = `
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     color: white;
-    border-radius: 30px;
-    padding: 0.75rem 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
   }
   
   .action-btn:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
   }
   
   .loading-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     min-height: 400px;
   }
   
   .loading-spinner {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border: 4px solid #f3f3f3;
     border-top: 4px solid #667eea;
     border-radius: 50%;
@@ -177,256 +183,14 @@ const profileStyles = `
     100% { transform: rotate(360deg); }
   }
   
-  @media (max-width: 768px) {
-    .profile-content {
-      padding: 1rem;
-      margin: 0.5rem;
-      border-radius: 15px;
-    }
-    
-    .profile-header {
-      padding: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    
-    .profile-info .row {
-      flex-direction: column;
-    }
-    
-    .profile-info .col-md-8 {
-      margin-bottom: 1rem;
-    }
-    
-    .profile-info .col-md-4 {
-      text-align: center;
-    }
-    
-    .profile-info h1 {
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    .profile-avatar {
-      width: 80px;
-      height: 80px;
-      margin-right: 1rem;
-    }
-    
-    .profile-badge {
-      font-size: 0.7rem;
-      padding: 0.3rem 0.6rem;
-      margin-bottom: 0.3rem;
-    }
-    
-    .action-btn {
-      padding: 0.6rem 1.2rem;
-      font-size: 0.85rem;
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-    
-    .profile-card {
-      margin-bottom: 1rem;
-    }
-    
-    .profile-card .card-header {
-      padding: 0.8rem;
-    }
-    
-    .profile-card .card-header h5 {
-      font-size: 0.9rem;
-      margin: 0;
-    }
-    
-    .profile-card .card-body {
-      padding: 0.8rem;
-    }
-    
-    .stats-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
-      margin: 0.5rem 0;
-    }
-    
-    .stat-item {
-      padding: 0.8rem;
-      border-radius: 8px;
-    }
-    
-    .stat-value {
-      font-size: 1.2rem;
-      margin-bottom: 0.3rem;
-    }
-    
-    .stat-label {
-      font-size: 0.7rem;
-    }
-    
-    .row .col-md-4 {
-      margin-bottom: 0.5rem;
-    }
-    
-    .row .col-md-4 .d-flex {
-      font-size: 0.8rem;
-    }
-    
-    .row .col-md-4 strong {
-      font-size: 0.8rem;
-    }
-    
-    .badge {
-      font-size: 0.6rem;
-      padding: 0.2rem 0.4rem;
-    }
-    
-    .modal-dialog {
-      margin: 1rem;
-      max-width: calc(100% - 2rem);
-    }
-    
-    .modal-content {
-      border-radius: 12px;
-    }
-    
-    .modal-header {
-      padding: 0.8rem;
-    }
-    
-    .modal-header h5 {
-      font-size: 0.9rem;
-    }
-    
-    .modal-body {
-      padding: 0.8rem;
-    }
-    
-    .modal-footer {
-      padding: 0.8rem;
-    }
-    
-    .form-label {
-      font-size: 0.8rem;
-      margin-bottom: 0.3rem;
-    }
-    
-    .form-select, .form-control {
-      font-size: 0.85rem;
-      padding: 0.5rem 0.7rem;
-    }
-    
-    .btn {
-      font-size: 0.8rem;
-      padding: 0.5rem 1rem;
-    }
+  .error-container {
+    text-align: center;
+    padding: 3rem;
   }
   
-  @media (max-width: 480px) {
-    .profile-content {
-      padding: 0.8rem;
-      margin: 0.3rem;
-    }
-    
-    .profile-header {
-      padding: 0.8rem;
-      margin-bottom: 1rem;
-    }
-    
-    .profile-info h1 {
-      font-size: 1.2rem;
-    }
-    
-    .profile-avatar {
-      width: 70px;
-      height: 70px;
-      margin-right: 0.8rem;
-    }
-    
-    .profile-badge {
-      font-size: 0.65rem;
-      padding: 0.25rem 0.5rem;
-    }
-    
-    .action-btn {
-      padding: 0.5rem 1rem;
-      font-size: 0.8rem;
-    }
-    
-    .profile-card .card-header {
-      padding: 0.6rem;
-    }
-    
-    .profile-card .card-header h5 {
-      font-size: 0.85rem;
-    }
-    
-    .profile-card .card-body {
-      padding: 0.6rem;
-    }
-    
-    .stats-grid {
-      grid-template-columns: 1fr;
-      gap: 0.4rem;
-    }
-    
-    .stat-item {
-      padding: 0.6rem;
-    }
-    
-    .stat-value {
-      font-size: 1rem;
-    }
-    
-    .stat-label {
-      font-size: 0.65rem;
-    }
-    
-    .row .col-md-4 .d-flex {
-      font-size: 0.75rem;
-    }
-    
-    .row .col-md-4 strong {
-      font-size: 0.75rem;
-    }
-    
-    .badge {
-      font-size: 0.55rem;
-      padding: 0.15rem 0.3rem;
-    }
-    
-    .modal-dialog {
-      margin: 0.5rem;
-      max-width: calc(100% - 1rem);
-    }
-    
-    .modal-header {
-      padding: 0.6rem;
-    }
-    
-    .modal-header h5 {
-      font-size: 0.85rem;
-    }
-    
-    .modal-body {
-      padding: 0.6rem;
-    }
-    
-    .modal-footer {
-      padding: 0.6rem;
-    }
-    
-    .form-label {
-      font-size: 0.75rem;
-    }
-    
-    .form-select, .form-control {
-      font-size: 0.8rem;
-      padding: 0.4rem 0.6rem;
-    }
-    
-    .btn {
-      font-size: 0.75rem;
-      padding: 0.4rem 0.8rem;
-    }
+  .error-container i {
+    color: #dc3545;
+    margin-bottom: 1rem;
   }
 `;
 
@@ -434,86 +198,65 @@ const PlayerProfilePage = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const [player, setPlayer] = useState(null);
+  const [userClubs, setUserClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userClubs, setUserClubs] = useState([]);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [selectedClub, setSelectedClub] = useState('');
-  const [inviteMessage, setInviteMessage] = useState('');
   const [inviting, setInviting] = useState(false);
-  const [isUserAdminOfClub, setIsUserAdminOfClub] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedClub, setSelectedClub] = useState(null);
+  const [inviteMessage, setInviteMessage] = useState('');
+
+  const fetchPlayer = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await playerAPI.getPlayer(id);
+      setPlayer(data);
+      setError(null);
+    } catch (err) {
+      setError('Erreur lors du chargement du profil');
+      console.error('Erreur chargement joueur:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   const fetchUserClubs = useCallback(async () => {
+    if (!user) return;
+    
     try {
       const clubs = await clubAPI.getMyClubs();
       setUserClubs(clubs);
-      
-      // Vérifier si l'utilisateur est admin d'au moins un club
-      const hasAdminClub = clubs.some(club => {
-        const userMember = club.membres.find(membre => {
-          const membreUserId = membre.userId._id || membre.userId;
-          const currentUserId = user.id || user._id;
-          return membreUserId === currentUserId;
-        });
-        const isCreateur = (() => {
-          const createurId = club.createurId?._id || club.createurId;
-          const currentUserId = user.id || user._id;
-          return createurId === currentUserId;
-        })();
-        return isCreateur || (userMember && userMember.role === 'Admin');
-      });
-      
-      setIsUserAdminOfClub(hasAdminClub);
     } catch (err) {
-      console.error('Erreur chargement clubs:', err);
+      console.error('Erreur chargement clubs utilisateur:', err);
     }
   }, [user]);
 
   useEffect(() => {
-    const fetchPlayer = async () => {
-      try {
-        setLoading(true);
-        const data = await playerAPI.getPlayer(id);
-        setPlayer(data);
-        setError(null);
-      } catch (err) {
-        setError('Erreur lors du chargement du profil');
-        console.error('Erreur chargement joueur:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchPlayer();
-    if (user) {
-      fetchUserClubs();
-    }
-    }, [id, user, fetchUserClubs]);
+    fetchUserClubs();
+  }, [fetchPlayer, fetchUserClubs]);
 
   const handleInvite = () => {
-    if (!user) {
-      alert('Vous devez être connecté pour inviter un joueur');
-      return;
+    if (userClubs.length === 1) {
+      setSelectedClub(userClubs[0]);
+      setShowInviteModal(true);
+    } else {
+      setShowInviteModal(true);
     }
-    setShowInviteModal(true);
   };
 
   const handleSendInvitation = async () => {
-    if (!selectedClub) {
-      alert('Veuillez sélectionner un club');
-      return;
-    }
-
+    if (!selectedClub) return;
+    
     try {
       setInviting(true);
-      await invitationAPI.invitePlayer(selectedClub, id, inviteMessage);
+      await invitationAPI.sendInvitation(selectedClub._id, player._id, inviteMessage);
       alert('Invitation envoyée avec succès !');
       setShowInviteModal(false);
-      setSelectedClub('');
       setInviteMessage('');
-    } catch (error) {
-      console.error('Erreur envoi invitation:', error);
-      alert('Erreur lors de l\'envoi de l\'invitation: ' + error.message);
+      setSelectedClub(null);
+    } catch (err) {
+      alert(err.message || 'Erreur lors de l\'envoi de l\'invitation');
     } finally {
       setInviting(false);
     }
@@ -522,9 +265,7 @@ const PlayerProfilePage = () => {
   const getDisponibiliteColor = (disponibilite) => {
     const colors = {
       'Disponible': 'success',
-      'Occupé': 'warning',
-      'Absent': 'danger',
-      'Recherche équipe': 'info'
+      'Indisponible': 'danger'
     };
     return colors[disponibilite] || 'secondary';
   };
@@ -533,9 +274,7 @@ const PlayerProfilePage = () => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
@@ -547,6 +286,7 @@ const PlayerProfilePage = () => {
           <div className="profile-content">
             <div className="loading-container">
               <div className="loading-spinner"></div>
+              <p className="mt-3">Chargement du profil...</p>
             </div>
           </div>
         </div>
@@ -560,9 +300,14 @@ const PlayerProfilePage = () => {
         <style>{profileStyles}</style>
         <div className="container">
           <div className="profile-content">
-            <div className="alert alert-danger" role="alert">
-              <i className="fas fa-exclamation-triangle me-2"></i>
-              {error || 'Joueur non trouvé'}
+            <div className="error-container">
+              <i className="fas fa-exclamation-triangle fa-3x"></i>
+              <h3>Erreur</h3>
+              <p>{error || 'Profil non trouvé'}</p>
+              <Link to="/joueurs" className="btn btn-primary">
+                <i className="fas fa-arrow-left me-2"></i>
+                Retour à la recherche
+              </Link>
             </div>
           </div>
         </div>
@@ -570,6 +315,7 @@ const PlayerProfilePage = () => {
     );
   }
 
+  const isUserAdminOfClub = userClubs.some(club => club.role === 'Admin');
   const isOwnProfile = user && player.userId === user.id;
 
   return (
@@ -583,12 +329,6 @@ const PlayerProfilePage = () => {
               <div className="row align-items-center">
                 <div className="col-md-8">
                   <div className="d-flex align-items-center">
-                    <Avatar 
-                      src={player.photoProfil} 
-                      alt={player.pseudo}
-                      size="xl"
-                      className="me-4 profile-avatar"
-                    />
                     <div>
                       <h1 className="mb-3 text-white">{player.pseudo}</h1>
                       <div className="d-flex gap-2 mb-3 flex-wrap">
@@ -649,6 +389,68 @@ const PlayerProfilePage = () => {
                   </div>
                 </div>
               )}
+
+              {/* Informations détaillées */}
+              <div className="card profile-card mb-4">
+                <div className="card-header">
+                  <h5 className="mb-0">
+                    <i className="fas fa-info-circle me-2"></i>
+                    Informations
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="mb-3">
+                        <strong>Position principale:</strong>
+                        <div className="text-muted">{player.postePrincipal || 'Non renseigné'}</div>
+                      </div>
+                      
+                      {player.postesSecondaires && player.postesSecondaires.length > 0 && (
+                        <div className="mb-3">
+                          <strong>Postes secondaires:</strong>
+                          <div className="mt-2">
+                            {player.postesSecondaires.map((poste, index) => (
+                              <span key={index} className="badge bg-light text-dark me-1">
+                                {poste}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mb-3">
+                        <strong>Recherche un club:</strong>
+                        <div className="text-muted">
+                          {player.rechercheClub ? 'Oui' : 'Non'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="col-md-6">
+                      {player.langues && player.langues.length > 0 && (
+                        <div className="mb-3">
+                          <strong>Langues:</strong>
+                          <div className="mt-2">
+                            {player.langues.map((langue, index) => (
+                              <span key={index} className="badge bg-info me-1">
+                                {langue}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="mb-3">
+                        <strong>Membre depuis:</strong>
+                        <div className="text-muted">
+                          {formatDate(player.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Statistiques */}
               {player.statistiques && (
@@ -756,94 +558,62 @@ const PlayerProfilePage = () => {
 
             {/* Sidebar */}
             <div className="col-lg-4">
-              {/* Informations détaillées */}
-              <div className="card profile-card mb-4">
-                <div className="card-header">
-                  <h5 className="mb-0">
-                    <i className="fas fa-info-circle me-2"></i>
-                    Informations
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <div className="mb-3">
-                    <strong>Position principale:</strong>
-                    <div className="text-muted">{player.postePrincipal || 'Non renseigné'}</div>
-                  </div>
-                  
-                  {player.postesSecondaires && player.postesSecondaires.length > 0 && (
-                    <div className="mb-3">
-                      <strong>Postes secondaires:</strong>
-                      <div className="mt-2">
-                        {player.postesSecondaires.map((poste, index) => (
-                          <span key={index} className="badge bg-light text-dark me-1">
-                            {poste}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {player.langues && player.langues.length > 0 && (
-                    <div className="mb-3">
-                      <strong>Langues:</strong>
-                      <div className="mt-2">
-                        {player.langues.map((langue, index) => (
-                          <span key={index} className="badge bg-info me-1">
-                            {langue}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mb-3">
-                    <strong>Recherche un club:</strong>
-                    <div className="text-muted">
-                      {player.rechercheClub ? 'Oui' : 'Non'}
-                    </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <strong>Membre depuis:</strong>
-                    <div className="text-muted">
-                      {formatDate(player.createdAt)}
-                    </div>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <strong>Dernière activité:</strong>
-                    <div className="text-muted">
-                      {formatDate(player.derniereActivite)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Club actuel */}
-              {player.club && (
+              {/* Clubs du joueur */}
+              {userClubs.length > 0 && (
                 <div className="card profile-card mb-4">
                   <div className="card-header">
                     <h5 className="mb-0">
-                      <i className="fas fa-shield-alt me-2"></i>
-                      Club actuel
+                      <i className="fas fa-users me-2"></i>
+                      Clubs
                     </h5>
                   </div>
                   <div className="card-body">
-                    <div className="d-flex align-items-center">
-                      <Avatar 
-                        src={player.club.logo} 
-                        alt={player.club.nom}
-                        size="md"
-                        type="club"
-                        className="me-3"
-                      />
-                      <div>
-                        <h6 className="mb-1">{player.club.nom}</h6>
-                        <small className="text-muted">
-                          {player.club.plateforme} • {player.club.pays}
-                        </small>
+                    {userClubs.map((club) => (
+                      <div key={club._id} className="mb-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <Link to={`/club/${club._id}`} className="text-decoration-none">
+                            <strong>{club.nom}</strong>
+                          </Link>
+                          <span className={`badge bg-${club.role === 'Admin' ? 'danger' : 'secondary'}`}>
+                            {club.role}
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invitation */}
+              {!isOwnProfile && isUserAdminOfClub && (
+                <div className="card profile-card">
+                  <div className="card-header">
+                    <h5 className="mb-0">
+                      <i className="fas fa-user-plus me-2"></i>
+                      Invitation
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    <p className="text-muted mb-3">
+                      Invitez ce joueur à rejoindre votre club
+                    </p>
+                    <button
+                      className="btn btn-primary w-100"
+                      onClick={handleInvite}
+                      disabled={inviting}
+                    >
+                      {inviting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          Envoi en cours...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-user-plus me-2"></i>
+                          Inviter
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               )}
@@ -870,8 +640,11 @@ const PlayerProfilePage = () => {
                   <label className="form-label">Sélectionner un club</label>
                   <select 
                     className="form-select"
-                    value={selectedClub}
-                    onChange={(e) => setSelectedClub(e.target.value)}
+                    value={selectedClub?._id || ''}
+                    onChange={(e) => {
+                      const club = userClubs.find(c => c._id === e.target.value);
+                      setSelectedClub(club || null);
+                    }}
                   >
                     <option value="">Choisir un club...</option>
                     {userClubs.map(club => (

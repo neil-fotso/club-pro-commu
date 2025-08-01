@@ -21,7 +21,7 @@ export default function CompetitionDetailPage() {
         setLoading(true);
         const [competitionData, clubsData] = await Promise.all([
           competitionAPI.getCompetition(id),
-          user ? clubAPI.getMyClubs() : Promise.resolve([])
+          user ? clubAPI.getMyClubs(user.token) : Promise.resolve([])
         ]);
         
         setCompetition(competitionData);
@@ -38,13 +38,15 @@ export default function CompetitionDetailPage() {
     fetchData();
   }, [id, user]);
 
+
+
   const handleInscription = async () => {
     if (!selectedClub) {
       alert('Veuillez sélectionner un club');
       return;
     }
 
-    if (competition.equipesInscrites.length >= competition.nombreEquipes) {
+    if ((competition.equipesInscrites?.length || 0) >= competition.nombreEquipes) {
       alert('Cette compétition a atteint son maximum d\'équipes');
       return;
     }
@@ -166,6 +168,17 @@ export default function CompetitionDetailPage() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="container py-5">
+        <div className="alert alert-info">
+          <i className="fas fa-info-circle me-2"></i>
+          Veuillez vous connecter pour voir les détails de cette compétition.
+        </div>
+      </div>
+    );
+  }
+
   if (error || !competition) {
     return (
       <div className="container py-5">
@@ -177,7 +190,16 @@ export default function CompetitionDetailPage() {
     );
   }
 
-  const isCreator = user && competition.createurId._id === user.id;
+  // Fonction helper pour comparer les IDs utilisateur
+  const compareUserIds = (userId1, userId2) => {
+    const id1 = typeof userId1 === 'object' ? userId1._id : userId1;
+    const id2 = typeof userId2 === 'object' ? userId2._id : userId2;
+    return id1 === id2;
+  };
+  
+  const isCreator = user && competition.createurId && compareUserIds(competition.createurId, user);
+  
+
   
   // Fonction helper pour comparer les IDs de clubs
   const compareClubIds = (clubId1, clubId2) => {
@@ -186,14 +208,14 @@ export default function CompetitionDetailPage() {
     return id1 === id2;
   };
   
-  const isInscrit = competition.equipesInscrites.some(e => 
+  const isInscrit = (user && competition.equipesInscrites?.some(e => 
     userClubs.some(club => compareClubIds(club._id, e.clubId))
-  );
+  )) || false;
   
   // Trouver le club inscrit de l'utilisateur
-  const clubInscrit = userClubs.find(club => 
-    competition.equipesInscrites.some(e => compareClubIds(club._id, e.clubId))
-  );
+  const clubInscrit = user ? (userClubs.find(club => 
+    competition.equipesInscrites?.some(e => compareClubIds(club._id, e.clubId))
+  )) : null;
 
   return (
     <div className="container py-5">
@@ -205,6 +227,29 @@ export default function CompetitionDetailPage() {
               <i className="fas fa-arrow-left me-2"></i>
               Retour
             </Link>
+            {competition.statut === 'En cours' && (
+              ((user?.isAdmin) || 
+               (competition.equipesInscrites?.some(equipe => {
+                 const clubId = typeof equipe.clubId === 'object' ? equipe.clubId._id : equipe.clubId;
+                 const userClub = userClubs.find(club => compareClubIds(club._id, clubId));
+                 const isAdminOfClub = userClub && userClub.membres.some(m => 
+                   compareUserIds(m.userId, user) && m.role === 'Admin'
+                 );
+                 
+                 return isAdminOfClub;
+               }))) && (
+                <Link to={`/competition/${competition._id}/matchs`} className="btn btn-primary me-3">
+                  <i className="fas fa-calendar-alt me-2"></i>
+                  Calendrier & Matchs
+                </Link>
+              )
+            )}
+            {(competition.statut === 'En cours' || competition.statut === 'Terminé') && (
+              <Link to={`/competition/${competition._id}/stats`} className="btn btn-info me-3">
+                <i className="fas fa-chart-bar me-2"></i>
+                Statistiques
+              </Link>
+            )}
             <div>
               <h1 className="mb-2">{competition.nom}</h1>
               <div className="d-flex gap-2 flex-wrap">
@@ -228,7 +273,7 @@ export default function CompetitionDetailPage() {
         </div>
         
         <div className="col-lg-4 text-end">
-          {isCreator && competition.statut === 'Ouvert' && (
+          {isCreator && (competition.statut === 'Ouvert' || competition.statut === 'Brouillon') && (
             <button 
               className="btn btn-success btn-lg"
               onClick={handleLancerCompetition}
@@ -240,12 +285,12 @@ export default function CompetitionDetailPage() {
           
           {!isCreator && user && !isInscrit && (
             <button 
-              className={`btn btn-lg ${competition.equipesInscrites.length >= competition.nombreEquipes ? 'btn-secondary disabled' : 'btn-primary'}`}
+              className={`btn btn-lg ${(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? 'btn-secondary disabled' : 'btn-primary'}`}
               onClick={() => setShowInscriptionModal(true)}
-              disabled={competition.equipesInscrites.length >= competition.nombreEquipes}
+              disabled={(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes}
             >
               <i className="fas fa-user-plus me-2"></i>
-              {competition.equipesInscrites.length >= competition.nombreEquipes ? 'Complet' : 'S\'inscrire'}
+              {(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? 'Complet' : 'S\'inscrire'}
             </button>
           )}
           
@@ -293,8 +338,8 @@ export default function CompetitionDetailPage() {
                 <div className="col-md-6">
                   <strong>Nombre d'équipes:</strong>
                   <p>
-                    {competition.equipesInscrites.length} / {competition.nombreEquipes}
-                    {competition.equipesInscrites.length >= competition.nombreEquipes && (
+                    {competition.equipesInscrites?.length || 0} / {competition.nombreEquipes}
+                    {(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes && (
                       <span className="badge bg-danger ms-2">Complet</span>
                     )}
                   </p>
@@ -303,13 +348,10 @@ export default function CompetitionDetailPage() {
                   <strong>Plateforme:</strong>
                   <p>{competition.plateforme}</p>
                 </div>
-                <div className="col-md-6">
-                  <strong>Niveau:</strong>
-                  <p>{competition.niveau}</p>
-                </div>
+
                 <div className="col-md-6">
                   <strong>Inscription:</strong>
-                  <p>{competition.inscriptionGratuite ? 'Gratuite' : `${competition.montantInscription}€`}</p>
+                  <p>{competition.inscriptionGratuite ? 'Gratuite' : `${competition.montantInscription || 0}€`}</p>
                 </div>
               </div>
 
@@ -334,18 +376,18 @@ export default function CompetitionDetailPage() {
             <div className="card-header">
               <h5 className="mb-0">
                 <i className="fas fa-users me-2"></i>
-                Équipes inscrites ({competition.equipesInscrites.length}/{competition.nombreEquipes})
+                Équipes inscrites ({competition.equipesInscrites?.length || 0}/{competition.nombreEquipes})
               </h5>
             </div>
             <div className="card-body">
-              {competition.equipesInscrites.length === 0 ? (
+              {(competition.equipesInscrites?.length || 0) === 0 ? (
                 <p className="text-muted">Aucune équipe inscrite pour le moment.</p>
               ) : (
                 <div className="row">
                   {competition.equipesInscrites.map((equipe, index) => {
                     const isAdminDeCeClub = userClubs.some(club => 
                       compareClubIds(club._id, equipe.clubId) && 
-                      club.membres.some(m => m.userId._id === user?.id && m.role === 'Admin')
+                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
                     );
                     
                     return (
@@ -381,12 +423,12 @@ export default function CompetitionDetailPage() {
           </div>
 
           {/* Demandes d'inscription (pour les compétitions privées) */}
-          {isCreator && competition.visibilite === 'privee' && competition.demandesInscription.length > 0 && (
+                      {isCreator && competition.visibilite === 'privee' && (competition.demandesInscription?.length || 0) > 0 && (
             <div className="card mb-4">
               <div className="card-header">
                 <h5 className="mb-0">
                   <i className="fas fa-clock me-2"></i>
-                  Demandes d'inscription ({competition.demandesInscription.filter(d => d.statut === 'En attente').length})
+                  Demandes d'inscription ({(competition.demandesInscription?.filter(d => d.statut === 'En attente') || []).length})
                 </h5>
               </div>
               <div className="card-body">
@@ -428,7 +470,7 @@ export default function CompetitionDetailPage() {
           )}
 
           {/* Matchs (si la compétition est lancée) */}
-          {competition.statut === 'En cours' && competition.matchs.length > 0 && (
+                      {competition.statut === 'En cours' && (competition.matchs?.length || 0) > 0 && (
             <div className="card">
               <div className="card-header">
                 <h5 className="mb-0">
@@ -509,7 +551,7 @@ export default function CompetitionDetailPage() {
                 ></button>
               </div>
               <div className="modal-body">
-                {competition.equipesInscrites.length >= competition.nombreEquipes ? (
+                {(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? (
                   <div className="alert alert-warning">
                     <i className="fas fa-exclamation-triangle me-2"></i>
                     Cette compétition a atteint son maximum de {competition.nombreEquipes} équipes.
@@ -559,7 +601,7 @@ export default function CompetitionDetailPage() {
                   type="button" 
                   className="btn btn-primary"
                   onClick={handleInscription}
-                  disabled={inscribing || !selectedClub || competition.equipesInscrites.length >= competition.nombreEquipes}
+                  disabled={inscribing || !selectedClub || (competition.equipesInscrites?.length || 0) >= competition.nombreEquipes}
                 >
                   {inscribing ? 'Inscription...' : 'S\'inscrire'}
                 </button>

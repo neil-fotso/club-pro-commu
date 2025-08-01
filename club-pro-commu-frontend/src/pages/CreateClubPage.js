@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { clubAPI } from '../services/api';
@@ -253,6 +253,23 @@ export default function CreateClubPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [userClub, setUserClub] = useState(null);
+
+  useEffect(() => {
+    async function fetchUserClub() {
+      if (user && user.token) {
+        try {
+          const clubs = await clubAPI.getMyClubs(user.token);
+          if (clubs && clubs.length > 0) {
+            setUserClub(clubs[0]);
+          }
+        } catch (e) {
+          // rien
+        }
+      }
+    }
+    fetchUserClub();
+  }, [user]);
 
   if (!user) {
     return (
@@ -273,6 +290,34 @@ export default function CreateClubPage() {
                     Se connecter
                   </a>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (userClub) {
+    return (
+      <div className="create-club-container">
+        <style>{createClubStyles}</style>
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-lg-6">
+              <div className="create-club-content text-center">
+                <div className="header-icon">
+                  <i className="fas fa-info-circle"></i>
+                </div>
+                <h2>Vous appartenez déjà à un club</h2>
+                <p className="text-muted mb-4">
+                  Vous ne pouvez pas créer un nouveau club tant que vous êtes membre d'un club.<br/>
+                  <b>Club actuel :</b> {userClub.nom}
+                </p>
+                <button className="btn submit-btn" onClick={() => navigate(`/club/${userClub._id}`)}>
+                  <i className="fas fa-shield-alt me-2"></i>
+                  Voir mon club
+                </button>
               </div>
             </div>
           </div>

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { clubAPI } from '../services/api';
+import { getAllCountries } from '../utils/countryUtils';
+import Avatar from '../components/Avatar';
 
 // Styles améliorés pour la page de recherche de clubs
 const clubSearchStyles = `
@@ -157,6 +159,27 @@ const clubSearchStyles = `
   .btn-clear:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+  }
+  
+  .sorting-options {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 15px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  .sorting-options .btn-group .btn {
+    border-radius: 8px;
+    margin: 0 2px;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.3s ease;
+  }
+  
+  .sorting-options .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
   
   .club-card {
@@ -805,16 +828,39 @@ export default function ClubSearchPage() {
     nom: '',
     pays: '',
     plateforme: '',
-    niveau: '',
-    recrute: ''
+    recrute: '',
+    langue: ''
   });
+  const [sortBy, setSortBy] = useState('nom');
+  const [sortOrder, setSortOrder] = useState('asc');
 
 
-  const loadClubs = useCallback(async () => {
+  const loadClubs = useCallback(async (currentFilters = filters) => {
     try {
       setLoading(true);
-      const data = await clubAPI.getClubs(filters);
-      setClubs(data);
+      const data = await clubAPI.getClubs(currentFilters);
+      
+      // Tri côté client pour l'instant
+      const sortedClubs = [...data].sort((a, b) => {
+        let aValue = a[sortBy];
+        let bValue = b[sortBy];
+        
+        // Gestion des valeurs nulles/undefined
+        if (!aValue) aValue = '';
+        if (!bValue) bValue = '';
+        
+        // Conversion en string pour le tri
+        aValue = String(aValue).toLowerCase();
+        bValue = String(bValue).toLowerCase();
+        
+        if (sortOrder === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      });
+      
+      setClubs(sortedClubs);
       setError('');
     } catch (err) {
       setError('Erreur lors du chargement des clubs');
@@ -822,7 +868,7 @@ export default function ClubSearchPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [sortBy, sortOrder, filters]);
 
   const loadUserClub = useCallback(async () => {
     if (!user) return;
@@ -871,6 +917,7 @@ export default function ClubSearchPage() {
   };
 
   useEffect(() => {
+    // Charger les clubs au montage du composant
     loadClubs();
     loadUserClub();
   }, [loadClubs, loadUserClub]);
@@ -889,6 +936,20 @@ export default function ClubSearchPage() {
       ...prev,
       [field]: value
     }));
+    // Ne pas déclencher la recherche automatiquement
+  };
+
+  const handleSearch = () => {
+    loadClubs(filters);
+  };
+
+  const handleSortChange = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
   };
 
   const clearFilters = () => {
@@ -896,8 +957,8 @@ export default function ClubSearchPage() {
       nom: '',
       pays: '',
       plateforme: '',
-      niveau: '',
-      recrute: ''
+      recrute: '',
+      langue: ''
     });
   };
 
@@ -1030,13 +1091,18 @@ export default function ClubSearchPage() {
                        <i className="fas fa-flag"></i>
                        Pays
                      </label>
-                     <input
-                       type="text"
-                       className="form-control"
+                     <select
+                       className="form-select"
                        value={filters.pays}
                        onChange={(e) => handleFilterChange('pays', e.target.value)}
-                       placeholder="France, Belgique..."
-                     />
+                     >
+                       <option value="">Tous les pays</option>
+                       {getAllCountries().map(country => (
+                         <option key={country.code} value={country.name}>
+                           {country.flag} {country.name}
+                         </option>
+                       ))}
+                     </select>
                    </div>
                    
                    <div className="filter-group">
@@ -1057,22 +1123,31 @@ export default function ClubSearchPage() {
                    
                    <div className="filter-group">
                      <label>
-                       <i className="fas fa-star"></i>
-                       Niveau
+                       <i className="fas fa-language"></i>
+                       Langue
                      </label>
                      <select
                        className="form-select"
-                       value={filters.niveau}
-                       onChange={(e) => handleFilterChange('niveau', e.target.value)}
+                       value={filters.langue}
+                       onChange={(e) => handleFilterChange('langue', e.target.value)}
                      >
-                       <option value="">Tous les niveaux</option>
-                       <option value="Débutant">Débutant</option>
-                       <option value="Intermédiaire">Intermédiaire</option>
-                       <option value="Avancé">Avancé</option>
-                       <option value="Expert">Expert</option>
-                       <option value="Pro">Pro</option>
+                       <option value="">Toutes les langues</option>
+                       <option value="Français">🇫🇷 Français</option>
+                       <option value="Anglais">🇬🇧 Anglais</option>
+                       <option value="Espagnol">🇪🇸 Espagnol</option>
+                       <option value="Allemand">🇩🇪 Allemand</option>
+                       <option value="Italien">🇮🇹 Italien</option>
+                       <option value="Portugais">🇵🇹 Portugais</option>
+                       <option value="Néerlandais">🇳🇱 Néerlandais</option>
+                       <option value="Arabe">🇸🇦 Arabe</option>
+                       <option value="Chinois">🇨🇳 Chinois</option>
+                       <option value="Japonais">🇯🇵 Japonais</option>
+                       <option value="Coréen">🇰🇷 Coréen</option>
+                       <option value="Russe">🇷🇺 Russe</option>
                      </select>
                    </div>
+                   
+
                  </div>
                </div>
              )}
@@ -1096,6 +1171,86 @@ export default function ClubSearchPage() {
              </div>
            </div>
 
+                    {/* Options de tri */}
+          <div className="sorting-options mb-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <h6 className="mb-0">
+                <i className="fas fa-sort me-2"></i>
+                Trier par :
+              </h6>
+              <div className="btn-group" role="group">
+                <button
+                  type="button"
+                  className={`btn btn-sm ${sortBy === 'nom' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => handleSortChange('nom')}
+                >
+                  <i className="fas fa-shield-alt me-1"></i>
+                  Nom
+                  {sortBy === 'nom' && (
+                    <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${sortBy === 'membres' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => handleSortChange('membres')}
+                >
+                  <i className="fas fa-users me-1"></i>
+                  Membres
+                  {sortBy === 'membres' && (
+                    <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className={`btn btn-sm ${sortBy === 'dateCreation' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => handleSortChange('dateCreation')}
+                >
+                  <i className="fas fa-calendar me-1"></i>
+                  Date de création
+                  {sortBy === 'dateCreation' && (
+                    <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bouton de recherche */}
+          <div className="row mb-4">
+            <div className="col text-center">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSearch}
+                disabled={loading}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  borderRadius: '25px',
+                  padding: '0.75rem 1.5rem',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+                  fontSize: '1rem'
+                }}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Recherche en cours...
+                  </>
+                ) : (
+                  <>
+                    <i className="fas fa-search me-2"></i>
+                    Rechercher
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           {/* Résultats */}
           <div className="results-count">
             {clubs.length} club{clubs.length !== 1 ? 's' : ''} trouvé{clubs.length !== 1 ? 's' : ''}
@@ -1113,9 +1268,13 @@ export default function ClubSearchPage() {
                 <div key={club._id} className="col-lg-6 col-xl-4">
                   <div className="club-card">
                     <div className="club-header">
-                      <div className="club-avatar">
-                        <i className="fas fa-shield-alt"></i>
-                      </div>
+                      <Avatar 
+                        src={club.logo}
+                        name={club.nom}
+                        size="md"
+                        type="club"
+                        className="club-avatar"
+                      />
                       <div className="club-info">
                         <h5>
                           <Link to={`/club/${club._id}`}>

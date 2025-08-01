@@ -13,8 +13,9 @@ export function AuthProvider({ children }) {
     if (token) {
       // Vérifier si le token est valide
       authAPI.getMe()
-        .then(userData => {
-          setUser({ ...userData, token });
+        .then(data => {
+          // data.user contient le profil, data.player le profil joueur
+          setUser({ ...data.user, player: data.player, token });
         })
         .catch(() => {
           localStorage.removeItem('token');

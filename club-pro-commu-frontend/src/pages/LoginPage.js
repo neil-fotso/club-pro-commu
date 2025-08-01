@@ -11,6 +11,7 @@ export default function LoginPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (user) {
     return (
@@ -118,21 +119,36 @@ export default function LoginPage() {
                       <i className="fas fa-lock me-2"></i>
                       Mot de passe *
                     </label>
-                    <input
-                      type="password"
-                      className="form-control form-control-lg"
-                      id="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      placeholder="Entrez votre mot de passe"
-                      style={{
-                        borderRadius: '12px',
-                        border: '2px solid #e9ecef',
-                        transition: 'all 0.3s ease'
-                      }}
-                    />
+                    <div className="input-group">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        className="form-control form-control-lg"
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        placeholder="Entrez votre mot de passe"
+                        style={{
+                          borderRadius: '12px 0 0 12px',
+                          border: '2px solid #e9ecef',
+                          borderRight: 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowPassword(!showPassword)}
+                        style={{
+                          borderRadius: '0 12px 12px 0',
+                          border: '2px solid #e9ecef',
+                          borderLeft: 'none'
+                        }}
+                      >
+                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
                   </div>
 
                   <button 
