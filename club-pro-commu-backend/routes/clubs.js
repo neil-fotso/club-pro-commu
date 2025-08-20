@@ -2,6 +2,7 @@ const express = require('express');
 const Club = require('../models/Club');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 const { updatePlayerAvailability } = require('../utils/playerUtils');
 const discordService = require('../services/discordService');
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // Récupérer tous les clubs avec filtres
 router.get('/', async (req, res) => {
   try {
-    const { search, plateforme, pays, recrute } = req.query;
+    const { search, plateforme, pays, recrute, langue } = req.query;
     
     let query = {};
     
@@ -29,14 +30,29 @@ router.get('/', async (req, res) => {
       query.pays = pays;
     }
     
+    // Filtre par langue
+    if (langue) {
+      query.langues = { $in: [langue] };
+    }
+    
     // Filtre par recrutement
     if (recrute === 'true') {
       query.recrute = true;
+    } else if (recrute === 'false') {
+      query.recrute = false;
     }
     
-    const clubs = await Club.find(query)
+    let clubs = await Club.find(query)
       .populate('createurId', 'pseudo')
       .sort({ dateCreation: -1 });
+    
+    // Si on filtre par recrutement, recalculer le statut de recrutement
+    if (recrute === 'true' || recrute === 'false') {
+      clubs = clubs.filter(club => {
+        const recruteStatus = club.calculateRecrute();
+        return recrute === 'true' ? recruteStatus : !recruteStatus;
+      });
+    }
     
     res.json(clubs);
   } catch (error) {
@@ -98,7 +114,7 @@ router.post('/', auth, async (req, res) => {
       effectifMax, 
       langues, 
       recrute,
-      niveauRecherche, 
+ 
       postesRecherches, 
       horaires 
     } = req.body;
@@ -128,7 +144,7 @@ router.post('/', auth, async (req, res) => {
       effectifMax: effectifMax || 11, // Handle effectifMax from form
       langues: langues || ['Français'], // Handle languages from form
       recrute: recrute !== undefined ? recrute : true, // Handle recrute from form
-      niveauRecherche: niveauRecherche || 'Tous niveaux',
+
       postesRecherches: postesRecherches || [],
       horaires,
       membres: [{
@@ -174,7 +190,7 @@ router.put('/:id', auth, async (req, res) => {
       effectifMax: req.body.effectifMax,
       recrute: req.body.recrute,
       pays: req.body.pays,
-      niveauRecherche: req.body.niveauRecherche,
+
       postesRecherches: req.body.postesRecherches,
       horaires: req.body.horaires
     };
@@ -659,6 +675,25 @@ router.delete('/:id/demande-utilisateur', auth, async (req, res) => {
   } catch (error) {
     console.error('Erreur annulation demande:', error);
     res.status(500).json({ message: 'Erreur serveur.' });
+  }
+});
+
+// DELETE /api/clubs/:id - Supprimer un club (admin uniquement)
+router.delete('/:id', adminAuth, async (req, res) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club non trouvé' });
+    }
+
+    // Supprimer le club
+    await Club.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Club supprimé avec succès' });
+  } catch (error) {
+    console.error('Erreur suppression club:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 

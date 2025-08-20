@@ -3,7 +3,7 @@ const User = require('./models/User');
 require('dotenv').config();
 
 // Configuration de la base de données
-const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/clubprocommu';
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu';
 
 // Données des utilisateurs de test
 const testUsers = [

@@ -67,7 +67,7 @@ const apiCall = async (endpoint, options = {}) => {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.message || 'Erreur API');
+      throw new Error(data.message || 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🚀');
     }
     
     return data;

@@ -14,9 +14,9 @@ const mapPositionToBackend = (frontendPosition) => {
     'BU': 'Attaquant',
     'AG': 'Attaquant',
     'AD': 'Attaquant',
-    'MOC': 'Attaquant',
 
     // Positions de milieu
+    'MOC': 'Milieu',
     'MG': 'Milieu',
     'MD': 'Milieu',
     'MC': 'Milieu',
@@ -48,8 +48,8 @@ router.post('/register', async (req, res) => {
       nationalite,
       ville,
       plateforme,
-      position,
-      niveau = 'Intermédiaire',
+      pseudoPlateforme,
+      postePrincipal,
       bio = ''
     } = req.body;
 
@@ -83,7 +83,11 @@ router.post('/register', async (req, res) => {
     }
 
     // Vérifier si l'email existe déjà
+    console.log('🔍 Vérification email:', email.toLowerCase());
+    console.log('   Base de données:', User.db.name);
     const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+    console.log('   Résultat email:', existingUserByEmail ? 'EXISTE' : 'N\'EXISTE PAS');
+    
     if (existingUserByEmail) {
       return res.status(400).json({
         message: 'Un compte avec cet email existe déjà',
@@ -93,7 +97,11 @@ router.post('/register', async (req, res) => {
     }
 
     // Vérifier si le pseudo existe déjà
+    console.log('🔍 Vérification pseudo:', pseudo);
+    console.log('   Base de données:', User.db.name);
     const existingUserByPseudo = await User.findOne({ pseudo });
+    console.log('   Résultat pseudo:', existingUserByPseudo ? 'EXISTE' : 'N\'EXISTE PAS');
+    
     if (existingUserByPseudo) {
       return res.status(400).json({
         message: 'Ce pseudo est déjà utilisé',
@@ -121,9 +129,10 @@ router.post('/register', async (req, res) => {
       nationalite: nationalite || '',
       ville: ville || '',
       plateforme,
-      position: position ? mapPositionToBackend(position) : 'Polyvalent', // Position générale pour compatibilité
-      postePrincipal: position || undefined, // Position détaillée du frontend (optionnel)
-      niveau,
+      pseudoPlateforme: pseudoPlateforme || '',
+      position: postePrincipal ? mapPositionToBackend(postePrincipal) : 'Polyvalent', // Position générale pour compatibilité
+      postePrincipal: postePrincipal || undefined, // Position détaillée du frontend (optionnel)
+
       bio,
       disponibilite: 'Disponible',
       derniereActivite: new Date(),
@@ -179,15 +188,16 @@ router.post('/register', async (req, res) => {
         _id: player._id,
         pseudo: player.pseudo,
         plateforme: player.plateforme,
+        pseudoPlateforme: player.pseudoPlateforme,
         position: player.position,
-        niveau: player.niveau,
+        postePrincipal: player.postePrincipal,
         disponibilite: player.disponibilite
       }
     });
 
   } catch (error) {
     console.error('Erreur inscription:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🚀' });
   }
 });
 
@@ -211,22 +221,27 @@ router.get('/me', auth, async (req, res) => {
     const player = await Player.findOne({ userId: user._id });
     
     res.json({
-      _id: user._id,
-      pseudo: user.pseudo,
-      email: user.email,
-      dateCreation: user.dateCreation,
+      user: {
+        _id: user._id,
+        pseudo: user.pseudo,
+        email: user.email,
+        dateCreation: user.dateCreation,
+        isAdmin: user.isAdmin,
+      },
       player: player ? {
         _id: player._id,
         pseudo: player.pseudo,
         plateforme: player.plateforme,
+        pseudoPlateforme: player.pseudoPlateforme,
         position: player.position,
-        niveau: player.niveau,
-        disponibilite: player.disponibilite
+        postePrincipal: player.postePrincipal,
+        disponibilite: player.disponibilite,
+        derniereActivite: player.derniereActivite
       } : null
     });
   } catch (error) {
     console.error('Erreur récupération utilisateur:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Oups ! Nous rencontrons quelques difficultés techniques. Réessayez dans un instant ! 🔧' });
   }
 });
 
@@ -243,46 +258,35 @@ router.post('/login', async (req, res) => {
     }
 
     // Rechercher l'utilisateur par email ou pseudo
-    let user = await User.findOne({ email: email.toLowerCase() });
-    console.log('🔍 Recherche par email:', email.toLowerCase(), 'Résultat:', user ? 'Trouvé' : 'Non trouvé');
+    let user = await User.findOne({ email: email.toLowerCase() }).select('+isAdmin');
 
     // Si pas trouvé par email, essayer par pseudo
     if (!user) {
-      user = await User.findOne({ pseudo: email });
-      console.log('🔍 Recherche par pseudo:', email, 'Résultat:', user ? 'Trouvé' : 'Non trouvé');
+      user = await User.findOne({ pseudo: email }).select('+isAdmin');
     }
 
     if (!user) {
-      console.log('❌ Aucun utilisateur trouvé pour:', email);
       return res.status(400).json({
         message: 'Email ou mot de passe incorrect'
       });
     }
 
-    console.log('✅ Utilisateur trouvé:', user.pseudo);
-    console.log('🔐 Mot de passe fourni:', password);
-    console.log('🔐 Hash stocké:', user.password.substring(0, 20) + '...');
-
     // Vérifier le mot de passe avec la méthode du modèle User
     let isPasswordValid = false;
     try {
       isPasswordValid = await user.comparePassword(password);
-      console.log('🔍 Résultat comparePassword:', isPasswordValid);
     } catch (bcryptError) {
-      console.error('❌ Erreur comparePassword:', bcryptError);
+      console.error('Erreur de vérification du mot de passe:', bcryptError);
       return res.status(500).json({
         message: 'Erreur de vérification du mot de passe'
       });
     }
 
     if (!isPasswordValid) {
-      console.log('❌ Mot de passe incorrect pour:', user.pseudo);
       return res.status(400).json({
         message: 'Email ou mot de passe incorrect'
       });
     }
-
-    console.log('✅ Mot de passe correct pour:', user.pseudo);
 
     // Récupérer le profil joueur
     const player = await Player.findOne({ userId: user._id });
@@ -302,11 +306,13 @@ router.post('/login', async (req, res) => {
     }
 
     // Retourner les données utilisateur
+    const userObj = user.toObject();
     const userResponse = {
       _id: user._id,
       pseudo: user.pseudo,
       email: user.email,
       dateCreation: user.dateCreation,
+      isAdmin: userObj.isAdmin,
       token
     };
 
@@ -317,15 +323,16 @@ router.post('/login', async (req, res) => {
         _id: player._id,
         pseudo: player.pseudo,
         plateforme: player.plateforme,
+        pseudoPlateforme: player.pseudoPlateforme,
         position: player.position,
-        niveau: player.niveau,
+        postePrincipal: player.postePrincipal,
         disponibilite: player.disponibilite
       } : null
     });
 
   } catch (error) {
     console.error('Erreur connexion:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🚀' });
   }
 });
 
@@ -341,7 +348,13 @@ router.get('/me', auth, async (req, res) => {
     const player = await Player.findOne({ userId: req.user.id });
 
     res.json({
-      user,
+      user: {
+        _id: user._id,
+        pseudo: user.pseudo,
+        email: user.email,
+        dateCreation: user.dateCreation,
+        isAdmin: user.isAdmin,
+      },
       player: player ? {
         _id: player._id,
         pseudo: player.pseudo,
@@ -354,7 +367,7 @@ router.get('/me', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur récupération utilisateur:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Oups ! Nous rencontrons quelques difficultés techniques. Réessayez dans un instant ! 🔧' });
   }
 });
 
@@ -399,7 +412,7 @@ router.post('/change-password', auth, async (req, res) => {
     res.json({ message: 'Mot de passe modifié avec succès' });
   } catch (error) {
     console.error('Erreur changement mot de passe:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ message: 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🔐' });
   }
 });
 

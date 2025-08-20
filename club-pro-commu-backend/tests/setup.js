@@ -1,0 +1,1 @@
+process.env.NODE_ENV = "test"; process.env.MONGODB_URI = process.env.MONGODB_URI_TEST || "mongodb://localhost:27017/club-pro-commu-test"; jest.setTimeout(10000); process.env.JWT_SECRET = "test-secret-key"; console.log = jest.fn(); console.error = jest.fn();

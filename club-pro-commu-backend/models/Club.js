@@ -28,11 +28,7 @@ const clubSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  niveauRecherche: {
-    type: String,
-    enum: ['Tous niveaux', 'Intermédiaire+', 'Avancé+', 'Expert uniquement'],
-    default: 'Tous niveaux'
-  },
+
   postesRecherches: [{
     type: String,
     enum: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien']
@@ -90,6 +86,29 @@ const clubSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+});
+
+// Méthode pour calculer si le club recrute automatiquement
+clubSchema.methods.calculateRecrute = function() {
+  // Si le club a explicitement désactivé le recrutement
+  if (this.recrute === false) {
+    return false;
+  }
+  
+  // Si le club a atteint son effectif maximum
+  if (this.membres && this.membres.length >= this.effectifMax) {
+    return false;
+  }
+  
+  // Sinon, le club recrute
+  return true;
+};
+
+// Middleware pour mettre à jour recrute avant la sauvegarde
+clubSchema.pre('save', function(next) {
+  // Calculer automatiquement si le club recrute
+  this.recrute = this.calculateRecrute();
+  next();
 });
 
 module.exports = mongoose.model('Club', clubSchema); 

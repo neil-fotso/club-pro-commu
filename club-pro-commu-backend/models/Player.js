@@ -41,6 +41,11 @@ const playerSchema = new mongoose.Schema({
     enum: ['PC', 'PS5', 'Xbox'],
     required: true
   },
+  pseudoPlateforme: {
+    type: String,
+    default: '',
+    trim: true
+  },
   position: {
     type: String,
     enum: ['Attaquant', 'Milieu', 'Défenseur', 'Gardien', 'Polyvalent'],
@@ -67,11 +72,7 @@ const playerSchema = new mongoose.Schema({
       'Afrikaans', 'Autre'
     ]
   }],
-  niveau: {
-    type: String,
-    enum: ['Débutant', 'Intermédiaire', 'Avancé', 'Expert', 'Pro'],
-    default: 'Intermédiaire'
-  },
+
   experience: {
     type: Number,
     default: 0,
@@ -94,7 +95,7 @@ const playerSchema = new mongoose.Schema({
   },
   disponibilite: {
     type: String,
-    enum: ['Disponible', 'Occupé', 'Absent', 'Recherche équipe'],
+    enum: ['Disponible', 'Indisponible'],
     default: 'Disponible'
   },
   horaires: {
@@ -208,18 +209,16 @@ playerSchema.methods.calculateDisponibilite = async function() {
   // Vérifier si le joueur appartient à un club
   const Club = require('./Club');
   const clubMembership = await Club.findOne({ 
-    'membres.joueurId': this._id 
+    'membres.userId': this.userId 
   });
   
   const isInClub = !!clubMembership;
   
-  // Logique de disponibilité automatique
+  // Logique de disponibilité simplifiée
   if (this.rechercheClub && !isInClub) {
-    this.disponibilite = 'Recherche équipe';
-  } else if (isInClub) {
-    this.disponibilite = 'Occupé';
-  } else {
     this.disponibilite = 'Disponible';
+  } else {
+    this.disponibilite = 'Indisponible';
   }
   
   return this.save();

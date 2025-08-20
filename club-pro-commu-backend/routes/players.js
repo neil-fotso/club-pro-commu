@@ -2,6 +2,7 @@ const express = require('express');
 const Player = require('../models/Player');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 
 const router = express.Router();
 
@@ -12,10 +13,11 @@ router.get('/', async (req, res) => {
       page = 1,
       limit = 20,
       pseudo,
+      pseudoPlateforme,
       pays,
       plateforme,
       position,
-      niveau,
+
       disponibilite,
       ageMin,
       ageMax,
@@ -35,6 +37,9 @@ router.get('/', async (req, res) => {
     if (pseudo) {
       query.pseudo = { $regex: pseudo, $options: 'i' };
     }
+    if (pseudoPlateforme) {
+      query.pseudoPlateforme = { $regex: pseudoPlateforme, $options: 'i' };
+    }
     if (pays) {
       query.pays = pays;
     }
@@ -44,9 +49,7 @@ router.get('/', async (req, res) => {
     if (position) {
       query.position = position;
     }
-    if (niveau) {
-      query.niveau = niveau;
-    }
+
     if (disponibilite) {
       query.disponibilite = disponibilite;
     }
@@ -77,9 +80,7 @@ router.get('/', async (req, res) => {
       case 'pseudo':
         sortOptions.pseudo = ordre === 'desc' ? -1 : 1;
         break;
-      case 'niveau':
-        sortOptions.niveau = ordre === 'desc' ? -1 : 1;
-        break;
+
       case 'experience':
         sortOptions.experience = ordre === 'desc' ? -1 : 1;
         break;
@@ -94,6 +95,12 @@ router.get('/', async (req, res) => {
         sortOptions.derniereActivite = ordre === 'desc' ? -1 : 1;
         break;
     }
+
+    // Log de la base de données utilisée
+    console.log('🔍 Route /api/players - Recherche des joueurs');
+    console.log('   Base de données Player:', Player.db.name);
+    console.log('   Base de données User:', User.db.name);
+    console.log('   Requête:', JSON.stringify(query, null, 2));
 
     // Exécution de la requête
     const players = await Player.find(query)
@@ -171,13 +178,11 @@ router.get('/recommendations', auth, async (req, res) => {
     // Logique de recommandation basée sur :
     // - Même plateforme
     // - Positions complémentaires
-    // - Niveau similaire
     // - Disponibilité
     const recommendations = await Player.find({
       userId: { $ne: req.user.id },
       plateforme: currentPlayer.plateforme,
-      disponibilite: 'Disponible',
-      niveau: { $in: [currentPlayer.niveau, ...getNiveauProche(currentPlayer.niveau)] }
+      disponibilite: 'Disponible'
     })
     .populate('userId', 'pseudo')
     .limit(10)
@@ -191,17 +196,7 @@ router.get('/recommendations', auth, async (req, res) => {
   }
 });
 
-// Fonction helper pour les niveaux proches
-function getNiveauProche(niveau) {
-  const niveaux = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert', 'Pro'];
-  const index = niveaux.indexOf(niveau);
-  const proches = [];
-  
-  if (index > 0) proches.push(niveaux[index - 1]);
-  if (index < niveaux.length - 1) proches.push(niveaux[index + 1]);
-  
-  return proches;
-}
+
 
 // GET /api/players/me - Récupérer mon profil joueur
 router.get('/me', auth, async (req, res) => {
@@ -284,7 +279,7 @@ router.put('/:id', auth, async (req, res) => {
     // Mise à jour des champs autorisés
     const allowedUpdates = [
       'pseudo', 'photoProfil', 'age', 'pays', 'nationalite', 'ville',
-      'plateforme', 'position', 'postePrincipal', 'postesSecondaires', 'niveau', 
+      'plateforme', 'position', 'postePrincipal', 'postesSecondaires', 
       'bio', 'description', 'horaires', 'jeux', 'reseauxSociaux', 'preferences',
       'langues', 'rechercheClub'
     ];
@@ -385,6 +380,30 @@ router.post('/recalculate-availability', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur recalcul disponibilité:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// DELETE /api/players/:id - Supprimer un joueur (admin uniquement)
+router.delete('/:id', adminAuth, async (req, res) => {
+  try {
+    const player = await Player.findById(req.params.id);
+    
+    if (!player) {
+      return res.status(404).json({ message: 'Joueur non trouvé' });
+    }
+
+    // Supprimer le joueur
+    await Player.findByIdAndDelete(req.params.id);
+    
+    // Optionnel : supprimer aussi l'utilisateur associé
+    if (player.userId) {
+      await User.findByIdAndDelete(player.userId);
+    }
+
+    res.json({ message: 'Joueur supprimé avec succès' });
+  } catch (error) {
+    console.error('Erreur suppression joueur:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });

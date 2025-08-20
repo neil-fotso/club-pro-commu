@@ -17,19 +17,17 @@ const connectDB = async () => {
 const calculateDisponibilite = async (player) => {
   // Vérifier si le joueur appartient à un club
   const clubMembership = await Club.findOne({ 
-    'membres.joueurId': player._id 
+    'membres.userId': player.userId 
   });
   
   const isInClub = !!clubMembership;
   
-  // Logique de disponibilité automatique
+  // Logique de disponibilité simplifiée
   let newDisponibilite;
   if (player.rechercheClub && !isInClub) {
-    newDisponibilite = 'Recherche équipe';
-  } else if (isInClub) {
-    newDisponibilite = 'Occupé';
-  } else {
     newDisponibilite = 'Disponible';
+  } else {
+    newDisponibilite = 'Indisponible';
   }
   
   // Mettre à jour seulement si la disponibilité a changé

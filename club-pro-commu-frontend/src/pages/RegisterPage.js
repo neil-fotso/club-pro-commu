@@ -152,7 +152,7 @@ export default function RegisterPage() {
         }
       }
     } catch (error) {
-      setServerError('Erreur lors de l\'inscription. Veuillez réessayer.');
+      setServerError('Oups ! Il semble y avoir eu un petit problème technique lors de l\'inscription. Pas de panique, réessayez dans quelques instants ! 🚀');
       console.error('Erreur inscription:', error);
     } finally {
       setLoading(false);

@@ -4,7 +4,7 @@ const Player = require('./models/Player');
 require('dotenv').config();
 
 // Configuration de la base de données
-const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/clubprocommu';
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu';
 
 // Données des joueurs de test
 const playerData = [

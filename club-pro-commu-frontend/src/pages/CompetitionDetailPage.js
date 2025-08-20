@@ -283,7 +283,7 @@ export default function CompetitionDetailPage() {
             </button>
           )}
           
-          {!isCreator && user && !isInscrit && (
+          {user && !isInscrit && (
             <button 
               className={`btn btn-lg ${(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? 'btn-secondary disabled' : 'btn-primary'}`}
               onClick={() => setShowInscriptionModal(true)}
@@ -294,7 +294,7 @@ export default function CompetitionDetailPage() {
             </button>
           )}
           
-          {!isCreator && user && isInscrit && competition.statut === 'Ouvert' && (
+          {user && isInscrit && competition.statut === 'Ouvert' && (
             <button 
               className="btn btn-danger btn-lg"
               onClick={handleQuitterCompetition}

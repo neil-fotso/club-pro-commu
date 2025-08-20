@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('❌ Erreur login:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🚀' };
     }
   };
 
@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
           type: error.response.data.type
         };
       }
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🚀' };
     }
   };
 

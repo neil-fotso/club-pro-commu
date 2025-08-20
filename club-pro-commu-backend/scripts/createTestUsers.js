@@ -31,7 +31,6 @@ const testUsers = [
       postePrincipal: 'BU',
       postesSecondaires: ['AIL', 'AID'],
       langues: ['Français', 'Anglais'],
-      niveau: 'Avancé',
       description: 'Attaquant rapide et technique, spécialiste des buts décisifs',
       rechercheClub: true,
       disponibilite: 'Disponible'
@@ -49,7 +48,6 @@ const testUsers = [
       postePrincipal: 'MC',
       postesSecondaires: ['MOC', 'MDC'],
       langues: ['Français'],
-      niveau: 'Intermédiaire',
       description: 'Milieu relayeur avec une bonne vision de jeu',
       rechercheClub: true,
       disponibilite: 'Disponible'
@@ -67,7 +65,6 @@ const testUsers = [
       postePrincipal: 'DC',
       postesSecondaires: ['DL', 'DR'],
       langues: ['Français', 'Espagnol'],
-      niveau: 'Débutant',
       description: 'Défenseur central en progression, bon dans les duels',
       rechercheClub: true,
       disponibilite: 'Disponible'
@@ -85,7 +82,6 @@ const testUsers = [
       postePrincipal: 'GB',
       postesSecondaires: [],
       langues: ['Français'],
-      niveau: 'Avancé',
       description: 'Gardien expérimenté, spécialiste des arrêts décisifs',
       rechercheClub: false,
       disponibilite: 'Disponible'
@@ -103,7 +99,6 @@ const testUsers = [
       postePrincipal: 'AIL',
       postesSecondaires: ['BU', 'AID'],
       langues: ['Français', 'Anglais'],
-      niveau: 'Intermédiaire',
       description: 'Ailier rapide avec une bonne technique de croisé',
       rechercheClub: true,
       disponibilite: 'Disponible'
@@ -121,7 +116,6 @@ const testUsers = [
       postePrincipal: 'MOC',
       postesSecondaires: ['MC', 'AIL'],
       langues: ['Français'],
-      niveau: 'Avancé',
       description: 'Meneur de jeu créatif, spécialiste des passes décisives',
       rechercheClub: true,
       disponibilite: 'Disponible'

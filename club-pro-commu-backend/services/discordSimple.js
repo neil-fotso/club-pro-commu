@@ -28,10 +28,9 @@ class DiscordSimpleService {
         }
       });
 
-      console.log('✅ Message Discord envoyé via webhook');
       return true;
     } catch (error) {
-      console.error('❌ Erreur envoi webhook Discord:', error.message);
+      console.error('Erreur envoi webhook Discord:', error.message);
       return false;
     }
   }
@@ -57,10 +56,9 @@ class DiscordSimpleService {
         }
       });
 
-      console.log('✅ Message Discord envoyé via bot');
       return true;
     } catch (error) {
-      console.error('❌ Erreur envoi bot Discord:', error.message);
+      console.error('Erreur envoi bot Discord:', error.message);
       return false;
     }
   }

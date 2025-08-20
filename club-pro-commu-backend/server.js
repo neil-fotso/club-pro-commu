@@ -49,12 +49,10 @@ app.use((req, res, next) => {
     }
   }
   
-  // Log pour debug
-  console.log(`${req.method} ${req.path}`, {
-    body: req.body,
-    headers: req.headers['content-type'],
-    userAgent: req.headers['user-agent']
-  });
+  // Log minimal pour les erreurs seulement
+  if (req.method === 'POST' || req.method === 'PUT') {
+    console.log(`${req.method} ${req.path}`);
+  }
   
   next();
 });
@@ -88,26 +86,26 @@ app.use('/api/invitations', updateActivity, invitationRoutes);
 app.use('/api/notifications', updateActivity, notificationRoutes);
 app.use('/api/discord', discordRoutes);
 
-// Route de santé pour tester la connexion
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Serveur Club Pro Communauté opérationnel',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
-});
-
 // Connexion à MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu', {
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu';
+console.log('🔧 Configuration MongoDB:');
+console.log('   MONGO_URI:', process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu');
+console.log('   Base de données utilisée:', mongoUri);
+
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => {
-  console.log('MongoDB connecté');
-  console.log('🤖 Service Discord simplifié prêt');
+  console.log('✅ MongoDB connecté avec succès !');
+  console.log('   Base de données:', mongoose.connection.db.databaseName);
+  console.log('   Host:', mongoose.connection.host);
+  console.log('   Port:', mongoose.connection.port);
 })
-.catch((err) => console.error('Erreur MongoDB :', err));
+.catch((err) => {
+  console.error('❌ Erreur MongoDB :', err);
+  process.exit(1);
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`)); 

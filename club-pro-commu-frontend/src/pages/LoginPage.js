@@ -56,7 +56,19 @@ export default function LoginPage() {
     if (result.success) {
       navigate('/');
     } else {
-      setError(result.error);
+      // Personnaliser les messages d'erreur pour les rendre plus chaleureux
+      let errorMessage = result.error;
+      
+      // Messages d'erreur spécifiques pour la connexion
+      if (result.error.includes('Email ou mot de passe incorrect')) {
+        errorMessage = 'Oups ! Email ou mot de passe incorrect. Vérifiez vos informations et réessayez ! 🔍';
+      } else if (result.error.includes('Email et mot de passe requis')) {
+        errorMessage = 'Hey ! N\'oubliez pas de remplir tous les champs obligatoires ! 📝';
+      } else if (result.error.includes('Erreur de vérification du mot de passe')) {
+        errorMessage = 'Oups ! Il semble y avoir eu un petit problème technique. Pas de panique, réessayez dans quelques instants ! 🔐';
+      }
+      
+      setError(errorMessage);
     }
     
     setLoading(false);
@@ -84,8 +96,8 @@ export default function LoginPage() {
 
                 {/* Message d'erreur */}
                 {error && (
-                  <div className="alert alert-danger border-0 bg-danger bg-opacity-10 mb-4">
-                    <i className="fas fa-exclamation-triangle me-2"></i>
+                  <div className="alert alert-warning border-0 bg-warning bg-opacity-10 mb-4" style={{borderRadius: '12px'}}>
+                    <i className="fas fa-heart me-2 text-warning"></i>
                     {error}
                   </div>
                 )}

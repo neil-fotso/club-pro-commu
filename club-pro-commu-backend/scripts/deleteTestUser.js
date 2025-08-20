@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Connexion à MongoDB
-mongoose.connect('mongodb://localhost:27017/clubprocommu', {
+mongoose.connect('mongodb://localhost:27017/club-pro-commu', {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
