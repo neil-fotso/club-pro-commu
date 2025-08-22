@@ -29,12 +29,27 @@ const SecretAdminPage = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   const allowInProduction = process.env.REACT_APP_ALLOW_ADMIN_CREATOR === 'true';
 
+  // Debug des variables d'environnement
+  console.log('🔍 DEBUG VARIABLES D\'ENVIRONNEMENT:');
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('REACT_APP_ALLOW_ADMIN_CREATOR:', process.env.REACT_APP_ALLOW_ADMIN_CREATOR);
+  console.log('REACT_APP_ADMIN_SECRET (longueur):', SECRET_PASSWORD?.length || 0);
+  console.log('isProduction:', isProduction);
+  console.log('allowInProduction:', allowInProduction);
+  console.log('API_URL:', API_URL);
+
   const handleAccessSubmit = (e) => {
     e.preventDefault();
+    
+    console.log('🔐 Tentative d\'accès:');
+    console.log('Mot de passe saisi (longueur):', accessPassword?.length || 0);
+    console.log('Mot de passe attendu (longueur):', SECRET_PASSWORD?.length || 0);
+    console.log('Correspondance:', accessPassword === SECRET_PASSWORD);
     
     // Vérifier si la page est accessible en production
     if (isProduction && !allowInProduction) {
       setResult('❌ Cette fonctionnalité est désactivée en production pour des raisons de sécurité.');
+      console.log('❌ Accès bloqué: REACT_APP_ALLOW_ADMIN_CREATOR =', process.env.REACT_APP_ALLOW_ADMIN_CREATOR);
       return;
     }
 
@@ -165,19 +180,43 @@ const SecretAdminPage = () => {
     return (
       <div className="container mt-5">
         <div className="row justify-content-center">
-          <div className="col-md-8">
+          <div className="col-md-10">
             <div className="alert alert-danger text-center">
               <h2>🚫 Accès Restreint</h2>
               <p className="lead">Cette fonctionnalité est désactivée en production pour des raisons de sécurité.</p>
               <hr />
+              
+              {/* Section de debug pour diagnostiquer le problème */}
+              <div className="alert alert-info text-start">
+                <h5>🔍 Diagnostic des Variables d'Environnement :</h5>
+                <ul className="mb-0">
+                  <li><strong>NODE_ENV:</strong> {process.env.NODE_ENV || 'undefined'}</li>
+                  <li><strong>REACT_APP_ALLOW_ADMIN_CREATOR:</strong> {process.env.REACT_APP_ALLOW_ADMIN_CREATOR || 'undefined'}</li>
+                  <li><strong>REACT_APP_ADMIN_SECRET:</strong> {SECRET_PASSWORD ? `Défini (${SECRET_PASSWORD.length} caractères)` : 'undefined'}</li>
+                  <li><strong>isProduction:</strong> {isProduction.toString()}</li>
+                  <li><strong>allowInProduction:</strong> {allowInProduction.toString()}</li>
+                </ul>
+              </div>
+
               <h5>🔧 Pour les administrateurs système :</h5>
               <p className="mb-1">Pour activer temporairement cette page :</p>
               <ol className="text-start">
                 <li>Définissez la variable d'environnement : <code>REACT_APP_ALLOW_ADMIN_CREATOR=true</code></li>
                 <li>Définissez un mot de passe sécurisé : <code>REACT_APP_ADMIN_SECRET=votre_mot_de_passe_fort</code></li>
-                <li>Redémarrez l'application</li>
+                <li>Redémarrez/redéployez l'application</li>
                 <li><strong>⚠️ IMPORTANT :</strong> Désactivez cette page après utilisation</li>
               </ol>
+
+              <div className="alert alert-warning">
+                <h6>🐛 Problèmes Courants :</h6>
+                <ul className="mb-0 text-start">
+                  <li><strong>Variables non prises en compte :</strong> Redéployez après avoir défini les variables</li>
+                  <li><strong>Cache navigateur :</strong> Videz le cache ou mode privé</li>
+                  <li><strong>Plateforme de déploiement :</strong> Vérifiez que les variables sont bien enregistrées</li>
+                  <li><strong>Syntaxe :</strong> Pas d'espaces, valeurs exactes (true/false)</li>
+                </ul>
+              </div>
+
               <div className="mt-3">
                 <small className="text-muted">
                   Environnement : Production | URL API : {API_URL}
@@ -230,6 +269,18 @@ const SecretAdminPage = () => {
                 {result && (
                   <div className={`alert mt-3 ${result.includes('❌') ? 'alert-danger' : 'alert-success'}`}>
                     {result}
+                  </div>
+                )}
+
+                {/* Section de debug pour développement */}
+                {!isProduction && (
+                  <div className="mt-3 p-3 bg-light rounded">
+                    <h6>🔍 Debug Mode (Développement)</h6>
+                    <small>
+                      <div><strong>Mot de passe attendu:</strong> {SECRET_PASSWORD}</div>
+                      <div><strong>NODE_ENV:</strong> {process.env.NODE_ENV}</div>
+                      <div><strong>ALLOW_CREATOR:</strong> {process.env.REACT_APP_ALLOW_ADMIN_CREATOR}</div>
+                    </small>
                   </div>
                 )}
               </div>
