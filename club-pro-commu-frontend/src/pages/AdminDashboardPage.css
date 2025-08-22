@@ -1,0 +1,204 @@
+/* Dashboard Administrateur */
+.admin-dashboard {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: #343a40;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.sidebar-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar .nav-link {
+  color: #adb5bd;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-radius: 0;
+  transition: all 0.3s ease;
+}
+
+.sidebar .nav-link:hover {
+  color: #ffffff;
+  background-color: #495057;
+}
+
+.sidebar .nav-link.active {
+  color: #ffffff;
+  background-color: #007bff;
+}
+
+.sidebar-heading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* Cards avec bordures colorées */
+.card.border-left-primary {
+  border-left: 0.25rem solid #4e73df !important;
+}
+
+.card.border-left-success {
+  border-left: 0.25rem solid #1cc88a !important;
+}
+
+.card.border-left-info {
+  border-left: 0.25rem solid #36b9cc !important;
+}
+
+.card.border-left-warning {
+  border-left: 0.25rem solid #f6c23e !important;
+}
+
+/* Texte coloré */
+.text-primary {
+  color: #4e73df !important;
+}
+
+.text-success {
+  color: #1cc88a !important;
+}
+
+.text-info {
+  color: #36b9cc !important;
+}
+
+.text-warning {
+  color: #f6c23e !important;
+}
+
+.text-gray-800 {
+  color: #5a5c69 !important;
+}
+
+.text-gray-300 {
+  color: #dddfeb !important;
+}
+
+/* Utilitaires */
+.text-xs {
+  font-size: 0.7rem;
+}
+
+.font-weight-bold {
+  font-weight: 700 !important;
+}
+
+.shadow {
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+/* Tables */
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: #858796;
+  font-size: 0.85rem;
+}
+
+.table td {
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+/* Badges personnalisés */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Boutons groupés */
+.btn-group-sm .btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    min-height: auto;
+  }
+  
+  .sidebar-sticky {
+    position: relative;
+    height: auto;
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+  
+  .btn-group-sm .btn {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Animations */
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+.btn {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Couleurs spécifiques au dashboard */
+.overview-tab .card-body {
+  padding: 1.25rem;
+}
+
+.competitions-tab .table-responsive {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.litiges-tab .alert {
+  border-radius: 0.35rem;
+}
+
+/* Header du dashboard */
+.admin-dashboard .border-bottom {
+  border-bottom: 1px solid #e3e6f0 !important;
+}
+
+.admin-dashboard h1.h2 {
+  color: #5a5c69;
+  font-weight: 400;
+}
+
+/* Sidebar responsive toggle */
+@media (max-width: 767.98px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+  
+  .sidebar.show {
+    left: 0;
+  }
+} 

@@ -158,6 +158,37 @@ const playerSchema = new mongoose.Schema({
     type: String,
     enum: ['Non vérifié', 'Vérifié', 'Premium'],
     default: 'Non vérifié'
+  },
+  
+  // NOUVEAU : Liste des clubs du joueur
+  clubs: [{
+    clubId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+      required: true
+    },
+    role: {
+      type: String,
+      enum: ['Admin', 'Capitaine', 'Joueur'],
+      default: 'Joueur'
+    },
+    dateAdhesion: {
+      type: Date,
+      default: Date.now
+    },
+    statut: {
+      type: String,
+      enum: ['Actif', 'Inactif', 'Suspendu'],
+      default: 'Actif'
+    }
+  }],
+  
+  // NOUVEAU : Nombre maximum de clubs autorisés
+  maxClubs: {
+    type: Number,
+    default: 3, // Un joueur peut être dans 3 clubs maximum
+    min: 1,
+    max: 10
   }
 }, {
   timestamps: true
@@ -206,22 +237,71 @@ playerSchema.methods.addReward = function(reward) {
 
 // Méthode pour calculer automatiquement la disponibilité
 playerSchema.methods.calculateDisponibilite = async function() {
-  // Vérifier si le joueur appartient à un club
-  const Club = require('./Club');
-  const clubMembership = await Club.findOne({ 
-    'membres.userId': this.userId 
-  });
+  // Compter les clubs actifs du joueur
+  const activeClubs = this.clubs.filter(club => club.statut === 'Actif');
   
-  const isInClub = !!clubMembership;
-  
-  // Logique de disponibilité simplifiée
-  if (this.rechercheClub && !isInClub) {
-    this.disponibilite = 'Disponible';
+  // Logique de disponibilité pour multi-clubs
+  if (this.rechercheClub) {
+    // Si le joueur cherche un club et n'a pas atteint son maximum
+    if (activeClubs.length < this.maxClubs) {
+      this.disponibilite = 'Disponible';
+    } else {
+      this.disponibilite = 'Indisponible'; // A atteint son maximum de clubs
+    }
   } else {
-    this.disponibilite = 'Indisponible';
+    this.disponibilite = 'Indisponible'; // Ne cherche pas de nouveau club
   }
   
   return this.save();
+};
+
+// NOUVELLE MÉTHODE : Ajouter un club au joueur
+playerSchema.methods.joinClub = function(clubId, role = 'Joueur') {
+  // Vérifier si déjà membre de ce club
+  const alreadyMember = this.clubs.some(club => 
+    club.clubId.toString() === clubId.toString() && club.statut === 'Actif'
+  );
+  
+  if (alreadyMember) {
+    throw new Error('Déjà membre de ce club');
+  }
+  
+  // Vérifier le nombre maximum de clubs
+  const activeClubs = this.clubs.filter(club => club.statut === 'Actif');
+  if (activeClubs.length >= this.maxClubs) {
+    throw new Error(`Nombre maximum de clubs atteint (${this.maxClubs})`);
+  }
+  
+  // Ajouter le club
+  this.clubs.push({
+    clubId: clubId,
+    role: role,
+    dateAdhesion: new Date(),
+    statut: 'Actif'
+  });
+  
+  return this.save();
+};
+
+// NOUVELLE MÉTHODE : Quitter un club
+playerSchema.methods.leaveClub = function(clubId) {
+  const clubIndex = this.clubs.findIndex(club => 
+    club.clubId.toString() === clubId.toString() && club.statut === 'Actif'
+  );
+  
+  if (clubIndex === -1) {
+    throw new Error('Pas membre de ce club');
+  }
+  
+  // Marquer comme inactif plutôt que supprimer (historique)
+  this.clubs[clubIndex].statut = 'Inactif';
+  
+  return this.save();
+};
+
+// NOUVELLE MÉTHODE : Obtenir les clubs actifs
+playerSchema.methods.getActiveClubs = function() {
+  return this.clubs.filter(club => club.statut === 'Actif');
 };
 
 module.exports = mongoose.model('Player', playerSchema); 

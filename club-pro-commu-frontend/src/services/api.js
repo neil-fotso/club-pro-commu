@@ -636,6 +636,13 @@ export const competitionAPI = {
     return apiCall(`/competitions/${competitionId}/statistiques`);
   },
 
+  // Générer le bracket d'élimination directe
+  genererElimination: async (competitionId) => {
+    return apiCall(`/competitions/${competitionId}/generer-elimination`, {
+      method: 'POST'
+    });
+  },
+
   // Récupérer les compétitions de l'utilisateur connecté
   getMyCompetitions: async (token) => {
     return apiCall('/competitions/mes-competitions', {

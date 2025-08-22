@@ -28,6 +28,7 @@ const CompetitionMatchesPage = () => {
   const [joueurModalType, setJoueurModalType] = useState('');
   const [selectedJoueur, setSelectedJoueur] = useState('');
   const [joueurQuantite, setJoueurQuantite] = useState(1);
+  const [generatingBracket, setGeneratingBracket] = useState(false);
 
   const fetchCompetition = useCallback(async () => {
     try {
@@ -97,50 +98,102 @@ const CompetitionMatchesPage = () => {
     setShowScoreModal(true);
   };
 
-  // Fonction pour obtenir tous les membres des deux équipes
-  const getJoueursEquipes = (match) => {
-    const joueurs = [];
-    
-    // Essayer d'abord avec les équipes du match
-    if (match.equipe1 && match.equipe1.membres) {
-      joueurs.push(...match.equipe1.membres
-        .filter(membre => membre.userId) // Filtrer les membres avec un userId
-        .map(membre => ({ 
-          pseudo: membre.userId.pseudo, 
-          equipe: match.equipe1.nom,
-          role: membre.role
-        }))
-      );
+
+
+  // Fonction pour obtenir les joueurs du club de l'admin connecté
+  const getJoueursClubAdmin = (match) => {
+    if (!user || !userClubs || userClubs.length === 0) {
+      return [];
     }
-    
-    if (match.equipe2 && match.equipe2.membres) {
-      joueurs.push(...match.equipe2.membres
-        .filter(membre => membre.userId) // Filtrer les membres avec un userId
-        .map(membre => ({ 
-          pseudo: membre.userId.pseudo, 
-          equipe: match.equipe2.nom,
-          role: membre.role
-        }))
-      );
-    }
-    
-    // Si pas de joueurs trouvés, essayer avec les clubs inscrits
-    if (joueurs.length === 0 && competition && competition.equipesInscrites) {
-      competition.equipesInscrites.forEach(equipe => {
-        if (equipe.clubId && equipe.clubId.membres) {
-          joueurs.push(...equipe.clubId.membres
-            .filter(membre => membre.userId)
-            .map(membre => ({ 
-              pseudo: membre.userId.pseudo, 
-              equipe: equipe.clubId.nom,
-              role: membre.role
-            }))
-          );
+
+    // Trouver le club dont l'utilisateur est admin et qui participe au match
+    const team1Id = typeof match.equipe1 === 'object' ? match.equipe1._id : match.equipe1;
+    const team2Id = typeof match.equipe2 === 'object' ? match.equipe2._id : match.equipe2;
+
+    // Chercher dans les clubs de l'utilisateur
+    for (const club of userClubs) {
+      const clubId = typeof club._id === 'object' ? club._id.toString() : club._id;
+      const isMatchClub = clubId === team1Id || clubId === team2Id;
+      
+      if (isMatchClub) {
+        // Vérifier que l'utilisateur est admin de ce club
+        const isAdmin = club.membres.some(member => {
+          const memberId = typeof member.userId === 'object' ? member.userId._id : member.userId;
+          return memberId === user._id && member.role === 'Admin';
+        });
+
+        if (isAdmin && club.membres) {
+          // Retourner les membres de ce club uniquement
+          return club.membres
+            .filter(membre => membre.userId && membre.userId.pseudo)
+            .map(membre => ({
+              pseudo: membre.userId.pseudo,
+              equipe: club.nom || 'Mon Club',
+              role: membre.role,
+              userId: membre.userId._id || membre.userId
+            }));
         }
-      });
+      }
     }
+
+    // Si pas trouvé dans userClubs, chercher dans les équipes inscrites de la compétition
+    if (competition && competition.equipesInscrites) {
+      for (const equipe of competition.equipesInscrites) {
+        if (!equipe.clubId) continue;
+        
+        const clubId = typeof equipe.clubId === 'object' ? equipe.clubId._id : equipe.clubId;
+        const isMatchClub = clubId === team1Id || clubId === team2Id;
+        
+        if (isMatchClub) {
+          // Vérifier si l'utilisateur est admin de ce club
+          const isAdmin = equipe.clubId.membres && equipe.clubId.membres.some(member => {
+            const memberId = typeof member.userId === 'object' ? member.userId._id : member.userId;
+            return memberId === user._id && member.role === 'Admin';
+          });
+
+          if (isAdmin && equipe.clubId.membres) {
+            return equipe.clubId.membres
+              .filter(membre => membre.userId && membre.userId.pseudo)
+              .map(membre => ({
+                pseudo: membre.userId.pseudo,
+                equipe: equipe.clubId.nom || 'Mon Club',
+                role: membre.role,
+                userId: membre.userId._id || membre.userId
+              }));
+          }
+        }
+      }
+    }
+
+    return [];
+  };
+
+  // Fonction pour organiser les matchs par phase
+  const getMatchsByPhase = () => {
+    if (!competition?.matchsElimination) return {};
     
-    return joueurs;
+    const phases = ['Huitième', 'Quart', 'Demi', 'Petite finale', 'Finale'];
+    const matchsByPhase = {};
+    
+    phases.forEach(phase => {
+      matchsByPhase[phase] = competition.matchsElimination.filter(match => 
+        match.phase === phase
+      );
+    });
+    
+    return matchsByPhase;
+  };
+
+  // Fonction pour obtenir l'icône de la phase
+  const getPhaseIcon = (phase) => {
+    const icons = {
+      'Huitième': '🎯',
+      'Quart': '⚡',
+      'Demi': '🔥',
+      'Petite finale': '🥉',
+      'Finale': '🏆'
+    };
+    return icons[phase] || '🎮';
   };
 
   // Fonction pour ouvrir la modale de sélection de joueur
@@ -151,11 +204,30 @@ const CompetitionMatchesPage = () => {
     setShowJoueurModal(true);
   };
 
+  // Fonction pour générer le bracket d'élimination
+  const handleGenerateBracket = async () => {
+    try {
+      setGeneratingBracket(true);
+      await competitionAPI.genererElimination(id);
+      
+      // Recharger la compétition pour voir les nouveaux matchs
+      await fetchCompetition();
+      
+      alert('Bracket d\'élimination généré avec succès !');
+    } catch (error) {
+      console.error('Erreur génération bracket:', error);
+      alert('Erreur lors de la génération du bracket');
+    } finally {
+      setGeneratingBracket(false);
+    }
+  };
+
   // Fonction pour ajouter un joueur via la modale
   const handleJoueurSubmit = () => {
     if (!selectedJoueur) return;
 
-    const joueurs = getJoueursEquipes(selectedMatch);
+    // Utiliser la liste des joueurs du club de l'admin
+    const joueurs = getJoueursClubAdmin(selectedMatch);
     const joueur = joueurs.find(j => j.pseudo === selectedJoueur);
     
     if (joueur) {
@@ -169,11 +241,15 @@ const CompetitionMatchesPage = () => {
           ...prev,
           passeurs: [...prev.passeurs, { joueur: selectedJoueur, passes: joueurQuantite }]
         }));
-      } else if (joueurModalType === 'carton') {
-        const cartonType = joueurModalType === 'cartonJaune' ? 'cartonsJaunes' : 'cartonsRouges';
+      } else if (joueurModalType === 'cartonJaune') {
         setScoreData(prev => ({
           ...prev,
-          [cartonType]: [...prev[cartonType], selectedJoueur]
+          cartonsJaunes: [...prev.cartonsJaunes, selectedJoueur]
+        }));
+      } else if (joueurModalType === 'cartonRouge') {
+        setScoreData(prev => ({
+          ...prev,
+          cartonsRouges: [...prev.cartonsRouges, selectedJoueur]
         }));
       }
     }
@@ -230,18 +306,7 @@ const CompetitionMatchesPage = () => {
     return 'Programmé';
   };
 
-  const getPhaseText = (phase, totalEquipes) => {
-    if (totalEquipes <= 2) return 'Finale';
-    if (totalEquipes <= 4) return phase === 'finale' ? 'Finale' : 'Demi-finale';
-    if (totalEquipes <= 8) return phase === 'finale' ? 'Finale' : phase === 'demi_finale' ? 'Demi-finale' : 'Quart de finale';
-    if (totalEquipes <= 16) {
-      if (phase === 'finale') return 'Finale';
-      if (phase === 'demi_finale') return 'Demi-finale';
-      if (phase === 'quart_finale') return 'Quart de finale';
-      return 'Huitième de finale';
-    }
-    return phase;
-  };
+
 
   // Fonction helper pour comparer les IDs utilisateur
   const compareUserIds = (userId1, userId2) => {
@@ -255,6 +320,43 @@ const CompetitionMatchesPage = () => {
     const id1 = typeof clubId1 === 'object' ? clubId1._id : clubId1;
     const id2 = typeof clubId2 === 'object' ? clubId2._id : clubId2;
     return id1 === id2;
+  };
+
+  // Fonction pour vérifier si l'utilisateur peut saisir le score d'un match
+  const canEditMatchScore = (match) => {
+    if (!user) return false;
+
+    // 1. Admin du site
+    if (user.isAdmin) return true;
+
+    // 2. Créateur de la compétition
+    if (competition && competition.createurId) {
+      const competitionCreatorId = typeof competition.createurId === 'object' ? competition.createurId._id : competition.createurId;
+      if (competitionCreatorId === user._id) return true;
+    }
+
+    // 3. Admin d'un des clubs concernés par le match
+    if (!match.equipe1 || !match.equipe2) return false;
+
+    // Obtenir les IDs des équipes du match
+    const team1Id = typeof match.equipe1 === 'object' ? match.equipe1._id : match.equipe1;
+    const team2Id = typeof match.equipe2 === 'object' ? match.equipe2._id : match.equipe2;
+
+    // Vérifier si l'utilisateur est admin d'un des clubs du match
+    const isAdminOfMatchTeam = userClubs.some(club => {
+      const clubId = typeof club._id === 'object' ? club._id.toString() : club._id;
+      const isMatchClub = clubId === team1Id || clubId === team2Id;
+      
+      if (!isMatchClub) return false;
+      
+      // Vérifier si l'utilisateur est admin de ce club
+      return club.membres.some(member => {
+        const memberId = typeof member.userId === 'object' ? member.userId._id : member.userId;
+        return memberId === user._id && member.role === 'Admin';
+      });
+    });
+
+    return isAdminOfMatchTeam;
   };
 
   if (loading) {
@@ -446,7 +548,7 @@ const CompetitionMatchesPage = () => {
                                       Programmer
                                     </button>
                                   )}
-                                  {match.statut === 'Programmé' && (
+                                  {match.statut === 'Programmé' && canEditMatchScore(match) && (
                                     <button 
                                       className="btn btn-sm btn-primary"
                                       onClick={() => openScoreModal(match)}
@@ -461,7 +563,7 @@ const CompetitionMatchesPage = () => {
                                       onClick={() => openScoreModal(match)}
                                     >
                                       <i className="fas fa-eye me-1"></i>
-                                      Voir détails
+                                      {canEditMatchScore(match) ? 'Modifier' : 'Voir détails'}
                                     </button>
                                   )}
                                 </div>
@@ -481,102 +583,189 @@ const CompetitionMatchesPage = () => {
         </div>
       )}
 
-      {/* Matchs d'élimination directe */}
-      {competition.matchsElimination && competition.matchsElimination.length > 0 && (
+      {/* Bracket d'élimination directe */}
+      {competition.type === 'elimination_directe' && (
         <div className="row mb-4">
           <div className="col-12">
-            <h3>
-              <i className="fas fa-sitemap me-2"></i>
-              Phase d'élimination directe
-            </h3>
-            <div className="table-responsive">
-              <table className="table table-hover">
-                <thead>
-                  <tr>
-                    <th>Phase</th>
-                    <th>Date</th>
-                    <th>Équipe 1</th>
-                    <th>Score</th>
-                    <th>Équipe 2</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {competition.matchsElimination.map((match, index) => (
-                    <tr key={index}>
-                      <td>
-                        <span className="badge bg-info">
-                          {getPhaseText(match.phase, competition.equipesInscrites?.length || 0)}
-                        </span>
-                      </td>
-                      <td>
-                        {match.dateMatch ? 
-                          new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
-                          'À programmer'
-                        }
-                      </td>
-                      <td>
-                        <strong>{match.equipe1?.nom || 'TBD'}</strong>
-                      </td>
-                      <td>
-                        {match.statut === 'Terminé' ? (
-                          <span className="badge bg-success">
-                            {match.score1} - {match.score2}
-                          </span>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
-                      </td>
-                      <td>
-                        <strong>{match.equipe2?.nom || 'TBD'}</strong>
-                      </td>
-                      <td>
-                        <span className={`badge ${getMatchStatus(match)}`}>
-                          {getMatchStatusText(match)}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="btn-group" role="group">
-                          {!match.dateMatch && (user?.isAdmin || 
-                            userClubs.some(club => 
-                              (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
-                              club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                            )) && (
-                            <button 
-                              className="btn btn-sm btn-outline-secondary"
-                              onClick={() => openDateModal(match)}
-                              title="Programmer une date"
-                            >
-                              <i className="fas fa-calendar-plus me-1"></i>
-                              Programmer
-                            </button>
-                          )}
-                          {match.statut === 'Programmé' && (
-                            <button 
-                              className="btn btn-sm btn-primary"
-                              onClick={() => openScoreModal(match)}
-                            >
-                              <i className="fas fa-edit me-1"></i>
-                              Saisir score
-                            </button>
-                          )}
-                          {match.statut === 'Terminé' && (
-                            <button 
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => openScoreModal(match)}
-                            >
-                              <i className="fas fa-eye me-1"></i>
-                              Voir détails
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h3>
+                <i className="fas fa-sitemap me-2"></i>
+                Bracket d'élimination directe
+              </h3>
+              {competition.matchsElimination.length === 0 && user && (
+                competition.createurId === user._id || user.isAdmin
+              ) && (
+                <button
+                  className="btn btn-success"
+                  onClick={handleGenerateBracket}
+                  disabled={generatingBracket}
+                >
+                  {generatingBracket ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-plus me-2"></i>
+                      Générer le bracket
+                    </>
+                  )}
+                </button>
+              )}
             </div>
+
+            {competition.matchsElimination.length === 0 ? (
+              <div className="alert alert-info">
+                <i className="fas fa-info-circle me-2"></i>
+                Le bracket d'élimination n'a pas encore été généré. 
+                {competition.equipesInscrites?.length >= 2 ? 
+                  ' Cliquez sur "Générer le bracket" pour commencer.' :
+                  ' Au moins 2 équipes doivent être inscrites.'
+                }
+              </div>
+            ) : (
+              // Design de bracket progressif
+              <div className="tournament-bracket">
+                <div className="bracket-container">
+                  {Object.entries(getMatchsByPhase()).map(([phase, matches]) => 
+                    matches.length > 0 && (
+                      <div key={phase} className={`bracket-round bracket-${phase.toLowerCase()}`}>
+                        <div className="round-header">
+                          <h5>
+                            {getPhaseIcon(phase)} {phase}
+                          </h5>
+                        </div>
+                        <div className="matches-column">
+                          {matches.map((match, index) => (
+                            <div key={index} className={`bracket-match ${match.statut.toLowerCase()}`}>
+                              <div className="match-container">
+                                <div className="match-header">
+                                  <span className="match-date">
+                                    {match.dateMatch ? 
+                                      new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
+                                      'À programmer'
+                                    }
+                                  </span>
+                                  <span className={`match-status badge ${getMatchStatus(match)}`}>
+                                    {getMatchStatusText(match)}
+                                  </span>
+                                </div>
+                                
+                                <div className="teams-container">
+                                  {/* Équipe 1 */}
+                                  <div className={`team-slot ${match.statut === 'Terminé' && match.score1 > match.score2 ? 'winner' : ''}`}>
+                                    <div className="team-info">
+                                      <span className="team-name">
+                                        {match.equipe1?.nom || 'TBD'}
+                                      </span>
+                                      {match.statut === 'Terminé' && (
+                                        <span className="team-score">
+                                          {match.score1}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="vs-divider">VS</div>
+                                  
+                                  {/* Équipe 2 */}
+                                  <div className={`team-slot ${match.statut === 'Terminé' && match.score2 > match.score1 ? 'winner' : ''}`}>
+                                    <div className="team-info">
+                                      <span className="team-name">
+                                        {match.equipe2?.nom || 'TBD'}
+                                      </span>
+                                      {match.statut === 'Terminé' && (
+                                        <span className="team-score">
+                                          {match.score2}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className="match-actions">
+                                  {!match.dateMatch && (user?.isAdmin || 
+                                    userClubs.some(club => 
+                                      (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                    )) && (
+                                    <button 
+                                      className="btn btn-sm btn-outline-secondary"
+                                      onClick={() => openDateModal(match)}
+                                      title="Programmer une date"
+                                    >
+                                      <i className="fas fa-calendar-plus"></i>
+                                    </button>
+                                  )}
+                                  {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                                    <button 
+                                      className="btn btn-sm btn-primary"
+                                      onClick={() => openScoreModal(match)}
+                                    >
+                                      <i className="fas fa-edit"></i>
+                                    </button>
+                                  )}
+                                  {match.statut === 'Terminé' && (
+                                    <button 
+                                      className="btn btn-sm btn-outline-primary"
+                                      onClick={() => openScoreModal(match)}
+                                    >
+                                      <i className="fas fa-eye"></i>
+                                    </button>
+                                  )}
+                                </div>
+                                
+                                {/* Ligne de progression */}
+                                {match.statut === 'Terminé' && phase !== 'Finale' && phase !== 'Petite finale' && (
+                                  <div className="progression-line"></div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+                
+                {/* Champions */}
+                {(competition.gagnant || competition.finaliste || competition.troisieme) && (
+                  <div className="champions-section mt-4">
+                    <h4 className="text-center mb-3">🏆 Podium Final</h4>
+                    <div className="row justify-content-center">
+                      {competition.gagnant && (
+                        <div className="col-md-4 text-center mb-3">
+                          <div className="champion-card gold">
+                            <div className="trophy-icon">🏆</div>
+                            <h5>Champion</h5>
+                            <p className="champion-name">{competition.gagnant.nom}</p>
+                          </div>
+                        </div>
+                      )}
+                      {competition.finaliste && (
+                        <div className="col-md-4 text-center mb-3">
+                          <div className="champion-card silver">
+                            <div className="trophy-icon">🥈</div>
+                            <h5>Finaliste</h5>
+                            <p className="champion-name">{competition.finaliste.nom}</p>
+                          </div>
+                        </div>
+                      )}
+                      {competition.troisieme && (
+                        <div className="col-md-4 text-center mb-3">
+                          <div className="champion-card bronze">
+                            <div className="trophy-icon">🥉</div>
+                            <h5>3ème place</h5>
+                            <p className="champion-name">{competition.troisieme.nom}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -588,8 +777,8 @@ const CompetitionMatchesPage = () => {
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">
-                  <i className="fas fa-edit me-2"></i>
-                  Saisie de score - {selectedMatch.equipe1?.nom} vs {selectedMatch.equipe2?.nom}
+                  <i className={`fas ${canEditMatchScore(selectedMatch) ? 'fa-edit' : 'fa-eye'} me-2`}></i>
+                  {canEditMatchScore(selectedMatch) ? 'Saisie de score' : 'Détails du match'} - {selectedMatch.equipe1?.nom} vs {selectedMatch.equipe2?.nom}
                 </h5>
                 <button 
                   type="button" 
@@ -610,6 +799,7 @@ const CompetitionMatchesPage = () => {
                         value={scoreData.score1}
                         onChange={(e) => setScoreData(prev => ({ ...prev, score1: e.target.value }))}
                         min="0"
+                        disabled={!canEditMatchScore(selectedMatch)}
                       />
                     </div>
                   </div>
@@ -624,6 +814,7 @@ const CompetitionMatchesPage = () => {
                         value={scoreData.score2}
                         onChange={(e) => setScoreData(prev => ({ ...prev, score2: e.target.value }))}
                         min="0"
+                        disabled={!canEditMatchScore(selectedMatch)}
                       />
                     </div>
                   </div>
@@ -636,16 +827,18 @@ const CompetitionMatchesPage = () => {
                 {/* Buteurs */}
                 <div className="mb-3">
                   <label className="form-label">Buteurs</label>
-                  <div className="d-flex gap-2 mb-2">
-                    <button 
-                      type="button" 
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={addButeur}
-                    >
-                      <i className="fas fa-plus me-1"></i>
-                      Ajouter buteur
-                    </button>
-                  </div>
+                  {canEditMatchScore(selectedMatch) && (
+                    <div className="d-flex gap-2 mb-2">
+                      <button 
+                        type="button" 
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={addButeur}
+                      >
+                        <i className="fas fa-plus me-1"></i>
+                        Ajouter buteur
+                      </button>
+                    </div>
+                  )}
                   {scoreData.buteurs.map((buteur, index) => (
                     <div key={index} className="badge bg-success me-2 mb-2">
                       {buteur.joueur} ({buteur.buts} buts)
@@ -656,16 +849,18 @@ const CompetitionMatchesPage = () => {
                 {/* Passeurs */}
                 <div className="mb-3">
                   <label className="form-label">Passeurs</label>
-                  <div className="d-flex gap-2 mb-2">
-                    <button 
-                      type="button" 
-                      className="btn btn-sm btn-outline-info"
-                      onClick={addPasseur}
-                    >
-                      <i className="fas fa-plus me-1"></i>
-                      Ajouter passeur
-                    </button>
-                  </div>
+                  {canEditMatchScore(selectedMatch) && (
+                    <div className="d-flex gap-2 mb-2">
+                      <button 
+                        type="button" 
+                        className="btn btn-sm btn-outline-info"
+                        onClick={addPasseur}
+                      >
+                        <i className="fas fa-plus me-1"></i>
+                        Ajouter passeur
+                      </button>
+                    </div>
+                  )}
                   {scoreData.passeurs.map((passeur, index) => (
                     <div key={index} className="badge bg-info me-2 mb-2">
                       {passeur.joueur} ({passeur.passes} passes)
@@ -677,16 +872,18 @@ const CompetitionMatchesPage = () => {
                 <div className="row">
                   <div className="col-md-6">
                     <label className="form-label">Cartons jaunes</label>
-                    <div className="d-flex gap-2 mb-2">
-                      <button 
-                        type="button" 
-                        className="btn btn-sm btn-outline-warning"
-                        onClick={() => addCarton('jaune')}
-                      >
-                        <i className="fas fa-plus me-1"></i>
-                        Ajouter
-                      </button>
-                    </div>
+                    {canEditMatchScore(selectedMatch) && (
+                      <div className="d-flex gap-2 mb-2">
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-outline-warning"
+                          onClick={() => addCarton('jaune')}
+                        >
+                          <i className="fas fa-plus me-1"></i>
+                          Ajouter
+                        </button>
+                      </div>
+                    )}
                     {scoreData.cartonsJaunes.map((joueur, index) => (
                       <div key={index} className="badge bg-warning me-2 mb-2">
                         {joueur}
@@ -695,16 +892,18 @@ const CompetitionMatchesPage = () => {
                   </div>
                   <div className="col-md-6">
                     <label className="form-label">Cartons rouges</label>
-                    <div className="d-flex gap-2 mb-2">
-                      <button 
-                        type="button" 
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => addCarton('rouge')}
-                      >
-                        <i className="fas fa-plus me-1"></i>
-                        Ajouter
-                      </button>
-                    </div>
+                    {canEditMatchScore(selectedMatch) && (
+                      <div className="d-flex gap-2 mb-2">
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => addCarton('rouge')}
+                        >
+                          <i className="fas fa-plus me-1"></i>
+                          Ajouter
+                        </button>
+                      </div>
+                    )}
                     {scoreData.cartonsRouges.map((joueur, index) => (
                       <div key={index} className="badge bg-danger me-2 mb-2">
                         {joueur}
@@ -722,6 +921,7 @@ const CompetitionMatchesPage = () => {
                     value={scoreData.captureEcran}
                     onChange={(e) => setScoreData(prev => ({ ...prev, captureEcran: e.target.value }))}
                     placeholder="https://..."
+                    disabled={!canEditMatchScore(selectedMatch)}
                   />
                 </div>
               </div>
@@ -731,16 +931,18 @@ const CompetitionMatchesPage = () => {
                   className="btn btn-secondary" 
                   onClick={() => setShowScoreModal(false)}
                 >
-                  Annuler
+                  {canEditMatchScore(selectedMatch) ? 'Annuler' : 'Fermer'}
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary" 
-                  onClick={handleScoreSubmit}
-                >
-                  <i className="fas fa-save me-2"></i>
-                  Enregistrer le score
-                </button>
+                {canEditMatchScore(selectedMatch) && (
+                  <button 
+                    type="button" 
+                    className="btn btn-primary" 
+                    onClick={handleScoreSubmit}
+                  >
+                    <i className="fas fa-save me-2"></i>
+                    Enregistrer le score
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -811,10 +1013,10 @@ const CompetitionMatchesPage = () => {
               <div className="modal-header">
                 <h5 className="modal-title">
                   <i className="fas fa-user-plus me-2"></i>
-                  {joueurModalType === 'buteur' && 'Ajouter un buteur'}
-                  {joueurModalType === 'passeur' && 'Ajouter un passeur'}
-                  {joueurModalType === 'cartonJaune' && 'Ajouter un carton jaune'}
-                  {joueurModalType === 'cartonRouge' && 'Ajouter un carton rouge'}
+                  {joueurModalType === 'buteur' && 'Ajouter un buteur de mon club'}
+                  {joueurModalType === 'passeur' && 'Ajouter un passeur de mon club'}
+                  {joueurModalType === 'cartonJaune' && 'Ajouter un carton jaune à mon joueur'}
+                  {joueurModalType === 'cartonRouge' && 'Ajouter un carton rouge à mon joueur'}
                 </h5>
                 <button 
                   type="button" 
@@ -832,13 +1034,19 @@ const CompetitionMatchesPage = () => {
                     value={selectedJoueur}
                     onChange={(e) => setSelectedJoueur(e.target.value)}
                   >
-                    <option value="">Choisir un joueur...</option>
-                    {getJoueursEquipes(selectedMatch).map((joueur, index) => (
+                    <option value="">Choisir un joueur de mon club...</option>
+                    {getJoueursClubAdmin(selectedMatch).map((joueur, index) => (
                       <option key={index} value={joueur.pseudo}>
-                        {joueur.pseudo} ({joueur.equipe}) - {joueur.role}
+                        {joueur.pseudo} - {joueur.role}
                       </option>
                     ))}
                   </select>
+                  {getJoueursClubAdmin(selectedMatch).length === 0 && (
+                    <small className="text-muted">
+                      <i className="fas fa-info-circle me-1"></i>
+                      Vous devez être admin d'un club participant pour ajouter des statistiques.
+                    </small>
+                  )}
                 </div>
                 
                 {(joueurModalType === 'buteur' || joueurModalType === 'passeur') && (

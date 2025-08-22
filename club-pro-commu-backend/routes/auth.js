@@ -54,9 +54,17 @@ router.post('/register', async (req, res) => {
     } = req.body;
 
     // Validation des champs obligatoires
-    if (!pseudo || !email || !password || !plateforme) {
+    if (!pseudo || !email || !password) {
       return res.status(400).json({
-        message: 'Pseudo, email, mot de passe et plateforme sont obligatoires'
+        message: 'Pseudo, email et mot de passe sont obligatoires'
+      });
+    }
+
+    // Pour les comptes admin, la plateforme n'est pas obligatoire
+    const isAdminAccount = req.body.isAdmin === true;
+    if (!isAdminAccount && !plateforme) {
+      return res.status(400).json({
+        message: 'La plateforme est obligatoire pour les comptes joueurs'
       });
     }
 
@@ -115,13 +123,16 @@ router.post('/register', async (req, res) => {
       pseudo,
       email: email.toLowerCase(),
       password: password, // Le middleware pre('save') va hasher automatiquement
+      isAdmin: isAdminAccount || false,
       dateCreation: new Date()
     });
 
     await user.save();
 
-    // Créer automatiquement le profil joueur
-    const player = new Player({
+    // Créer automatiquement le profil joueur (seulement pour les comptes non-admin)
+    let player = null;
+    if (!isAdminAccount) {
+      player = new Player({
       userId: user._id,
       pseudo,
       age: age ? parseInt(age) : undefined,
@@ -160,9 +171,10 @@ router.post('/register', async (req, res) => {
         passesDecisives: 0,
         cleanSheets: 0
       }
-    });
+      });
 
-    await player.save();
+      await player.save();
+    }
 
     // Générer le token JWT
     const jwtSecret = process.env.JWT_SECRET || 'votre_secret_jwt_tres_long_et_securise_pour_le_developpement_local';
@@ -178,13 +190,18 @@ router.post('/register', async (req, res) => {
       pseudo: user.pseudo,
       email: user.email,
       dateCreation: user.dateCreation,
+      isAdmin: user.isAdmin,
       token
     };
 
-    res.status(201).json({
-      message: 'Inscription réussie',
-      user: userResponse,
-      player: {
+    const response = {
+      message: isAdminAccount ? 'Administrateur créé avec succès' : 'Inscription réussie',
+      user: userResponse
+    };
+
+    // Ajouter les données joueur seulement si ce n'est pas un admin
+    if (player) {
+      response.player = {
         _id: player._id,
         pseudo: player.pseudo,
         plateforme: player.plateforme,
@@ -192,8 +209,10 @@ router.post('/register', async (req, res) => {
         position: player.position,
         postePrincipal: player.postePrincipal,
         disponibilite: player.disponibilite
-      }
-    });
+      };
+    }
+
+    res.status(201).json(response);
 
   } catch (error) {
     console.error('Erreur inscription:', error);

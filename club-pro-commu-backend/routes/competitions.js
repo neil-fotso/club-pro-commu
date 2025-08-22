@@ -81,8 +81,14 @@ router.get('/:id', async (req, res) => {
   try {
     const competition = await Competition.findById(req.params.id)
       .populate('createurId', 'pseudo _id')
-      .populate('equipesInscrites.clubId', 'nom logo description')
-      .populate('equipesInscrites.clubId.membres.userId', 'pseudo')
+      .populate({
+        path: 'equipesInscrites.clubId',
+        select: 'nom logo description membres',
+        populate: {
+          path: 'membres.userId',
+          select: 'pseudo _id'
+        }
+      })
       .populate('demandesInscription.clubId', 'nom logo')
       .populate('poules.equipes', 'nom logo')
       .populate('poules.matchs.equipe1', 'nom logo')
@@ -91,10 +97,6 @@ router.get('/:id', async (req, res) => {
       .populate('matchsElimination.equipe1', 'nom logo')
       .populate('matchsElimination.equipe2', 'nom logo')
       .populate('matchsElimination.arbitre', 'pseudo')
-      .populate('poules.matchs.equipe1.membres.userId', 'pseudo')
-      .populate('poules.matchs.equipe2.membres.userId', 'pseudo')
-      .populate('matchsElimination.equipe1.membres.userId', 'pseudo')
-      .populate('matchsElimination.equipe2.membres.userId', 'pseudo')
       .populate('gagnant', 'nom logo')
       .populate('finaliste', 'nom logo')
       .populate('troisieme', 'nom logo')
@@ -616,8 +618,12 @@ router.put('/:id/matchs/:matchId/date', auth, async (req, res) => {
       return res.status(404).json({ message: 'Compétition non trouvée' });
     }
 
-    // Vérifier que l'utilisateur est admin du site ou admin d'un des clubs du match
+    // Vérifier les permissions - plusieurs autorisations possibles :
+    // 1. Admin du site
     const isAdmin = req.user.isAdmin;
+    
+    // 2. Créateur de la compétition
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
     
     // Trouver le match pour identifier les clubs concernés
     let match = null;
@@ -653,8 +659,10 @@ router.put('/:id/matchs/:matchId/date', auth, async (req, res) => {
       'membres.role': 'Admin'
     });
     
-    if (!isAdmin && !estAdminEquipe1 && !estAdminEquipe2) {
-      return res.status(403).json({ message: 'Seuls les admins des équipes concernées peuvent programmer ce match' });
+    if (!isAdmin && !estCreateurCompetition && !estAdminEquipe1 && !estAdminEquipe2) {
+      return res.status(403).json({ 
+        message: 'Seuls les admins du site, le créateur de la compétition ou les admins des équipes concernées peuvent programmer ce match' 
+      });
     }
 
     // Trouver et mettre à jour le match
@@ -727,7 +735,16 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
       return res.status(404).json({ message: 'Match non trouvé' });
     }
 
-    // Vérifier que l'utilisateur est admin d'une des équipes
+    // Vérifier les permissions - plusieurs autorisations possibles :
+    // 1. Admin du site
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    
+    // 2. Créateur de la compétition
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+    
+    // 3. Admin d'une des équipes du match
     const estAdminEquipe1 = await Club.findOne({ 
       _id: match.equipe1, 
       'membres.userId': req.user.id,
@@ -739,8 +756,10 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
       'membres.role': 'Admin'
     });
     
-    if (!estAdminEquipe1 && !estAdminEquipe2) {
-      return res.status(403).json({ message: 'Seuls les admins des équipes peuvent modifier les scores' });
+    if (!estAdminSite && !estCreateurCompetition && !estAdminEquipe1 && !estAdminEquipe2) {
+      return res.status(403).json({ 
+        message: 'Seuls les admins du site, le créateur de la compétition ou les admins des équipes peuvent modifier les scores' 
+      });
     }
 
     // Mettre à jour le score
@@ -762,6 +781,15 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
     if (match.valideParEquipe1 && match.valideParEquipe2) {
       // Mettre à jour les statistiques des équipes
       await updateTeamStats(competition, match);
+      
+      // Recalculer les statistiques individuelles
+      const individualStats = await calculateCompetitionStats(competition);
+      competition.statistiques = individualStats;
+      
+      // Gérer la progression en élimination directe
+      if (competition.type === 'elimination_directe' && match.phase) {
+        await handleEliminationProgression(competition, match);
+      }
     }
 
     await competition.save();
@@ -811,6 +839,283 @@ async function updateTeamStats(competition, match) {
   }
 }
 
+// Fonction pour gérer la progression des équipes en élimination directe
+async function handleEliminationProgression(competition, completedMatch) {
+  try {
+    console.log('🏆 Gestion progression élimination directe...');
+    
+    // Déterminer l'équipe gagnante
+    const winner = completedMatch.score1 > completedMatch.score2 ? 
+      completedMatch.equipe1 : completedMatch.equipe2;
+    const loser = completedMatch.score1 > completedMatch.score2 ? 
+      completedMatch.equipe2 : completedMatch.equipe1;
+    
+    console.log(`   Gagnant: ${winner}, Phase: ${completedMatch.phase}`);
+    
+    // Définir la progression des phases
+    const phaseProgression = {
+      'Huitième': 'Quart',
+      'Quart': 'Demi', 
+      'Demi': 'Finale'
+    };
+    
+    const nextPhase = phaseProgression[completedMatch.phase];
+    
+    if (!nextPhase) {
+      // C'est la finale ou petite finale
+      if (completedMatch.phase === 'Finale') {
+        competition.gagnant = winner;
+        competition.finaliste = loser;
+        console.log('   🏆 Champion déterminé !');
+        
+        // Mettre à jour le statut des équipes
+        const gagnantEquipe = competition.equipesInscrites.find(e => 
+          e.clubId.toString() === winner.toString());
+        const finalisteEquipe = competition.equipesInscrites.find(e => 
+          e.clubId.toString() === loser.toString());
+        
+        if (gagnantEquipe) gagnantEquipe.statut = 'Gagnant';
+        if (finalisteEquipe) finalisteEquipe.statut = 'Finaliste';
+        
+        // Marquer la compétition comme terminée
+        competition.statut = 'Terminé';
+      } else if (completedMatch.phase === 'Petite finale') {
+        competition.troisieme = winner;
+        console.log('   🥉 3ème place déterminée !');
+        
+        const troisiemeEquipe = competition.equipesInscrites.find(e => 
+          e.clubId.toString() === winner.toString());
+        if (troisiemeEquipe) troisiemeEquipe.statut = 'Troisième';
+      }
+      return;
+    }
+    
+    console.log(`   → Progression vers: ${nextPhase}`);
+    
+    // Chercher ou créer le match de la phase suivante
+    let nextMatch = competition.matchsElimination.find(match => 
+      match.phase === nextPhase && 
+      (!match.equipe1 || !match.equipe2)
+    );
+    
+    if (!nextMatch) {
+      // Créer un nouveau match pour la phase suivante
+      nextMatch = {
+        equipe1: null,
+        equipe2: null,
+        score1: null,
+        score2: null,
+        dateMatch: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Dans 7 jours
+        statut: 'Programmé',
+        phase: nextPhase,
+        tour: 1,
+        valideParEquipe1: false,
+        valideParEquipe2: false,
+        captureEcran: null,
+        stats: {
+          buteurs: [],
+          passeurs: [],
+          cartonsJaunes: [],
+          cartonsRouges: []
+        },
+        litige: false,
+        arbitre: null
+      };
+      
+      competition.matchsElimination.push(nextMatch);
+      console.log(`   ✅ Nouveau match créé pour ${nextPhase}`);
+    }
+    
+    // Placer l'équipe gagnante dans le match suivant
+    if (!nextMatch.equipe1) {
+      nextMatch.equipe1 = winner;
+      console.log(`   ✅ ${winner} placé en équipe1 du ${nextPhase}`);
+    } else if (!nextMatch.equipe2) {
+      nextMatch.equipe2 = winner;
+      console.log(`   ✅ ${winner} placé en équipe2 du ${nextPhase}`);
+    } else {
+      console.log(`   ⚠️ Match ${nextPhase} déjà complet`);
+    }
+    
+    // Marquer l'équipe perdante comme éliminée
+    const loserEquipe = competition.equipesInscrites.find(e => 
+      e.clubId.toString() === loser.toString());
+    if (loserEquipe && loserEquipe.statut === 'Confirmé') {
+      loserEquipe.statut = 'Eliminé';
+      console.log(`   ❌ ${loser} éliminé`);
+    }
+    
+    // Gérer la petite finale (3ème place)
+    if (completedMatch.phase === 'Demi') {
+      let petiteFinale = competition.matchsElimination.find(match => 
+        match.phase === 'Petite finale');
+      
+      if (!petiteFinale) {
+        petiteFinale = {
+          equipe1: null,
+          equipe2: null,
+          score1: null,
+          score2: null,
+          dateMatch: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 1 jour avant la finale
+          statut: 'Programmé',
+          phase: 'Petite finale',
+          tour: 1,
+          valideParEquipe1: false,
+          valideParEquipe2: false,
+          captureEcran: null,
+          stats: {
+            buteurs: [],
+            passeurs: [],
+            cartonsJaunes: [],
+            cartonsRouges: []
+          },
+          litige: false,
+          arbitre: null
+        };
+        
+        competition.matchsElimination.push(petiteFinale);
+        console.log(`   ✅ Petite finale créée`);
+      }
+      
+      // Placer l'équipe perdante dans la petite finale
+      if (!petiteFinale.equipe1) {
+        petiteFinale.equipe1 = loser;
+        console.log(`   ✅ ${loser} placé en petite finale (équipe1)`);
+      } else if (!petiteFinale.equipe2) {
+        petiteFinale.equipe2 = loser;
+        console.log(`   ✅ ${loser} placé en petite finale (équipe2)`);
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur progression élimination:', error);
+  }
+}
+
+// Fonction pour calculer les statistiques individuelles de la compétition
+async function calculateCompetitionStats(competition) {
+  const stats = {
+    meilleurButeur: null,
+    meilleurPasseur: null,
+    meilleurJoueur: null,
+    totalMatchs: 0,
+    totalButs: 0
+  };
+
+  // Collecter toutes les statistiques des matchs terminés
+  const buteursStats = {};
+  const passeursStats = {};
+  let totalButs = 0;
+  let totalMatchs = 0;
+
+  // Parcourir tous les matchs terminés (matchs normaux et matchs d'élimination)
+  const allMatches = [
+    ...(competition.matchs || []),
+    ...(competition.matchsElimination || [])
+  ];
+  
+  allMatches.forEach(match => {
+    if (match.statut === 'Terminé' && match.score1 !== null && match.score2 !== null) {
+      totalMatchs++;
+      totalButs += (match.score1 + match.score2);
+
+      // Compter les buteurs (vérifier dans match.buteurs ET match.stats.buteurs)
+      const buteurs = match.buteurs || match.stats?.buteurs || [];
+      if (Array.isArray(buteurs)) {
+        buteurs.forEach(buteur => {
+          const joueur = buteur.joueur;
+          const buts = buteur.buts || 1;
+          
+          if (!buteursStats[joueur]) {
+            buteursStats[joueur] = {
+              joueur: joueur,
+              buts: 0,
+              club: null // Sera déterminé plus tard
+            };
+          }
+          buteursStats[joueur].buts += buts;
+        });
+      }
+
+      // Compter les passeurs (vérifier dans match.passeurs ET match.stats.passeurs)
+      const passeurs = match.passeurs || match.stats?.passeurs || [];
+      if (Array.isArray(passeurs)) {
+        passeurs.forEach(passeur => {
+          const joueur = passeur.joueur;
+          const passes = passeur.passes || 1;
+          
+          if (!passeursStats[joueur]) {
+            passeursStats[joueur] = {
+              joueur: joueur,
+              passes: 0,
+              club: null // Sera déterminé plus tard
+            };
+          }
+          passeursStats[joueur].passes += passes;
+        });
+      }
+    }
+  });
+
+  // Trouver le meilleur buteur
+  let maxButs = 0;
+  for (const [joueur, data] of Object.entries(buteursStats)) {
+    if (data.buts > maxButs) {
+      maxButs = data.buts;
+      stats.meilleurButeur = {
+        joueur: joueur,
+        buts: data.buts,
+        club: data.club
+      };
+    }
+  }
+
+  // Trouver le meilleur passeur
+  let maxPasses = 0;
+  for (const [joueur, data] of Object.entries(passeursStats)) {
+    if (data.passes > maxPasses) {
+      maxPasses = data.passes;
+      stats.meilleurPasseur = {
+        joueur: joueur,
+        passes: data.passes,
+        club: data.club
+      };
+    }
+  }
+
+  // Le meilleur joueur pourrait être celui avec le plus de buts + passes
+  const joueursGlobaux = {};
+  
+  // Ajouter les buts
+  for (const [joueur, data] of Object.entries(buteursStats)) {
+    if (!joueursGlobaux[joueur]) joueursGlobaux[joueur] = { joueur, score: 0, club: null };
+    joueursGlobaux[joueur].score += data.buts * 2; // Les buts valent 2 points
+  }
+  
+  // Ajouter les passes
+  for (const [joueur, data] of Object.entries(passeursStats)) {
+    if (!joueursGlobaux[joueur]) joueursGlobaux[joueur] = { joueur, score: 0, club: null };
+    joueursGlobaux[joueur].score += data.passes; // Les passes valent 1 point
+  }
+
+  // Trouver le meilleur joueur global
+  let maxScore = 0;
+  for (const [joueur, data] of Object.entries(joueursGlobaux)) {
+    if (data.score > maxScore) {
+      maxScore = data.score;
+      stats.meilleurJoueur = {
+        joueur: joueur,
+        club: data.club
+      };
+    }
+  }
+
+  stats.totalMatchs = totalMatchs;
+  stats.totalButs = totalButs;
+
+  return stats;
+}
+
 // 🔹 7. STATISTIQUES ET CLASSEMENTS
 
 // GET /api/competitions/:id/classement - Récupérer le classement
@@ -848,9 +1153,132 @@ router.get('/:id/statistiques', async (req, res) => {
       return res.status(404).json({ message: 'Compétition non trouvée' });
     }
 
+    // Si les statistiques n'existent pas ou sont vides, les calculer
+    if (!competition.statistiques || Object.keys(competition.statistiques).length === 0) {
+      console.log('🔄 Calcul des statistiques pour la compétition:', competition.nom);
+      const stats = await calculateCompetitionStats(competition);
+      competition.statistiques = stats;
+      await competition.save();
+    }
+
     res.json(competition.statistiques);
   } catch (error) {
     console.error('Erreur récupération statistiques:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/competitions/:id/generer-elimination - Générer le bracket d'élimination directe
+router.post('/:id/generer-elimination', async (req, res) => {
+  try {
+    const competition = await Competition.findById(req.params.id);
+
+    if (!competition) {
+      return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    if (competition.type !== 'elimination_directe') {
+      return res.status(400).json({ message: 'Cette fonction est uniquement pour les compétitions à élimination directe' });
+    }
+
+    const equipes = competition.equipesInscrites;
+    if (equipes.length < 2) {
+      return res.status(400).json({ message: 'Au moins 2 équipes sont nécessaires' });
+    }
+
+    console.log(`🏆 Génération bracket élimination pour ${equipes.length} équipes`);
+
+    // Déterminer la phase de départ selon le nombre d'équipes
+    let phaseDepart = 'Finale';
+    if (equipes.length > 2) phaseDepart = 'Demi';
+    if (equipes.length > 4) phaseDepart = 'Quart';
+    if (equipes.length > 8) phaseDepart = 'Huitième';
+    
+    console.log(`🔍 Analyse: ${equipes.length} équipes → Phase de départ: ${phaseDepart}`);
+
+    // Vider les matchs d'élimination existants
+    competition.matchsElimination = [];
+
+    // Mélanger les équipes pour un appariement aléatoire
+    const equipesShuffled = [...equipes].sort(() => Math.random() - 0.5);
+
+    // Créer les matchs de la première phase
+    const matchsToCreate = Math.floor(equipesShuffled.length / 2);
+    
+    for (let i = 0; i < matchsToCreate; i++) {
+      const equipe1 = equipesShuffled[i * 2];
+      const equipe2 = equipesShuffled[i * 2 + 1];
+
+      const match = {
+        equipe1: equipe1.clubId,
+        equipe2: equipe2.clubId,
+        score1: null,
+        score2: null,
+        dateMatch: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000), // Étalé sur plusieurs jours
+        statut: 'Programmé',
+        phase: phaseDepart,
+        tour: 1,
+        valideParEquipe1: false,
+        valideParEquipe2: false,
+        captureEcran: null,
+        stats: {
+          buteurs: [],
+          passeurs: [],
+          cartonsJaunes: [],
+          cartonsRouges: []
+        },
+        litige: false,
+        arbitre: null
+      };
+
+      competition.matchsElimination.push(match);
+    }
+
+    // Marquer les équipes comme confirmées
+    equipes.forEach(equipe => {
+      if (equipe.statut === 'Inscrit') {
+        equipe.statut = 'Confirmé';
+      }
+    });
+
+    await competition.save();
+
+    console.log(`✅ ${matchsToCreate} matchs créés en phase ${phaseDepart}`);
+
+    res.json({ 
+      message: `Bracket d'élimination généré avec succès`,
+      phase: phaseDepart,
+      matchsCrees: matchsToCreate,
+      matchsElimination: competition.matchsElimination
+    });
+  } catch (error) {
+    console.error('Erreur génération bracket:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/competitions/:id/recalculer-statistiques - Recalculer toutes les statistiques
+router.post('/:id/recalculer-statistiques', async (req, res) => {
+  try {
+    const competition = await Competition.findById(req.params.id);
+
+    if (!competition) {
+      return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    console.log('🔄 Recalcul forcé des statistiques pour:', competition.nom);
+    
+    // Recalculer les statistiques individuelles
+    const stats = await calculateCompetitionStats(competition);
+    competition.statistiques = stats;
+    await competition.save();
+
+    res.json({ 
+      message: 'Statistiques recalculées avec succès',
+      statistiques: stats
+    });
+  } catch (error) {
+    console.error('Erreur recalcul statistiques:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });

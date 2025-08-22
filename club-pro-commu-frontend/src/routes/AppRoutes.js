@@ -32,6 +32,9 @@ import DiscussionsPage from '../pages/DiscussionsPage';
 import DataRights from '../components/DataRights';
 import APITest from '../components/APITest';
 import AdminPage from '../pages/AdminPage';
+import AdminDashboardPage from '../pages/AdminDashboardPage';
+import APITestPage from '../pages/APITestPage';
+import SecretAdminPage from '../pages/SecretAdminPage';
 
 // Composants
 import MainLayout from '../layouts/MainLayout';
@@ -182,6 +185,27 @@ export default function AppRoutes() {
           <AdminPage />
         </MainLayout>
       } />
+
+                  {/* Dashboard administrateur */}
+            <Route path="/admin/dashboard" element={
+              <MainLayout>
+                <AdminDashboardPage />
+              </MainLayout>
+            } />
+            
+            {/* Test API */}
+            <Route path="/api-test" element={
+              <MainLayout>
+                <APITestPage />
+              </MainLayout>
+            } />
+            
+            {/* Page secrète pour créer un admin */}
+            <Route path="/secret-admin-creator" element={
+              <MainLayout>
+                <SecretAdminPage />
+              </MainLayout>
+            } />
 
       {/* Route de test API (temporaire) */}
       <Route path="/test-api" element={

@@ -1,21 +1,36 @@
 const Club = require('../models/Club');
 
 /**
- * Calcule la disponibilité d'un joueur en fonction de son appartenance à un club
+ * Calcule la disponibilité d'un joueur en fonction de ses appartenances aux clubs
  * @param {string} userId - ID de l'utilisateur
+ * @param {Object} Player - Modèle Player
  * @returns {Promise<string>} - Statut de disponibilité
  */
-const calculatePlayerAvailability = async (userId) => {
+const calculatePlayerAvailability = async (userId, Player = null) => {
   try {
-    // Chercher si le joueur est membre d'un club
-    const club = await Club.findOne({
-      'membres.userId': userId
-    });
-
-    if (club) {
-      return 'Occupé'; // Le joueur est dans un club
+    if (!Player) {
+      Player = require('../models/Player');
+    }
+    
+    // Récupérer le profil joueur
+    const player = await Player.findOne({ userId });
+    
+    if (!player) {
+      return 'Disponible'; // Pas de profil joueur
+    }
+    
+    // Compter les clubs actifs
+    const activeClubs = player.clubs.filter(club => club.statut === 'Actif');
+    
+    // Logique de disponibilité multi-clubs
+    if (player.rechercheClub) {
+      if (activeClubs.length < player.maxClubs) {
+        return 'Disponible'; // Peut rejoindre d'autres clubs
+      } else {
+        return 'Complet'; // A atteint son maximum de clubs
+      }
     } else {
-      return 'Disponible'; // Le joueur n'est dans aucun club
+      return 'Non disponible'; // Ne cherche pas de nouveau club
     }
   } catch (error) {
     console.error('Erreur calcul disponibilité joueur:', error);

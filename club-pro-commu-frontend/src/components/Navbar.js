@@ -196,6 +196,12 @@ export default function Navbar() {
                       <>
                         <li><hr className="dropdown-divider" /></li>
                         <li>
+                          <Link className="dropdown-item text-danger" to="/admin/dashboard" onClick={() => handleNavigation('/admin/dashboard')}>
+                            <i className="fas fa-tachometer-alt me-2"></i>
+                            Dashboard Admin
+                          </Link>
+                        </li>
+                        <li>
                           <Link className="dropdown-item text-danger" to="/admin" onClick={() => handleNavigation('/admin')}>
                             <i className="fas fa-cog me-2"></i>
                             Administration

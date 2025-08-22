@@ -11,6 +11,7 @@ const competitionRoutes = require('./routes/competitions');
 const invitationRoutes = require('./routes/invitations');
 const notificationRoutes = require('./routes/notifications');
 const discordRoutes = require('./routes/discord');
+const adminRoutes = require('./routes/admin');
 const updateActivity = require('./middleware/updateActivity');
 
 const app = express();
@@ -85,6 +86,7 @@ app.use('/api/competitions', updateActivity, competitionRoutes);
 app.use('/api/invitations', updateActivity, invitationRoutes);
 app.use('/api/notifications', updateActivity, notificationRoutes);
 app.use('/api/discord', discordRoutes);
+app.use('/api/admin', updateActivity, adminRoutes);
 
 // Connexion à MongoDB
 const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/club-pro-commu';

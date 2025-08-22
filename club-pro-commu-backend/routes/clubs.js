@@ -491,10 +491,25 @@ router.put('/:id/demandes/:demandeId/accept', auth, async (req, res) => {
       return res.status(400).json({ message: 'Le club est complet.' });
     }
     
+    // Vérifier si le joueur peut rejoindre ce club (système multi-clubs)
+    const Player = require('../models/Player');
+    const player = await Player.findOne({ userId: demande.userId });
+    
+    if (!player) {
+      return res.status(404).json({ message: 'Profil joueur non trouvé.' });
+    }
+    
+    try {
+      // Utiliser la nouvelle méthode pour rejoindre le club
+      await player.joinClub(club._id, 'Joueur');
+    } catch (error) {
+      return res.status(400).json({ message: error.message });
+    }
+    
     // Accepter la demande
     demande.statut = 'Acceptée';
     
-    // Ajouter l'utilisateur comme membre
+    // Ajouter l'utilisateur comme membre dans le club (compatibilité)
     club.membres.push({
       userId: demande.userId,
       role: 'Joueur',
@@ -517,8 +532,8 @@ router.put('/:id/demandes/:demandeId/accept', auth, async (req, res) => {
       }
     });
     
-    // Mettre à jour la disponibilité du joueur
-    await updatePlayerAvailability(demande.userId.toString(), require('../models/Player'));
+    // Mettre à jour la disponibilité du joueur avec le nouveau système
+    await player.calculateDisponibilite();
     
     res.json({ message: 'Demande acceptée avec succès.' });
   } catch (error) {
