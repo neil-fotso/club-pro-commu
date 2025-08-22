@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom'; // TODO: utiliser pour redirection
 import { authAPI } from '../services/api';
 
 const SecretAdminPage = () => {
@@ -25,6 +25,7 @@ const SecretAdminPage = () => {
   const SECRET_PASSWORD = process.env.REACT_APP_ADMIN_SECRET || 'CreateAdmin2024!';
 
   // L'URL API est gérée automatiquement par authAPI
+  // eslint-disable-next-line no-unused-vars
   const API_URL = process.env.NODE_ENV === 'production' 
     ? 'https://club-pro-commu.onrender.com/api'
     : 'http://localhost:3001/api';
