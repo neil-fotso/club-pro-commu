@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/api';
 
 const SecretAdminPage = () => {
+  // const navigate = useNavigate(); // TODO: à utiliser pour la redirection après création
   const [step, setStep] = useState('password'); // 'password' ou 'create'
   const [accessPassword, setAccessPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,6 +24,7 @@ const SecretAdminPage = () => {
   // En production, récupérer depuis une variable d'environnement ou une config sécurisée
   const SECRET_PASSWORD = process.env.REACT_APP_ADMIN_SECRET || 'CreateAdmin2024!';
 
+  // L'URL API est gérée automatiquement par authAPI
   const API_URL = process.env.NODE_ENV === 'production' 
     ? 'https://club-pro-commu.onrender.com/api'
     : 'http://localhost:3001/api';
@@ -36,7 +40,7 @@ const SecretAdminPage = () => {
   console.log('REACT_APP_ADMIN_SECRET (longueur):', SECRET_PASSWORD?.length || 0);
   console.log('isProduction:', isProduction);
   console.log('allowInProduction:', allowInProduction);
-  console.log('API_URL:', API_URL);
+  console.log('API_URL: géré par authAPI');
 
   const handleAccessSubmit = (e) => {
     e.preventDefault();
@@ -89,39 +93,25 @@ const SecretAdminPage = () => {
       setResult(prev => prev + '📧 Vérification de l\'unicité de l\'email...\n');
 
       // Créer l'admin via l'API
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...adminData,
-          isAdmin: true
-        })
+      const response = await authAPI.register({
+        ...adminData,
+        isAdmin: true
       });
 
-      if (response.ok) {
-        await response.json();
+      if (response && response.user) {
         setResult(prev => prev + '✅ Utilisateur créé avec succès !\n');
 
         // Vérifier si les droits admin ont été attribués automatiquement
         setResult(prev => prev + '🛡️ Vérification des droits administrateur...\n');
 
         // Se connecter avec ce compte pour vérifier l'ID et les droits
-        const loginResponse = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email: adminData.email,
-            password: adminData.password
-          })
+        const loginResponse = await authAPI.login({
+          emailOrPseudo: adminData.email,
+          password: adminData.password
         });
 
-        if (loginResponse.ok) {
-          const loginData = await loginResponse.json();
-          const userId = loginData.user._id;
+        if (loginResponse && loginResponse.user) {
+          const userId = loginResponse.user._id;
           
           setResult(prev => prev + `📋 ID utilisateur récupéré: ${userId}\n`);
           setResult(prev => prev + '🎉 ADMINISTRATEUR CRÉÉ AVEC SUCCÈS !\n\n');
@@ -217,11 +207,11 @@ const SecretAdminPage = () => {
                 </ul>
               </div>
 
-              <div className="mt-3">
-                <small className="text-muted">
-                  Environnement : Production | URL API : {API_URL}
-                </small>
-              </div>
+                                   <div className="mt-3">
+                       <small className="text-muted">
+                         Environnement : Production | URL API : Gérée automatiquement
+                       </small>
+                     </div>
             </div>
           </div>
         </div>
@@ -527,7 +517,7 @@ const SecretAdminPage = () => {
               <small>
                 <strong>🌐 Environnement:</strong><br/>
                 {isProduction ? '🏭 Production' : '🛠️ Développement'}<br/>
-                API: {API_URL}<br/><br/>
+                API: Gérée automatiquement<br/><br/>
                 
                 <strong>🔒 Sécurité:</strong><br/>
                 {isProduction ? (

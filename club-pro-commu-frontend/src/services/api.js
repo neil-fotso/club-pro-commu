@@ -651,4 +651,7 @@ export const competitionAPI = {
       },
     });
   },
-}; 
+};
+
+// Export de la fonction utilitaire apiCall pour tests et usage direct
+export { apiCall }; 

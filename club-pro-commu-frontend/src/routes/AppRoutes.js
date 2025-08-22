@@ -35,6 +35,7 @@ import AdminPage from '../pages/AdminPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
 import APITestPage from '../pages/APITestPage';
 import SecretAdminPage from '../pages/SecretAdminPage';
+import CompetitionTestPage from '../pages/CompetitionTestPage';
 
 // Composants
 import MainLayout from '../layouts/MainLayout';
@@ -204,6 +205,20 @@ export default function AppRoutes() {
             <Route path="/secret-admin-creator" element={
               <MainLayout>
                 <SecretAdminPage />
+              </MainLayout>
+            } />
+            
+            {/* Page de test des compétitions */}
+            <Route path="/competition-test" element={
+              <MainLayout>
+                <CompetitionTestPage />
+              </MainLayout>
+            } />
+            
+            {/* Page de test des compétitions */}
+            <Route path="/competition-test" element={
+              <MainLayout>
+                <CompetitionTestPage />
               </MainLayout>
             } />
 
