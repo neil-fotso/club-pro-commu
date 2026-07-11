@@ -583,6 +583,17 @@ export const competitionAPI = {
     });
   },
 
+  // Simuler le paiement des frais d'inscription
+  payerInscription: async (competitionId, clubId, paymentData, token) => {
+    return apiCall(`/competitions/${competitionId}/inscriptions/${clubId}/payer`, {
+      method: 'POST',
+      body: paymentData,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
   // Traiter une demande d'inscription
   traiterDemandeInscription: async (competitionId, demandeId, action, reponse = '', token) => {
     return apiCall(`/competitions/${competitionId}/demandes/${demandeId}`, {
@@ -646,6 +657,61 @@ export const competitionAPI = {
   // Récupérer les compétitions de l'utilisateur connecté
   getMyCompetitions: async (token) => {
     return apiCall('/competitions/mes-competitions', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Marquer une équipe comme prête pour un match
+  marquerPret: async (competitionId, matchId, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/pret`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Uploader une photo de preuve pour un litige
+  uploadPhotoLitige: async (competitionId, matchId, file, token, onProgress) => {
+    const API_BASE = process.env.NODE_ENV === 'production'
+      ? 'https://club-pro-commu.onrender.com/api'
+      : 'http://localhost:3001/api';
+    
+    const url = `${API_BASE}/competitions/${competitionId}/matchs/${matchId}/upload-photo`;
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            onProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        });
+      }
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch (e) { reject(new Error('Réponse invalide du serveur')); }
+        } else {
+          reject(new Error(`Erreur upload photo: ${xhr.status}`));
+        }
+      });
+      xhr.addEventListener('error', () => reject(new Error('Erreur réseau')));
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    });
+  },
+
+  // Déclarer un forfait manuellement (admin)
+  declarerForfait: async (competitionId, matchId, equipeEnForfait, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/forfait`, {
+      method: 'POST',
+      body: { equipeEnForfait },
       headers: {
         'Authorization': `Bearer ${token}`,
       },

@@ -60,7 +60,7 @@ const createTestData = async () => {
       adminUser = new User({
         email: 'admin@clubprocommu.fr',
         pseudo: 'AdminClubPro',
-        password: hashedPassword,
+        password: commonPassword,
         isAdmin: true,
         dateCreation: new Date(),
         derniereConnexion: new Date()
@@ -90,7 +90,7 @@ const createTestData = async () => {
       const user = new User({
         email: email,
         pseudo: pseudo,
-        password: hashedPassword,
+        password: commonPassword,
         isAdmin: false,
         dateCreation: new Date(),
         derniereConnexion: new Date()

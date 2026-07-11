@@ -26,6 +26,7 @@ const createTestAdmin = async () => {
     };
 
     // Vérifier si l'admin existe déjà
+    // Vérifier si l'admin existe déjà
     const existingAdmin = await User.findOne({ email: adminData.email });
     if (existingAdmin) {
       console.log('⚠️  Administrateur déjà existant !');
@@ -34,9 +35,8 @@ const createTestAdmin = async () => {
       console.log(`🔐 Password: AdminTest123!`);
       console.log(`🛡️  isAdmin: ${existingAdmin.isAdmin}`);
       
-      // Mettre à jour le mot de passe au cas où
-      const hashedPassword = await bcrypt.hash('AdminTest123!', 10);
-      existingAdmin.password = hashedPassword;
+      // Mettre à jour le mot de passe sans hacher manuellement
+      existingAdmin.password = 'AdminTest123!';
       existingAdmin.isAdmin = true;
       await existingAdmin.save();
       
@@ -44,11 +44,7 @@ const createTestAdmin = async () => {
       return;
     }
 
-    // Hacher le mot de passe
-    const hashedPassword = await bcrypt.hash(adminData.password, 10);
-    adminData.password = hashedPassword;
-
-    // Créer l'administrateur
+    // Créer l'administrateur sans hacher manuellement (le pre('save') de User s'en charge)
     const admin = new User(adminData);
     await admin.save();
 

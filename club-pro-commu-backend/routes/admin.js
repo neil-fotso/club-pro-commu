@@ -347,6 +347,7 @@ router.get('/dashboard/users', adminAuth, async (req, res) => {
 });
 
 // ⚖️ Gestion des litiges
+// ⚖️ Gestion des litiges
 router.get('/dashboard/litiges', adminAuth, async (req, res) => {
   try {
     console.log('⚖️ Récupération des matchs en litige');
@@ -373,7 +374,7 @@ router.get('/dashboard/litiges', adminAuth, async (req, res) => {
                   pouleNom: poule.nom,
                   matchIndex: matchIndex,
                   match: {
-                    ...match,
+                    ...match.toObject(),
                     equipe1Nom: comp.equipesInscrites.find(e => 
                       e.clubId._id.toString() === match.equipe1.toString()
                     )?.clubId.nom || 'Équipe 1',
@@ -400,7 +401,7 @@ router.get('/dashboard/litiges', adminAuth, async (req, res) => {
               phase: match.phase,
               matchIndex: matchIndex,
               match: {
-                ...match,
+                ...match.toObject(),
                 equipe1Nom: comp.equipesInscrites.find(e => 
                   e.clubId._id.toString() === match.equipe1.toString()
                 )?.clubId.nom || 'Équipe 1',
@@ -431,6 +432,97 @@ router.get('/dashboard/litiges', adminAuth, async (req, res) => {
   }
 });
 
+// POST /api/admin/dashboard/litiges/resoudre - Trancher, faire rejouer ou rejeter un litige
+router.post('/dashboard/litiges/resoudre', adminAuth, async (req, res) => {
+  try {
+    const { competitionId, type, matchId, action, decisionAdmin, score1, score2 } = req.body;
+    console.log(`⚖️ Résolution de litige par admin : Action=${action}, Match=${matchId}`);
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ success: false, message: 'Compétition non trouvée' });
+    }
+
+    // Retrouver le match dans la compétition
+    let match = null;
+    if (type === 'poule') {
+      for (let i = 0; i < competition.poules.length; i++) {
+        match = competition.poules[i].matchs.id(matchId);
+        if (match) break;
+      }
+    } else {
+      match = competition.matchsElimination.id(matchId);
+    }
+
+    if (!match) {
+      return res.status(404).json({ success: false, message: 'Match non trouvé' });
+    }
+
+    const compRouter = require('./competitions');
+
+    if (action === 'trancher') {
+      // 1. Définir les scores et clore le match
+      match.score1 = parseInt(score1);
+      match.score2 = parseInt(score2);
+      match.statut = 'Terminé';
+      match.litige = false;
+      
+      if (!match.litigeDetails) match.litigeDetails = {};
+      match.litigeDetails.statut = 'Tranché';
+      match.litigeDetails.decisionAdmin = decisionAdmin || 'Tranché par l\'administrateur';
+      match.litigeDetails.dateResolution = new Date();
+      match.litigeDetails.resoluPar = req.user.id;
+
+      // 2. Mettre à jour les stats d'équipe
+      if (compRouter.updateTeamStats) {
+        await compRouter.updateTeamStats(competition, match);
+      }
+
+      // 3. Recalculer les stats de la compétition
+      if (compRouter.calculateCompetitionStats) {
+        const stats = await compRouter.calculateCompetitionStats(competition);
+        competition.statistiques = stats;
+      }
+
+      // 4. Gérer la progression si élimination directe (hors Petite finale)
+      if (competition.type === 'elimination_directe' && match.phase && match.phase !== 'Petite finale') {
+        if (compRouter.handleEliminationProgression) {
+          await compRouter.handleEliminationProgression(competition, match);
+        }
+      }
+    } else if (action === 'rejouer') {
+      // Faire rejouer : reset le match
+      match.score1 = null;
+      match.score2 = null;
+      match.statut = 'Programmé';
+      match.litige = false;
+      
+      if (!match.litigeDetails) match.litigeDetails = {};
+      match.litigeDetails.statut = 'Tranché';
+      match.litigeDetails.decisionAdmin = decisionAdmin || 'Match réinitialisé pour être rejoué';
+      match.litigeDetails.dateResolution = new Date();
+      match.litigeDetails.resoluPar = req.user.id;
+    } else if (action === 'rejeter') {
+      // Rejeter le litige (le match reste dans son état actuel)
+      match.litige = false;
+      if (!match.litigeDetails) match.litigeDetails = {};
+      match.litigeDetails.statut = 'Rejeté';
+      match.litigeDetails.decisionAdmin = decisionAdmin || 'Litige rejeté par l\'administrateur';
+      match.litigeDetails.dateResolution = new Date();
+      match.litigeDetails.resoluPar = req.user.id;
+    } else {
+      return res.status(400).json({ success: false, message: 'Action non reconnue' });
+    }
+
+    await competition.save();
+
+    res.json({ success: true, message: 'Litige résolu avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la résolution du litige:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur lors de la résolution du litige' });
+  }
+});
+
 // 🔧 Actions administratives
 router.post('/dashboard/competition/:id/action', adminAuth, async (req, res) => {
   try {
@@ -452,15 +544,21 @@ router.post('/dashboard/competition/:id/action', adminAuth, async (req, res) => 
       case 'resume':
         competition.statut = 'En cours';
         break;
-      case 'delete':
+      case 'delete': {
+        const { cleanCompetitionVideos } = require('../utils/videoCleanup');
+        cleanCompetitionVideos(competition);
         await Competition.findByIdAndDelete(id);
         return res.json({
           success: true,
           message: 'Compétition supprimée avec succès'
         });
-      case 'force_end':
+      }
+      case 'force_end': {
         competition.statut = 'Terminé';
+        const { cleanCompetitionVideos: cleanForceVideos } = require('../utils/videoCleanup');
+        cleanForceVideos(competition);
         break;
+      }
       default:
         return res.status(400).json({
           success: false,

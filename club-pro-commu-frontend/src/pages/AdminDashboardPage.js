@@ -122,6 +122,64 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const [showLitigeModal, setShowLitigeModal] = useState(false);
+  const [selectedLitige, setSelectedLitige] = useState(null);
+  const [litigeResolution, setLitigeResolution] = useState({
+    action: 'trancher', // 'trancher', 'rejouer', 'rejeter'
+    decisionAdmin: '',
+    score1: '0',
+    score2: '0'
+  });
+  const [resolvingLitige, setResolvingLitige] = useState(false);
+
+  const handleResolveLitige = async () => {
+    try {
+      setResolvingLitige(true);
+      const response = await apiCall('/admin/dashboard/litiges/resoudre', 'POST', {
+        competitionId: selectedLitige.competitionId,
+        type: selectedLitige.type,
+        matchId: selectedLitige.match._id,
+        action: litigeResolution.action,
+        decisionAdmin: litigeResolution.decisionAdmin,
+        score1: litigeResolution.score1,
+        score2: litigeResolution.score2
+      });
+
+      if (response.success) {
+        alert('Litige résolu avec succès !');
+        setShowLitigeModal(false);
+        setSelectedLitige(null);
+        setLitigeResolution({ action: 'trancher', decisionAdmin: '', score1: '0', score2: '0' });
+        loadDashboardData();
+      }
+    } catch (error) {
+      console.error('Erreur résolution litige:', error);
+      alert('Erreur lors de la résolution : ' + error.message);
+    } finally {
+      setResolvingLitige(false);
+    }
+  };
+
+  const openLitigeExamen = (litige) => {
+    setSelectedLitige(litige);
+    setLitigeResolution({
+      action: 'trancher',
+      decisionAdmin: '',
+      score1: litige.match.score1 !== null ? litige.match.score1.toString() : '0',
+      score2: litige.match.score2 !== null ? litige.match.score2.toString() : '0'
+    });
+    setShowLitigeModal(true);
+  };
+
+  const getVideoUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('/uploads/')) {
+      const host = API_URL.replace('/api', '');
+      return `${host}${url}`;
+    }
+    return url;
+  };
+
   const handleCompetitionAction = async (competitionId, action, reason) => {
     try {
       const response = await apiCall(`/admin/dashboard/competition/${competitionId}/action`, 'POST', {
@@ -514,7 +572,10 @@ const AdminDashboardPage = () => {
                               }
                             </td>
                             <td>
-                              <button className="btn btn-primary btn-sm">
+                              <button 
+                                className="btn btn-primary btn-sm"
+                                onClick={() => openLitigeExamen(litige)}
+                              >
                                 🔍 Examiner
                               </button>
                             </td>
@@ -524,6 +585,174 @@ const AdminDashboardPage = () => {
                     </table>
                   </div>
                 )}
+              </div>
+            )}
+            {/* Modal d'examen et résolution de litige */}
+            {showLitigeModal && selectedLitige && (
+              <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
+                <div className="modal-dialog modal-lg">
+                  <div className="modal-content text-white" style={{ background: '#1e1b2e', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="modal-header border-bottom-0">
+                      <h5 className="modal-title text-warning">
+                        <i className="fas fa-exclamation-triangle me-2"></i>
+                        Examen du litige - {selectedLitige.competitionNom}
+                      </h5>
+                      <button 
+                        type="button" 
+                        className="btn-close btn-close-white" 
+                        onClick={() => setShowLitigeModal(false)}
+                      ></button>
+                    </div>
+                    <div className="modal-body">
+                      {/* Détails du match en litige */}
+                      <div className="card mb-3 border-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="card-body">
+                          <h5 className="card-title text-info mb-3">Détails du match</h5>
+                          <div className="row text-center mb-3">
+                            <div className="col-md-5">
+                              <h4 className="mb-0 text-white">{selectedLitige.match.equipe1Nom}</h4>
+                            </div>
+                            <div className="col-md-2 d-flex align-items-center justify-content-center">
+                              <span className="badge bg-secondary px-3 py-2">VS</span>
+                            </div>
+                            <div className="col-md-5">
+                              <h4 className="mb-0 text-white">{selectedLitige.match.equipe2Nom}</h4>
+                            </div>
+                          </div>
+                          <div className="row text-muted small">
+                            <div className="col-6">
+                              <strong>Phase :</strong> {selectedLitige.type === 'poule' ? selectedLitige.pouleNom : selectedLitige.phase}
+                            </div>
+                            <div className="col-6 text-end">
+                              <strong>Score initial :</strong> {selectedLitige.match.score1 !== null ? `${selectedLitige.match.score1} - ${selectedLitige.match.score2}` : 'Non joué'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Preuves du litige */}
+                      <div className="card mb-3 border-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="card-body">
+                          <h5 className="card-title text-warning mb-3">Preuves et Description</h5>
+                          <div className="mb-3">
+                            <strong>Description de l'infraction :</strong>
+                            <p className="p-3 rounded mt-1 text-white" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                              {selectedLitige.match.litigeDetails?.description || 'Aucune description fournie.'}
+                            </p>
+                          </div>
+                          {selectedLitige.match.litigeDetails?.preuveVideo && (
+                            <div className="mb-2">
+                              <strong>Preuve Vidéo :</strong>{' '}
+                              {selectedLitige.match.litigeDetails.preuveVideo.startsWith('/uploads/') ? (
+                                <div className="mt-2 text-center">
+                                  <video 
+                                    src={getVideoUrl(selectedLitige.match.litigeDetails.preuveVideo)} 
+                                    controls 
+                                    className="w-100 rounded border border-secondary" 
+                                    style={{ maxHeight: '340px', background: '#000' }}
+                                  />
+                                </div>
+                              ) : (
+                                <a 
+                                  href={selectedLitige.match.litigeDetails.preuveVideo} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="btn btn-outline-info btn-sm ms-2"
+                                >
+                                  <i className="fas fa-external-link-alt me-1"></i>
+                                  Ouvrir la preuve vidéo (Lien externe)
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions de résolution */}
+                      <div className="card border-0" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="card-body">
+                          <h5 className="card-title text-success mb-3">Décision Administrative</h5>
+                          
+                          <div className="mb-3">
+                            <label className="form-label"><strong>Type de Résolution</strong></label>
+                            <select 
+                              className="form-select bg-dark text-white border-secondary"
+                              value={litigeResolution.action}
+                              onChange={(e) => setLitigeResolution(prev => ({ ...prev, action: e.target.value }))}
+                            >
+                              <option value="trancher">Trancher le litige (Définir le score final)</option>
+                              <option value="rejouer">Faire rejouer le match (Réinitialiser le match)</option>
+                              <option value="rejeter">Rejeter le litige (Conserver l'état actuel)</option>
+                            </select>
+                          </div>
+
+                          {litigeResolution.action === 'trancher' && (
+                            <div className="row mb-3">
+                              <div className="col-md-6">
+                                <label className="form-label">Score {selectedLitige.match.equipe1Nom}</label>
+                                <input 
+                                  type="number" 
+                                  className="form-control bg-dark text-white border-secondary"
+                                  min="0"
+                                  value={litigeResolution.score1}
+                                  onChange={(e) => setLitigeResolution(prev => ({ ...prev, score1: e.target.value }))}
+                                />
+                              </div>
+                              <div className="col-md-6">
+                                <label className="form-label">Score {selectedLitige.match.equipe2Nom}</label>
+                                <input 
+                                  type="number" 
+                                  className="form-control bg-dark text-white border-secondary"
+                                  min="0"
+                                  value={litigeResolution.score2}
+                                  onChange={(e) => setLitigeResolution(prev => ({ ...prev, score2: e.target.value }))}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="mb-2">
+                            <label className="form-label"><strong>Motivation / Commentaire de la décision</strong></label>
+                            <textarea 
+                              className="form-control bg-dark text-white border-secondary"
+                              rows="3"
+                              value={litigeResolution.decisionAdmin}
+                              onChange={(e) => setLitigeResolution(prev => ({ ...prev, decisionAdmin: e.target.value }))}
+                              placeholder="Ex: Le buteur OM était hors-jeu d'après le clip de 42e. Score rectifié à 2 - 1 ou Litige rejeté, preuve non fournie."
+                            ></textarea>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="modal-footer border-top-0">
+                      <button 
+                        type="button" 
+                        className="btn btn-outline-light" 
+                        onClick={() => setShowLitigeModal(false)}
+                      >
+                        Fermer
+                      </button>
+                      <button 
+                        type="button" 
+                        className="btn btn-warning text-dark" 
+                        onClick={handleResolveLitige}
+                        disabled={resolvingLitige}
+                      >
+                        {resolvingLitige ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2"></span>
+                            Enregistrement...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-gavel me-2"></i>
+                            Enregistrer la Décision
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </main>

@@ -73,6 +73,20 @@ const competitionSchema = new mongoose.Schema({
     default: 'Europe/Paris'
   },
 
+  // 🔹 Timings de compétition
+  delaiLancementMatch: {
+    type: Number,
+    default: 10, // minutes pour lancer un match après que les équipes sont connues
+    min: 1,
+    max: 60
+  },
+  delaiSaisieScore: {
+    type: Number,
+    default: 20, // minutes pour saisir le score après que les deux équipes sont prêtes
+    min: 5,
+    max: 120
+  },
+
   // 🔹 Statut et visibilité
   statut: {
     type: String,
@@ -99,6 +113,24 @@ const competitionSchema = new mongoose.Schema({
     type: Number,
     min: 2,
     max: 128
+  },
+
+  // 🔹 Aspects financiers & Récompenses
+  inscriptionGratuite: {
+    type: Boolean,
+    default: true
+  },
+  montantInscription: {
+    type: Number,
+    default: 0
+  },
+  cashprizeFinal: {
+    type: Number,
+    default: 0
+  },
+  cashprizeMinimal: {
+    type: Number,
+    default: 0
   },
 
   // 🔹 Récompenses
@@ -132,6 +164,19 @@ const competitionSchema = new mongoose.Schema({
       type: String,
       enum: ['Inscrit', 'Confirmé', 'Eliminé', 'Gagnant', 'Finaliste', 'Troisième'],
       default: 'Inscrit'
+    },
+    statutPaiement: {
+      type: String,
+      enum: ['Gratuit', 'En attente', 'Payé', 'Remboursé'],
+      default: 'Gratuit'
+    },
+    transactionId: {
+      type: String,
+      default: null
+    },
+    datePaiement: {
+      type: Date,
+      default: null
     },
     poule: {
       type: String,
@@ -229,6 +274,10 @@ const competitionSchema = new mongoose.Schema({
       dateMatch: {
         type: Date
       },
+      dateLimiteDebut: {
+        type: Date,
+        default: null  // Heure limite pour commencer le match
+      },
       statut: {
         type: String,
         enum: ['Programmé', 'En cours', 'Terminé', 'Annulé'],
@@ -241,6 +290,28 @@ const competitionSchema = new mongoose.Schema({
       valideParEquipe2: {
         type: Boolean,
         default: false
+      },
+      equipe1Prete: {
+        type: Boolean,
+        default: false
+      },
+      equipe2Prete: {
+        type: Boolean,
+        default: false
+      },
+      dateDebutPreparation: {
+        type: Date,
+        default: null
+      },
+      dateDebutMatch: {
+        type: Date,
+        default: null
+      },
+      propositionScore: {
+        score1: { type: Number, default: null },
+        score2: { type: Number, default: null },
+        proposePar: { type: String, enum: ['equipe1', 'equipe2', null], default: null },
+        dateSaisie: { type: Date, default: null }
       },
       captureEcran: {
         type: String, // URL de la capture
@@ -261,6 +332,16 @@ const competitionSchema = new mongoose.Schema({
       litige: {
         type: Boolean,
         default: false
+      },
+      litigeDetails: {
+        signalePar: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        clubId: { type: mongoose.Schema.Types.ObjectId, ref: 'Club' },
+        description: { type: String, maxlength: 1000 },
+        preuveVideo: { type: String, maxlength: 500 },
+        dateSignalement: { type: Date, default: Date.now },
+        statut: { type: String, enum: ['En attente', 'Tranché', 'Rejeté'], default: 'En attente' },
+        decisionAdmin: { type: String, maxlength: 1000 },
+        dateResolution: Date
       },
       arbitre: {
         type: mongoose.Schema.Types.ObjectId,
@@ -291,6 +372,10 @@ const competitionSchema = new mongoose.Schema({
     dateMatch: {
       type: Date
     },
+    dateLimiteDebut: {
+      type: Date,
+      default: null  // Heure limite pour commencer le match
+    },
     statut: {
       type: String,
       enum: ['Programmé', 'En cours', 'Terminé', 'Annulé'],
@@ -298,7 +383,7 @@ const competitionSchema = new mongoose.Schema({
     },
     phase: {
       type: String,
-      enum: ['Huitième', 'Quart', 'Demi', 'Finale', 'Petite finale'],
+      enum: ['Trente-deuxième', 'Seizième', 'Huitième', 'Quart', 'Demi', 'Finale', 'Petite finale'],
       default: 'Huitième'
     },
     tour: {
@@ -312,6 +397,28 @@ const competitionSchema = new mongoose.Schema({
     valideParEquipe2: {
       type: Boolean,
       default: false
+    },
+    equipe1Prete: {
+      type: Boolean,
+      default: false
+    },
+    equipe2Prete: {
+      type: Boolean,
+      default: false
+    },
+    dateDebutPreparation: {
+      type: Date,
+      default: null
+    },
+    dateDebutMatch: {
+      type: Date,
+      default: null
+    },
+    propositionScore: {
+      score1: { type: Number, default: null },
+      score2: { type: Number, default: null },
+      proposePar: { type: String, enum: ['equipe1', 'equipe2', null], default: null },
+      dateSaisie: { type: Date, default: null }
     },
     captureEcran: {
       type: String,
@@ -332,6 +439,16 @@ const competitionSchema = new mongoose.Schema({
     litige: {
       type: Boolean,
       default: false
+    },
+    litigeDetails: {
+      signalePar: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      clubId: { type: mongoose.Schema.Types.ObjectId, ref: 'Club' },
+      description: { type: String, maxlength: 1000 },
+      preuveVideo: { type: String, maxlength: 500 },
+      dateSignalement: { type: Date, default: Date.now },
+      statut: { type: String, enum: ['En attente', 'Tranché', 'Rejeté'], default: 'En attente' },
+      decisionAdmin: { type: String, maxlength: 1000 },
+      dateResolution: Date
     },
     arbitre: {
       type: mongoose.Schema.Types.ObjectId,

@@ -5,11 +5,11 @@ import { competitionAPI } from '../services/api';
 export default function CompetitionPage() {
   const { user } = useAuth();
   const [form, setForm] = useState({
-    nom: '',
-    type: 'championnat',
+    nom: 'la street club pro compétition',
+    type: 'elimination_directe',
     formatCoupe: 'elimination_directe',
     visibilite: 'publique',
-    dateDebut: '',
+    dateDebut: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     dateFin: '',
     nombreEquipes: 8,
     description: '',
@@ -19,12 +19,14 @@ export default function CompetitionPage() {
     plateforme: 'PS5',
     statut: 'Ouvert',
     inscriptionGratuite: true,
-    montantInscription: 0
+    montantInscription: 0,
+    cashprizeFinal: 0,
+    cashprizeMinimal: 0
   });
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (!user) {
+  if (!user || !user.isAdmin) {
     return (
       <div className="container py-5">
         <div className="row justify-content-center">
@@ -34,16 +36,25 @@ export default function CompetitionPage() {
               <h2 className="fw-bold">Créer une Compétition</h2>
               <p className="text-muted">Organisez des championnats et coupes pour votre communauté</p>
             </div>
-            <div className="alert alert-warning text-center">
-              <i className="fas fa-lock me-2"></i>
-              Connectez-vous pour créer une compétition
-            </div>
-            <div className="text-center">
-              <a href="/login" className="btn btn-primary btn-lg">
-                <i className="fas fa-sign-in-alt me-2"></i>
-                Se connecter
-              </a>
-            </div>
+            {!user ? (
+              <>
+                <div className="alert alert-warning text-center">
+                  <i className="fas fa-lock me-2"></i>
+                  Connectez-vous pour créer une compétition
+                </div>
+                <div className="text-center">
+                  <a href="/login" className="btn btn-primary btn-lg">
+                    <i className="fas fa-sign-in-alt me-2"></i>
+                    Se connecter
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div className="alert alert-danger text-center">
+                <i className="fas fa-exclamation-triangle me-2"></i>
+                Accès refusé. Seuls les administrateurs peuvent créer une compétition.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -85,11 +96,11 @@ export default function CompetitionPage() {
 
   const resetForm = () => {
     setForm({
-      nom: '',
-      type: 'championnat',
+      nom: 'la street club pro compétition',
+      type: 'elimination_directe',
       formatCoupe: 'elimination_directe',
       visibilite: 'publique',
-      dateDebut: '',
+      dateDebut: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
       dateFin: '',
       nombreEquipes: 8,
       description: '',
@@ -99,7 +110,9 @@ export default function CompetitionPage() {
       plateforme: 'PS5',
       statut: 'Ouvert',
       inscriptionGratuite: true,
-      montantInscription: 0
+      montantInscription: 0,
+      cashprizeFinal: 0,
+      cashprizeMinimal: 0
     });
     setSuccess(false);
   };
@@ -145,6 +158,7 @@ export default function CompetitionPage() {
               <form onSubmit={handleSubmit}>
                 <div className="row">
                   {/* Informations de base */}
+                  {/* Nom masqué car nom unique par défaut
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <i className="fas fa-trophy me-2"></i>
@@ -160,7 +174,9 @@ export default function CompetitionPage() {
                       placeholder="Ex: Championnat D1 2024"
                     />
                   </div>
+                  */}
 
+                  {/* Sélecteur de type masqué car format unique (élimination directe) par défaut
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <i className="fas fa-gamepad me-2"></i>
@@ -177,8 +193,9 @@ export default function CompetitionPage() {
                       <option value="coupe">Coupe</option>
                     </select>
                   </div>
+                  */}
 
-                  {/* Format de coupe (visible seulement si type = coupe) */}
+                  {/* Format de coupe masqué car format unique (élimination directe) par défaut
                   {form.type === 'coupe' && (
                     <div className="col-md-6 mb-3">
                       <label className="form-label">
@@ -197,6 +214,7 @@ export default function CompetitionPage() {
                       </select>
                     </div>
                   )}
+                  */}
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
@@ -215,7 +233,7 @@ export default function CompetitionPage() {
                     </select>
                   </div>
 
-                  {/* Dates */}
+                  {/* Dates masquées temporairement
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <i className="fas fa-calendar me-2"></i>
@@ -244,8 +262,9 @@ export default function CompetitionPage() {
                       onChange={handleChange}
                     />
                   </div>
+                  */}
 
-                  {/* Configuration */}
+                  {/* Nombre d'équipes masqué car dynamique en fonction des inscrits
                   <div className="col-md-4 mb-3">
                     <label className="form-label">
                       <i className="fas fa-users me-2"></i>
@@ -262,6 +281,7 @@ export default function CompetitionPage() {
                       required
                     />
                   </div>
+                  */}
 
                   <div className="col-md-4 mb-3">
                     <label className="form-label">
@@ -282,6 +302,7 @@ export default function CompetitionPage() {
                     </select>
                   </div>
 
+                  {/* Choix plateforme masqué
                   <div className="col-md-4 mb-3">
                     <label className="form-label">
                       <i className="fas fa-gamepad me-2"></i>
@@ -300,40 +321,95 @@ export default function CompetitionPage() {
                       <option value="Cross-Platform">Cross-Platform</option>
                     </select>
                   </div>
+                  */}
 
-                  {/* Inscription */}
+                  {/* Tarification & Cashprize */}
                   <div className="col-md-6 mb-3">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        name="inscriptionGratuite"
-                        checked={form.inscriptionGratuite}
-                        onChange={handleChange}
-                        id="inscriptionGratuite"
-                      />
-                      <label className="form-check-label" htmlFor="inscriptionGratuite">
-                        Inscription gratuite
-                      </label>
-                    </div>
+                    <label className="form-label">
+                      <i className="fas fa-hand-holding-usd me-2"></i>
+                      Type d'inscription *
+                    </label>
+                    <select
+                      className="form-select"
+                      name="inscriptionGratuite"
+                      value={form.inscriptionGratuite ? "true" : "false"}
+                      onChange={(e) => {
+                        const val = e.target.value === "true";
+                        setForm({
+                          ...form,
+                          inscriptionGratuite: val,
+                          montantInscription: val ? 0 : form.montantInscription,
+                          cashprizeFinal: val ? form.cashprizeFinal : 0,
+                          cashprizeMinimal: val ? 0 : form.cashprizeMinimal
+                        });
+                      }}
+                    >
+                      <option value="true">🆓 Gratuite</option>
+                      <option value="false">💳 Payante</option>
+                    </select>
                   </div>
 
-                  {!form.inscriptionGratuite && (
+                  {form.inscriptionGratuite ? (
                     <div className="col-md-6 mb-3">
                       <label className="form-label">
-                        <i className="fas fa-euro-sign me-2"></i>
-                        Montant d'inscription
+                        <i className="fas fa-trophy me-2"></i>
+                        Cashprize final (€) *
                       </label>
                       <input
                         type="number"
                         className="form-control"
-                        name="montantInscription"
-                        value={form.montantInscription}
-                        onChange={handleChange}
+                        name="cashprizeFinal"
+                        value={form.cashprizeFinal}
+                        onChange={(e) => setForm({ ...form, cashprizeFinal: Number(e.target.value) })}
                         min="0"
-                        step="0.01"
+                        required
                       />
+                      <small className="form-text text-muted">
+                        Somme garantie offerte au vainqueur (peut être 0).
+                      </small>
                     </div>
+                  ) : (
+                    <>
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">
+                          <i className="fas fa-euro-sign me-2"></i>
+                          Montant d'inscription (€) *
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="montantInscription"
+                          value={form.montantInscription}
+                          onChange={(e) => setForm({ ...form, montantInscription: Number(e.target.value) })}
+                          min="1"
+                          step="0.01"
+                          required
+                        />
+                      </div>
+
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">
+                          <i className="fas fa-wallet me-2"></i>
+                          Cashprize minimal garanti (€) *
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="cashprizeMinimal"
+                          value={form.cashprizeMinimal}
+                          onChange={(e) => setForm({ ...form, cashprizeMinimal: Number(e.target.value) })}
+                          min="0"
+                          required
+                        />
+                      </div>
+
+                      <div className="col-12 mb-3">
+                        <div className="alert alert-info">
+                          <i className="fas fa-calculator me-2"></i>
+                          <strong>Note sur le Cashprize :</strong> Le vainqueur remportera <strong>80%</strong> des inscriptions collectées, avec un minimum garanti de <strong>{form.cashprizeMinimal || 0} €</strong>.
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   {/* Description */}

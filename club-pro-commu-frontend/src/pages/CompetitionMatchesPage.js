@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI, clubAPI } from '../services/api';
+import LiveMatchLobby from '../components/LiveMatchLobby';
 
 const CompetitionMatchesPage = () => {
   const { id } = useParams();
@@ -29,6 +30,13 @@ const CompetitionMatchesPage = () => {
   const [selectedJoueur, setSelectedJoueur] = useState('');
   const [joueurQuantite, setJoueurQuantite] = useState(1);
   const [generatingBracket, setGeneratingBracket] = useState(false);
+  const [showLitigeModal, setShowLitigeModal] = useState(false);
+  const [selectedMatchForLitige, setSelectedMatchForLitige] = useState(null);
+  const [litigeData, setLitigeData] = useState({ description: '', preuveVideo: '' });
+  const [submittingLitige, setSubmittingLitige] = useState(false);
+  const [litigeUploadMode, setLitigeUploadMode] = useState('link'); // 'link' ou 'file'
+  const [litigeFile, setLitigeFile] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const fetchCompetition = useCallback(async () => {
     try {
@@ -57,6 +65,41 @@ const CompetitionMatchesPage = () => {
     }
   }, [user]);
 
+  // Fonction pour organiser les matchs par journées (pour championnats)
+  const organizeMatchesByJournee = (matchs, nombreEquipes) => {
+    if (!matchs || matchs.length === 0) return [];
+    
+    const matchsParJournee = [];
+    const nombreMatchsParJournee = Math.floor(nombreEquipes / 2);
+    
+    // Pour un championnat aller-retour, on a nombre_equipes - 1 journées d'aller
+    // et nombre_equipes - 1 journées de retour
+    const nombreJourneesAller = nombreEquipes - 1;
+    const nombreJourneesTotal = nombreJourneesAller * 2; // Aller + Retour
+    
+    for (let journee = 1; journee <= nombreJourneesTotal; journee++) {
+      const startIndex = (journee - 1) * nombreMatchsParJournee;
+      const endIndex = startIndex + nombreMatchsParJournee;
+      const matchsJournee = matchs.slice(startIndex, endIndex);
+      
+      if (matchsJournee.length > 0) {
+        const isRetour = journee > nombreJourneesAller;
+        const journeeLabel = isRetour 
+          ? `Journée ${journee - nombreJourneesAller} (Retour)`
+          : `Journée ${journee} (Aller)`;
+          
+        matchsParJournee.push({
+          numero: journee,
+          label: journeeLabel,
+          matchs: matchsJournee,
+          isRetour: isRetour
+        });
+      }
+    }
+    
+    return matchsParJournee;
+  };
+
   useEffect(() => {
     fetchCompetition();
     fetchUserClubs();
@@ -82,6 +125,100 @@ const CompetitionMatchesPage = () => {
       console.error('Erreur mise à jour score:', error);
       alert('Erreur lors de la mise à jour du score');
     }
+  };
+
+  const handleLitigeSubmit = async () => {
+    try {
+      setSubmittingLitige(true);
+      let finalPreuveVideo = litigeData.preuveVideo;
+
+      // 1. Si mode d'upload fichier est activé et qu'un fichier est sélectionné
+      if (litigeUploadMode === 'file' && litigeFile) {
+        const uploadUrl = `${process.env.NODE_ENV === 'production' ? 'https://club-pro-commu.onrender.com/api' : 'http://localhost:3001/api'}/competitions/${id}/matchs/${selectedMatchForLitige._id}/upload-video`;
+        
+        const formData = new FormData();
+        formData.append('video', litigeFile);
+
+        const xhr = new XMLHttpRequest();
+        
+        const uploadPromise = new Promise((resolve, reject) => {
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(progress);
+            }
+          });
+
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                const response = JSON.parse(xhr.responseText);
+                resolve(response);
+              } catch (e) {
+                reject(new Error('Réponse invalide du serveur'));
+              }
+            } else {
+              reject(new Error(`Erreur lors du chargement de la vidéo`));
+            }
+          });
+
+          xhr.addEventListener('error', () => reject(new Error('Erreur réseau')));
+          xhr.addEventListener('abort', () => reject(new Error('Chargement annulé')));
+
+          xhr.open('POST', uploadUrl);
+          xhr.setRequestHeader('Authorization', `Bearer ${user.token}`);
+          xhr.send(formData);
+        });
+
+        const uploadResult = await uploadPromise;
+        if (uploadResult && uploadResult.success) {
+          finalPreuveVideo = uploadResult.videoUrl;
+        } else {
+          throw new Error('Impossible d\'obtenir l\'URL de la vidéo');
+        }
+      }
+
+      // 2. Envoyer le litige avec l'URL finale
+      const url = `${process.env.NODE_ENV === 'production' ? 'https://club-pro-commu.onrender.com/api' : 'http://localhost:3001/api'}/competitions/${id}/matchs/${selectedMatchForLitige._id}/litige`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+          description: litigeData.description,
+          preuveVideo: finalPreuveVideo
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du signalement');
+      }
+
+      setShowLitigeModal(false);
+      setSelectedMatchForLitige(null);
+      setLitigeData({ description: '', preuveVideo: '' });
+      setLitigeFile(null);
+      setUploadProgress(0);
+      fetchCompetition();
+      alert('Litige signalé avec succès. L\'administrateur va examiner le match.');
+    } catch (error) {
+      console.error('Erreur signalement litige:', error);
+      alert('Erreur lors du signalement du litige : ' + error.message);
+    } finally {
+      setSubmittingLitige(false);
+    }
+  };
+
+  const openLitigeModal = (match) => {
+    setSelectedMatchForLitige(match);
+    setLitigeData({ description: '', preuveVideo: '' });
+    setLitigeFile(null);
+    setLitigeUploadMode('link');
+    setUploadProgress(0);
+    setShowLitigeModal(true);
   };
 
   const openScoreModal = (match) => {
@@ -168,33 +305,157 @@ const CompetitionMatchesPage = () => {
     return [];
   };
 
-  // Fonction pour organiser les matchs par phase
-  const getMatchsByPhase = () => {
-    if (!competition?.matchsElimination) return {};
-    
-    const phases = ['Huitième', 'Quart', 'Demi', 'Petite finale', 'Finale'];
-    const matchsByPhase = {};
-    
-    phases.forEach(phase => {
-      matchsByPhase[phase] = competition.matchsElimination.filter(match => 
-        match.phase === phase
-      );
-    });
-    
-    return matchsByPhase;
+  // Calculer la profondeur maximale du tas (le nombre de rounds)
+  const getMaxDepth = () => {
+    if (!competition?.matchsElimination || competition.matchsElimination.length === 0) return 1;
+    // Exclure la Petite finale du calcul de profondeur
+    const tourMatches = competition.matchsElimination.filter(m => m.phase !== 'Petite finale');
+    if (tourMatches.length === 0) return 1;
+    const maxTour = tourMatches.reduce((max, m) => Math.max(max, m.tour), 0);
+    if (maxTour >= 31) return 6; // 32e
+    if (maxTour >= 15) return 5; // 16e
+    if (maxTour >= 7) return 4;  // 8e
+    if (maxTour >= 3) return 3;  // Quart
+    if (maxTour >= 1) return 2;  // Demi
+    return 1; // Finale
   };
 
-  // Fonction pour obtenir l'icône de la phase
-  const getPhaseIcon = (phase) => {
-    const icons = {
-      'Huitième': '🎯',
-      'Quart': '⚡',
-      'Demi': '🔥',
-      'Petite finale': '🥉',
-      'Finale': '🏆'
-    };
-    return icons[phase] || '🎮';
+  // Fonction de rendu récursif de l'arbre (tas binaire)
+  const renderBracketNode = (index, currentDepth = 1, maxDepth = 1) => {
+    // Trouver le match avec le tour égal à index et qui n'est pas la petite finale
+    const match = competition.matchsElimination.find(m => m.tour === index && m.phase !== 'Petite finale');
+    
+    // Vérifier si cette branche contient des matchs réels (en ignorant la petite finale)
+    const hasMatchesInBranch = competition.matchsElimination.some(m => {
+      if (m.phase === 'Petite finale') return false;
+      if (m.tour === index) return true;
+      let parent = m.tour;
+      while (parent > index) {
+        parent = Math.floor((parent - 1) / 2);
+      }
+      return parent === index;
+    });
+    
+    // Si aucun match n'existe dans cette branche, on ne l'affiche pas
+    if (!hasMatchesInBranch) {
+      return null;
+    }
+
+    const isLeaf = currentDepth === maxDepth;
+
+    return (
+      <div className="bracket-node" key={index}>
+        {!isLeaf && (
+          <div className="bracket-children">
+            {renderBracketNode(2 * index + 1, currentDepth + 1, maxDepth)}
+            {renderBracketNode(2 * index + 2, currentDepth + 1, maxDepth)}
+          </div>
+        )}
+        <div className="bracket-match-wrapper">
+          {match ? (
+            <div className={`match-card-container ${match.statut.toLowerCase()} ${match.litige ? 'border-warning shadow-lg' : ''}`}>
+              <div className="match-card-header">
+                <span className="match-card-date">
+                  {match.dateMatch ? (
+                    <>
+                      <i className="far fa-calendar-alt me-1"></i>
+                      {new Date(match.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </>
+                  ) : (
+                    'À programmer'
+                  )}
+                </span>
+                <span className={`match-card-status badge ${getMatchStatus(match)}`}>
+                  {getMatchStatusText(match)}
+                </span>
+              </div>
+              
+              {match.litige && (
+                <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
+                  <i className="fas fa-exclamation-triangle me-1"></i>
+                  LITIGE EN COURS
+                </div>
+              )}
+              
+              <div className="match-card-teams">
+                {/* Équipe 1 */}
+                <div className={`match-card-team ${match.statut === 'Terminé' && match.score1 > match.score2 ? 'winner' : ''}`}>
+                  <span className="match-card-team-name" title={match.equipe1?.nom || 'TBD'}>
+                    {match.equipe1?.nom || 'TBD'}
+                  </span>
+                  {match.statut === 'Terminé' && (
+                    <span className="match-card-team-score">{match.score1}</span>
+                  )}
+                </div>
+                
+                {/* Équipe 2 */}
+                <div className={`match-card-team ${match.statut === 'Terminé' && match.score2 > match.score1 ? 'winner' : ''}`}>
+                  <span className="match-card-team-name" title={match.equipe2?.nom || 'TBD'}>
+                    {match.equipe2?.nom || 'TBD'}
+                  </span>
+                  {match.statut === 'Terminé' && (
+                    <span className="match-card-team-score">{match.score2}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions de saisie score / date */}
+              <div className="match-card-actions">
+                {!match.dateMatch && (user?.isAdmin || 
+                  userClubs.some(club => 
+                    (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                    club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                  )) && (
+                  <button 
+                    className="btn btn-outline-light btn-sm"
+                    onClick={() => openDateModal(match)}
+                    title="Programmer une date"
+                  >
+                    <i className="fas fa-calendar-plus me-1"></i>
+                    Date
+                  </button>
+                )}
+                {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                  <button 
+                    className="btn btn-primary btn-sm"
+                    onClick={() => openScoreModal(match)}
+                  >
+                    <i className="fas fa-edit me-1"></i>
+                    Score
+                  </button>
+                )}
+                {match.statut === 'Terminé' && (
+                  <button 
+                    className="btn btn-outline-light btn-sm"
+                    onClick={() => openScoreModal(match)}
+                  >
+                    <i className="fas fa-eye me-1"></i>
+                    Détails
+                  </button>
+                )}
+                {canReportDispute(match) && !match.litige && (
+                  <button 
+                    className="btn btn-outline-warning btn-sm"
+                    onClick={() => openLitigeModal(match)}
+                    title="Signaler un litige"
+                  >
+                    <i className="fas fa-exclamation-triangle"></i>
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="match-card-placeholder">
+              <i className="fas fa-clock me-1"></i>
+              Match en attente
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
+
+
 
   // Fonction pour ouvrir la modale de sélection de joueur
   const openJoueurModal = (type) => {
@@ -359,6 +620,52 @@ const CompetitionMatchesPage = () => {
     return isAdminOfMatchTeam;
   };
 
+  const canReportDispute = (match) => {
+    if (!user) return false;
+    if (user.isAdmin) return true;
+    if (!match.equipe1 || !match.equipe2) return false;
+
+    // Obtenir les IDs des équipes du match
+    const team1Id = typeof match.equipe1 === 'object' ? match.equipe1._id : match.equipe1;
+    const team2Id = typeof match.equipe2 === 'object' ? match.equipe2._id : match.equipe2;
+
+    return userClubs.some(club => {
+      const clubId = typeof club._id === 'object' ? club._id.toString() : club._id;
+      const isMatchClub = clubId === team1Id || clubId === team2Id;
+      
+      if (!isMatchClub) return false;
+      
+      return club.membres.some(member => {
+        const memberId = typeof member.userId === 'object' ? member.userId._id : member.userId;
+        return memberId === user._id && (member.role === 'Admin' || member.role === 'Capitaine');
+      });
+    });
+  };
+
+  const getActiveMatchesForUser = () => {
+    if (!competition || !userClubs || userClubs.length === 0) return [];
+    
+    const allMatches = [];
+    if (competition.poules) {
+      competition.poules.forEach(p => {
+        if (p.matchs) allMatches.push(...p.matchs);
+      });
+    }
+    if (competition.matchsElimination) {
+      allMatches.push(...competition.matchsElimination);
+    }
+    
+    return allMatches.filter(m => {
+      if (!m || m.statut === 'Terminé' || m.statut === 'Annulé') return false;
+      if (!m.equipe1 || !m.equipe2) return false;
+      
+      const id1 = m.equipe1._id || m.equipe1;
+      const id2 = m.equipe2._id || m.equipe2;
+      
+      return userClubs.some(club => compareClubIds(club._id, id1) || compareClubIds(club._id, id2));
+    });
+  };
+
   if (loading) {
     return (
       <div className="container py-5">
@@ -473,38 +780,111 @@ const CompetitionMatchesPage = () => {
         </div>
       </div>
 
-      {/* Poules (si compétition avec phases de poules) */}
+      {/* Salons de Match en Direct (Lobbies) */}
+      {competition.statut === 'En cours' && (
+        <div className="row mb-4">
+          <div className="col-12">
+            {getActiveMatchesForUser().map(m => (
+              <LiveMatchLobby 
+                key={m._id}
+                match={m}
+                competitionId={id}
+                userClubs={userClubs}
+                userId={user?._id}
+                isAdmin={user?.isAdmin || (competition.createurId?._id === user?._id || competition.createurId === user?._id)}
+                onRefresh={fetchCompetition}
+              />
+            ))}
+            
+            {/* Si l'utilisateur est admin et qu'aucun match n'est le sien, ou pour administrer tous les matchs en cours */}
+            {(user?.isAdmin || (competition.createurId?._id === user?._id || competition.createurId === user?._id)) && getActiveMatchesForUser().length === 0 && (
+              <div className="card bg-dark bg-opacity-50 text-white border-secondary p-3 mb-4">
+                <div className="card-body">
+                  <h5 className="text-warning"><i className="fas fa-shield-alt me-2"></i>Administration des matchs en cours</h5>
+                  <p className="text-muted small">Aucun de vos clubs n'a de match actif en ce moment, mais en tant qu'administrateur de la compétition, vous pouvez superviser ou déclarer forfait sur les matchs actifs ci-dessous.</p>
+                  
+                  {(() => {
+                    const allActive = [];
+                    if (competition.poules) {
+                      competition.poules.forEach(p => {
+                        if (p.matchs) allActive.push(...p.matchs);
+                      });
+                    }
+                    if (competition.matchsElimination) {
+                      allActive.push(...competition.matchsElimination);
+                    }
+                    const activeMatchs = allActive.filter(m => m && m.statut !== 'Terminé' && m.statut !== 'Annulé' && m.equipe1 && m.equipe2);
+                    
+                    if (activeMatchs.length === 0) {
+                      return <span className="text-muted small">Aucun match n'est en cours pour le moment.</span>;
+                    }
+                    
+                    return (
+                      <div className="row g-3">
+                        {activeMatchs.map(m => (
+                          <div key={m._id} className="col-12">
+                            <LiveMatchLobby 
+                              match={m}
+                              competitionId={id}
+                              userClubs={userClubs}
+                              userId={user?._id}
+                              isAdmin={true}
+                              onRefresh={fetchCompetition}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Matchs (Poules ou Championnat) */}
       {competition.poules && competition.poules.length > 0 && (
         <div className="row mb-4">
           <div className="col-12">
             <h3>
-              <i className="fas fa-layer-group me-2"></i>
-              Phases de poules
+              <i className="fas fa-calendar-alt me-2"></i>
+              {competition.type === 'championnat' ? 'Calendrier du championnat' : 'Phases de poules'}
             </h3>
             {competition.poules.map((poule, pouleIndex) => (
               <div key={pouleIndex} className="card mb-3">
                 <div className="card-header">
                   <h5 className="mb-0">
-                    <i className="fas fa-users me-2"></i>
-                    {poule.nom}
+                    <i className={`fas ${competition.type === 'championnat' ? 'fa-trophy' : 'fa-users'} me-2`}></i>
+                    {competition.type === 'championnat' ? 'Matchs du championnat' : poule.nom}
                   </h5>
                 </div>
                 <div className="card-body">
                   {poule.matchs && poule.matchs.length > 0 ? (
-                    <div className="table-responsive">
-                      <table className="table table-hover">
-                        <thead>
-                          <tr>
-                            <th>Date</th>
-                            <th>Équipe 1</th>
-                            <th>Score</th>
-                            <th>Équipe 2</th>
-                            <th>Statut</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {poule.matchs.map((match, matchIndex) => (
+                    competition.type === 'championnat' ? (
+                      // Affichage par journées pour championnats
+                      (() => {
+                        const journees = organizeMatchesByJournee(poule.matchs, competition.equipesInscrites.length);
+                        return journees.map((journee, journeeIndex) => (
+                          <div key={journeeIndex} className="mb-4">
+                            <h6 className={`bg-${journee.isRetour ? 'info' : 'primary'} text-white p-2 rounded`}>
+                              <i className="fas fa-calendar-day me-2"></i>
+                              {journee.label}
+                            </h6>
+                            <div className="table-responsive">
+                              <table className="table table-hover table-sm">
+                                <thead>
+                                  <tr>
+                                    <th>Date</th>
+                                    <th>Équipe 1</th>
+                                    <th>Score</th>
+                                    <th>Équipe 2</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {journee.matchs.map((match, matchIndex) => (
                             <tr key={matchIndex}>
                               <td>
                                 {match.dateMatch ? 
@@ -570,9 +950,97 @@ const CompetitionMatchesPage = () => {
                               </td>
                             </tr>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        ));
+                      })()
+                    ) : (
+                      // Affichage classique pour les phases de poules
+                      <div className="table-responsive">
+                        <table className="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Équipe 1</th>
+                              <th>Score</th>
+                              <th>Équipe 2</th>
+                              <th>Statut</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {poule.matchs.map((match, matchIndex) => (
+                              <tr key={matchIndex}>
+                                <td>
+                                  {match.dateMatch ? 
+                                    new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
+                                    'À programmer'
+                                  }
+                                </td>
+                                <td>
+                                  <strong>{match.equipe1?.nom || 'TBD'}</strong>
+                                </td>
+                                <td>
+                                  {match.statut === 'Terminé' ? (
+                                    <span className="badge bg-success">
+                                      {match.score1} - {match.score2}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted">-</span>
+                                  )}
+                                </td>
+                                <td>
+                                  <strong>{match.equipe2?.nom || 'TBD'}</strong>
+                                </td>
+                                <td>
+                                  <span className={`badge ${getMatchStatus(match)}`}>
+                                    {getMatchStatusText(match)}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="btn-group" role="group">
+                                    {!match.dateMatch && (user?.isAdmin || 
+                                      userClubs.some(club => 
+                                        (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                                        club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                      )) && (
+                                      <button 
+                                        className="btn btn-sm btn-outline-secondary"
+                                        onClick={() => openDateModal(match)}
+                                        title="Programmer une date"
+                                      >
+                                        <i className="fas fa-calendar-plus me-1"></i>
+                                        Programmer
+                                      </button>
+                                    )}
+                                    {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                                      <button 
+                                        className="btn btn-sm btn-primary"
+                                        onClick={() => openScoreModal(match)}
+                                      >
+                                        <i className="fas fa-edit me-1"></i>
+                                        Saisir score
+                                      </button>
+                                    )}
+                                    {match.statut === 'Terminé' && (
+                                      <button 
+                                        className="btn btn-sm btn-outline-primary"
+                                        onClick={() => openScoreModal(match)}
+                                      >
+                                        <i className="fas fa-eye me-1"></i>
+                                        {canEditMatchScore(match) ? 'Modifier' : 'Voir détails'}
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
                   ) : (
                     <p className="text-muted">Aucun match programmé dans cette poule.</p>
                   )}
@@ -625,109 +1093,112 @@ const CompetitionMatchesPage = () => {
                 }
               </div>
             ) : (
-              // Design de bracket progressif
+              // Visualiseur d'arbre récursif moderne
               <div className="tournament-bracket">
-                <div className="bracket-container">
-                  {Object.entries(getMatchsByPhase()).map(([phase, matches]) => 
-                    matches.length > 0 && (
-                      <div key={phase} className={`bracket-round bracket-${phase.toLowerCase()}`}>
-                        <div className="round-header">
-                          <h5>
-                            {getPhaseIcon(phase)} {phase}
-                          </h5>
-                        </div>
-                        <div className="matches-column">
-                          {matches.map((match, index) => (
-                            <div key={index} className={`bracket-match ${match.statut.toLowerCase()}`}>
-                              <div className="match-container">
-                                <div className="match-header">
-                                  <span className="match-date">
-                                    {match.dateMatch ? 
-                                      new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
-                                      'À programmer'
-                                    }
+                <div className="bracket-container justify-content-center">
+                  {renderBracketNode(0, 1, getMaxDepth())}
+                </div>
+
+                {/* Petite finale si elle existe */}
+                {(() => {
+                  const pFinale = competition.matchsElimination.find(m => m.phase === 'Petite finale');
+                  if (!pFinale) return null;
+                  return (
+                    <div className="row justify-content-center mt-5">
+                      <div className="col-md-6 col-lg-4">
+                        <div className="card border-0 shadow-sm" style={{ background: 'rgba(30, 27, 46, 0.85)', backdropFilter: 'blur(10px)' }}>
+                          <div className="card-header text-center border-0 text-white" style={{ background: 'linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)' }}>
+                            <h5 className="mb-0">🥉 Petite Finale (3ème Place)</h5>
+                          </div>
+                          <div className="card-body p-3">
+                            <div className="match-card-container m-0 w-100">
+                              <div className="match-card-header">
+                                <span className="match-card-date">
+                                  {pFinale.dateMatch ? (
+                                    <>
+                                      <i className="far fa-calendar-alt me-1"></i>
+                                      {new Date(pFinale.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                    </>
+                                  ) : (
+                                    'À programmer'
+                                  )}
+                                </span>
+                                <span className={`match-card-status badge ${getMatchStatus(pFinale)}`}>
+                                  {getMatchStatusText(pFinale)}
+                                </span>
+                              </div>
+                              {pFinale.litige && (
+                                <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
+                                  <i className="fas fa-exclamation-triangle me-1"></i>
+                                  LITIGE EN COURS
+                                </div>
+                              )}
+                              <div className="match-card-teams">
+                                <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score1 > pFinale.score2 ? 'winner' : ''}`}>
+                                  <span className="match-card-team-name" title={pFinale.equipe1?.nom || 'TBD'}>
+                                    {pFinale.equipe1?.nom || 'TBD'}
                                   </span>
-                                  <span className={`match-status badge ${getMatchStatus(match)}`}>
-                                    {getMatchStatusText(match)}
+                                  {pFinale.statut === 'Terminé' && (
+                                    <span className="match-card-team-score">{pFinale.score1}</span>
+                                  )}
+                                </div>
+                                <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score2 > pFinale.score1 ? 'winner' : ''}`}>
+                                  <span className="match-card-team-name" title={pFinale.equipe2?.nom || 'TBD'}>
+                                    {pFinale.equipe2?.nom || 'TBD'}
                                   </span>
-                                </div>
-                                
-                                <div className="teams-container">
-                                  {/* Équipe 1 */}
-                                  <div className={`team-slot ${match.statut === 'Terminé' && match.score1 > match.score2 ? 'winner' : ''}`}>
-                                    <div className="team-info">
-                                      <span className="team-name">
-                                        {match.equipe1?.nom || 'TBD'}
-                                      </span>
-                                      {match.statut === 'Terminé' && (
-                                        <span className="team-score">
-                                          {match.score1}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="vs-divider">VS</div>
-                                  
-                                  {/* Équipe 2 */}
-                                  <div className={`team-slot ${match.statut === 'Terminé' && match.score2 > match.score1 ? 'winner' : ''}`}>
-                                    <div className="team-info">
-                                      <span className="team-name">
-                                        {match.equipe2?.nom || 'TBD'}
-                                      </span>
-                                      {match.statut === 'Terminé' && (
-                                        <span className="team-score">
-                                          {match.score2}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div className="match-actions">
-                                  {!match.dateMatch && (user?.isAdmin || 
-                                    userClubs.some(club => 
-                                      (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
-                                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                                    )) && (
-                                    <button 
-                                      className="btn btn-sm btn-outline-secondary"
-                                      onClick={() => openDateModal(match)}
-                                      title="Programmer une date"
-                                    >
-                                      <i className="fas fa-calendar-plus"></i>
-                                    </button>
-                                  )}
-                                  {match.statut === 'Programmé' && canEditMatchScore(match) && (
-                                    <button 
-                                      className="btn btn-sm btn-primary"
-                                      onClick={() => openScoreModal(match)}
-                                    >
-                                      <i className="fas fa-edit"></i>
-                                    </button>
-                                  )}
-                                  {match.statut === 'Terminé' && (
-                                    <button 
-                                      className="btn btn-sm btn-outline-primary"
-                                      onClick={() => openScoreModal(match)}
-                                    >
-                                      <i className="fas fa-eye"></i>
-                                    </button>
+                                  {pFinale.statut === 'Terminé' && (
+                                    <span className="match-card-team-score">{pFinale.score2}</span>
                                   )}
                                 </div>
-                                
-                                {/* Ligne de progression */}
-                                {match.statut === 'Terminé' && phase !== 'Finale' && phase !== 'Petite finale' && (
-                                  <div className="progression-line"></div>
+                              </div>
+                              <div className="match-card-actions">
+                                {!pFinale.dateMatch && (user?.isAdmin || 
+                                  userClubs.some(club => 
+                                    (compareClubIds(club._id, pFinale.equipe1) || compareClubIds(club._id, pFinale.equipe2)) &&
+                                    club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                  )) && (
+                                  <button 
+                                    className="btn btn-outline-light btn-sm"
+                                    onClick={() => openDateModal(pFinale)}
+                                  >
+                                    <i className="fas fa-calendar-plus me-1"></i> Date
+                                  </button>
+                                )}
+                                {pFinale.statut === 'Programmé' && canEditMatchScore(pFinale) && (
+                                  <button 
+                                    className="btn btn-primary btn-sm"
+                                    onClick={() => openScoreModal(pFinale)}
+                                  >
+                                    <i className="fas fa-edit me-1"></i> Score
+                                  </button>
+                                )}
+                                {pFinale.statut === 'Terminé' && (
+                                  <button 
+                                    className="btn btn-outline-light btn-sm"
+                                    onClick={() => openScoreModal(pFinale)}
+                                  >
+                                    <i className="fas fa-eye me-1"></i> Détails
+                                  </button>
+                                )}
+                                {canReportDispute(pFinale) && !pFinale.litige && (
+                                  <button 
+                                    className="btn btn-outline-warning btn-sm"
+                                    onClick={() => openLitigeModal(pFinale)}
+                                    title="Signaler un litige"
+                                  >
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                  </button>
                                 )}
                               </div>
                             </div>
-                          ))}
+                          </div>
                         </div>
                       </div>
-                    )
-                  )}
-                </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
                 
                 {/* Champions */}
                 {(competition.gagnant || competition.finaliste || competition.troisieme) && (
@@ -764,8 +1235,6 @@ const CompetitionMatchesPage = () => {
                     </div>
                   </div>
                 )}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -1090,8 +1559,146 @@ const CompetitionMatchesPage = () => {
         </div>
       )}
 
+      {/* Modal de signalement de litige */}
+      {showLitigeModal && selectedMatchForLitige && (
+        <div className="modal fade show" style={{ display: 'block' }} tabIndex="-1">
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title text-warning">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  Signaler un litige
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowLitigeModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <div className="alert alert-info py-2">
+                  <i className="fas fa-info-circle me-1"></i>
+                  Conformément au règlement, veuillez décrire précisément l'infraction et fournir un clip vidéo comme preuve.
+                </div>
+                
+                <div className="mb-3">
+                  <label className="form-label"><strong>Description de l'infraction</strong></label>
+                  <textarea
+                    className="form-control"
+                    rows="4"
+                    value={litigeData.description}
+                    onChange={(e) => setLitigeData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Ex: Le défenseur OM a une taille de 1.95m (limite 1.87m), ou Gêne du gardien sur coup franc à la 42e minute."
+                  ></textarea>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label d-block"><strong>Mode de transmission de la preuve</strong></label>
+                  <div className="btn-group w-100 mb-3" role="group">
+                    <button 
+                      type="button" 
+                      className={`btn btn-sm ${litigeUploadMode === 'link' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+                      onClick={() => setLitigeUploadMode('link')}
+                    >
+                      <i className="fas fa-link me-1"></i> Lien Vidéo URL
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`btn btn-sm ${litigeUploadMode === 'file' ? 'btn-primary text-white' : 'btn-outline-secondary'}`}
+                      onClick={() => setLitigeUploadMode('file')}
+                    >
+                      <i className="fas fa-upload me-1"></i> Fichier Vidéo (Max 100 Mo)
+                    </button>
+                  </div>
+                </div>
+
+                {litigeUploadMode === 'link' && (
+                  <div className="mb-3">
+                    <label className="form-label"><strong>Lien vers la preuve vidéo (URL)</strong></label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      value={litigeData.preuveVideo}
+                      onChange={(e) => setLitigeData(prev => ({ ...prev, preuveVideo: e.target.value }))}
+                      placeholder="https://twitch.tv/... ou https://youtube.com/..."
+                    />
+                    <small className="text-muted">Lien vers un clip Twitch, YouTube, Streamable, etc.</small>
+                  </div>
+                )}
+
+                {litigeUploadMode === 'file' && (
+                  <div className="mb-3">
+                    <label className="form-label"><strong>Sélectionner le fichier vidéo</strong></label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="form-control"
+                      onChange={(e) => setLitigeFile(e.target.files[0])}
+                    />
+                    <small className="text-muted">Formats recommandés : mp4, webm (max. 100 Mo).</small>
+                    
+                    {litigeFile && (
+                      <div className="mt-2 text-success small">
+                        <i className="fas fa-file-video me-1"></i>
+                        Fichier prêt : {litigeFile.name} ({(litigeFile.size / (1024 * 1024)).toFixed(2)} Mo)
+                      </div>
+                    )}
+
+                    {submittingLitige && uploadProgress > 0 && (
+                      <div className="mt-3">
+                        <div className="d-flex justify-content-between small text-muted mb-1">
+                          <span>Téléchargement de la vidéo...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="progress" style={{ height: '6px' }}>
+                          <div 
+                            className="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                            role="progressbar" 
+                            style={{ width: `${uploadProgress}%` }}
+                            aria-valuenow={uploadProgress} 
+                            aria-valuemin="0" 
+                            aria-valuemax="100"
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowLitigeModal(false)}
+                >
+                  Annuler
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-warning text-dark" 
+                  onClick={handleLitigeSubmit}
+                  disabled={!litigeData.description || (litigeUploadMode === 'file' && !litigeFile) || submittingLitige}
+                >
+                  {submittingLitige ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Envoi...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-paper-plane me-2"></i>
+                      Envoyer le signalement
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Overlay pour les modals */}
-      {(showScoreModal || showDateModal || showJoueurModal) && (
+      {(showScoreModal || showDateModal || showJoueurModal || showLitigeModal) && (
         <div className="modal-backdrop fade show"></div>
       )}
     </div>

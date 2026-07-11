@@ -217,6 +217,12 @@ export default function CompetitionDetailPage() {
     competition.equipesInscrites?.some(e => compareClubIds(club._id, e.clubId))
   )) : null;
 
+  const getEquipeInscriteDetails = () => {
+    if (!user || !clubInscrit) return null;
+    return competition.equipesInscrites?.find(e => compareClubIds(clubInscrit._id, e.clubId));
+  };
+  const equipeDetails = getEquipeInscriteDetails();
+
   return (
     <div className="container py-5">
       {/* Header */}
@@ -285,12 +291,11 @@ export default function CompetitionDetailPage() {
           
           {user && !isInscrit && (
             <button 
-              className={`btn btn-lg ${(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? 'btn-secondary disabled' : 'btn-primary'}`}
+              className="btn btn-primary btn-lg"
               onClick={() => setShowInscriptionModal(true)}
-              disabled={(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes}
             >
               <i className="fas fa-user-plus me-2"></i>
-              {(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? 'Complet' : 'S\'inscrire'}
+              S'inscrire
             </button>
           )}
           
@@ -305,6 +310,18 @@ export default function CompetitionDetailPage() {
           )}
         </div>
       </div>
+
+      {isInscrit && equipeDetails && equipeDetails.statutPaiement === 'En attente' && (
+        <div className="alert alert-warning border-0 bg-warning bg-opacity-10 d-flex justify-content-between align-items-center mb-4 text-white" style={{ borderRadius: '12px', border: '1px solid rgba(255,193,7,0.2)' }}>
+          <div>
+            <i className="fas fa-exclamation-triangle text-warning me-2" style={{ fontSize: '1.2rem' }}></i>
+            <strong>Paiement Requis</strong> : Votre club <strong>{clubInscrit.nom}</strong> est pré-inscrit, mais l'inscription n'est pas confirmée. Veuillez régler les frais de participation.
+          </div>
+          <Link to={`/competition/${competition._id}/paiement/${clubInscrit._id}`} className="btn btn-warning text-dark fw-bold btn-sm ms-3">
+            <i className="fas fa-credit-card me-1"></i> Réglér les frais ({competition.montantInscription}€)
+          </Link>
+        </div>
+      )}
 
       <div className="row">
         {/* Informations principales */}
@@ -336,13 +353,8 @@ export default function CompetitionDetailPage() {
                   </div>
                 )}
                 <div className="col-md-6">
-                  <strong>Nombre d'équipes:</strong>
-                  <p>
-                    {competition.equipesInscrites?.length || 0} / {competition.nombreEquipes}
-                    {(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes && (
-                      <span className="badge bg-danger ms-2">Complet</span>
-                    )}
-                  </p>
+                  <strong>Nombre d'équipes inscrites:</strong>
+                  <p>{competition.equipesInscrites?.length || 0}</p>
                 </div>
                 <div className="col-md-6">
                   <strong>Plateforme:</strong>
@@ -350,21 +362,45 @@ export default function CompetitionDetailPage() {
                 </div>
 
                 <div className="col-md-6">
-                  <strong>Inscription:</strong>
-                  <p>{competition.inscriptionGratuite ? 'Gratuite' : `${competition.montantInscription || 0}€`}</p>
+                  <strong>Frais d'inscription:</strong>
+                  <p className="mb-2">{competition.inscriptionGratuite ? 'Gratuite' : `${competition.montantInscription || 0} €`}</p>
                 </div>
+                {!competition.inscriptionGratuite && (
+                  <div className="col-md-6">
+                    <strong>Cagnotte (Cashprize) :</strong>
+                    <p className="mb-0 text-success fw-bold">
+                      {competition.cashprizeFinal || 0} €
+                    </p>
+                    <small className="text-muted d-block" style={{ fontSize: '0.8rem' }}>
+                      (Minimum garanti de {competition.cashprizeMinimal || 0}€)
+                    </small>
+                  </div>
+                )}
+              </div>
+
+              <div className="alert alert-secondary d-flex align-items-center justify-content-between p-3 border-0 bg-light rounded mt-4">
+                <div className="d-flex align-items-center">
+                  <i className="fas fa-gavel text-primary me-3" style={{ fontSize: '1.5rem' }}></i>
+                  <div>
+                    <h6 className="mb-0 fw-bold">Règlement Officiel de la Compétition</h6>
+                    <small className="text-muted">Effectifs, tailles DC/postes, bugs penalty/coup franc, litiges mi-temps...</small>
+                  </div>
+                </div>
+                <Link to="/reglement" className="btn btn-primary btn-sm rounded-pill px-3">
+                  <i className="fas fa-eye me-1"></i> Voir
+                </Link>
               </div>
 
               {competition.reglement && (
                 <div className="mt-3">
-                  <strong>Règlement:</strong>
-                  <p className="mb-0">{competition.reglement}</p>
+                  <strong>Notes de l'organisateur :</strong>
+                  <p className="mb-0 text-muted">{competition.reglement}</p>
                 </div>
               )}
 
               {competition.recompense && (
                 <div className="mt-3">
-                  <strong>Récompenses:</strong>
+                  <strong>Récompenses :</strong>
                   <p className="mb-0">{competition.recompense}</p>
                 </div>
               )}
@@ -376,7 +412,7 @@ export default function CompetitionDetailPage() {
             <div className="card-header">
               <h5 className="mb-0">
                 <i className="fas fa-users me-2"></i>
-                Équipes inscrites ({competition.equipesInscrites?.length || 0}/{competition.nombreEquipes})
+                Équipes inscrites ({competition.equipesInscrites?.length || 0})
               </h5>
             </div>
             <div className="card-body">
@@ -400,9 +436,19 @@ export default function CompetitionDetailPage() {
                             </small>
                           </div>
                           <div className="d-flex align-items-center gap-2">
-                            <span className={`badge ${equipe.statut === 'Inscrit' ? 'bg-success' : 'bg-warning'}`}>
+                            <span className={`badge ${
+                              equipe.statut === 'Confirmé' || equipe.statut === 'Gagnant' ? 'bg-success' :
+                              equipe.statut === 'Inscrit' ? 'bg-secondary' : 'bg-warning'
+                            }`}>
                               {equipe.statut}
                             </span>
+                            {!competition.inscriptionGratuite && (
+                              <span className={`badge ${
+                                equipe.statutPaiement === 'Payé' ? 'bg-success bg-opacity-75' : 'bg-warning bg-opacity-75'
+                              }`}>
+                                {equipe.statutPaiement === 'Payé' ? 'Payé' : 'En attente'}
+                              </span>
+                            )}
                             {isAdminDeCeClub && competition.statut === 'Ouvert' && (
                               <button
                                 className="btn btn-outline-danger btn-sm"
@@ -551,30 +597,21 @@ export default function CompetitionDetailPage() {
                 ></button>
               </div>
               <div className="modal-body">
-                {(competition.equipesInscrites?.length || 0) >= competition.nombreEquipes ? (
-                  <div className="alert alert-warning">
-                    <i className="fas fa-exclamation-triangle me-2"></i>
-                    Cette compétition a atteint son maximum de {competition.nombreEquipes} équipes.
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-3">
-                      <label className="form-label">Sélectionner un club</label>
-                      <select 
-                        className="form-select"
-                        value={selectedClub}
-                        onChange={(e) => setSelectedClub(e.target.value)}
-                      >
-                        <option value="">Choisir un club...</option>
-                        {userClubs.map(club => (
-                          <option key={club._id} value={club._id}>
-                            {club.nom}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
+                <div className="mb-3">
+                  <label className="form-label">Sélectionner un club</label>
+                  <select 
+                    className="form-select"
+                    value={selectedClub}
+                    onChange={(e) => setSelectedClub(e.target.value)}
+                  >
+                    <option value="">Choisir un club...</option>
+                    {userClubs.map(club => (
+                      <option key={club._id} value={club._id}>
+                        {club.nom}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 
                 {competition.visibilite === 'privee' && (
                   <div className="mb-3">
@@ -601,7 +638,7 @@ export default function CompetitionDetailPage() {
                   type="button" 
                   className="btn btn-primary"
                   onClick={handleInscription}
-                  disabled={inscribing || !selectedClub || (competition.equipesInscrites?.length || 0) >= competition.nombreEquipes}
+                  disabled={inscribing || !selectedClub}
                 >
                   {inscribing ? 'Inscription...' : 'S\'inscrire'}
                 </button>

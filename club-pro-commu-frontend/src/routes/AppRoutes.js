@@ -14,8 +14,10 @@ import CompetitionListPage from '../pages/CompetitionListPage';
 import CompetitionDetailPage from '../pages/CompetitionDetailPage';
 import CompetitionMatchesPage from '../pages/CompetitionMatchesPage';
 import CompetitionStatsPage from '../pages/CompetitionStatsPage';
+import PaymentSimulationPage from '../pages/PaymentSimulationPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
 import TermsPage from '../pages/TermsPage';
+import RulesPage from '../pages/RulesPage';
 
 // Pages privées
 import AccountPage from '../pages/AccountPage';
@@ -101,6 +103,9 @@ export default function AppRoutes() {
           <CompetitionMatchesPage />
         </MainLayout>
       } />
+      <Route path="/competition/:id/paiement/:clubId" element={
+        <PaymentSimulationPage />
+      } />
       <Route path="/competition/:id/stats" element={
         <MainLayout>
           <CompetitionStatsPage />
@@ -121,6 +126,12 @@ export default function AppRoutes() {
           <TermsPage />
         </MainLayout>
       } />
+      <Route path="/reglement" element={
+        <MainLayout>
+          <RulesPage />
+        </MainLayout>
+      } />
+
 
       {/* Routes privées */}
       <Route path="/compte" element={

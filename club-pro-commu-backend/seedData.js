@@ -263,14 +263,9 @@ const createUsers = async () => {
         continue;
       }
 
-      // Hasher le mot de passe
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(userData.password, salt);
-
       // Créer l'utilisateur
       const user = new User({
-        ...userData,
-        password: hashedPassword
+        ...userData
       });
 
       await user.save();

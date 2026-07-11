@@ -85,6 +85,7 @@ export default function Navbar() {
                 Accueil
               </Link>
             </li>
+            {/* 
             <li className="nav-item">
               <Link className="nav-link" to="/recherche-joueur" onClick={() => handleNavigation('/recherche-joueur')}>
                 <i className="fas fa-search me-1"></i>
@@ -97,6 +98,7 @@ export default function Navbar() {
                 Recommandations
               </Link>
             </li>
+            */}
             <li className="nav-item dropdown">
               <button
                 className="nav-link dropdown-toggle"
@@ -115,12 +117,14 @@ export default function Navbar() {
                     Créer un club
                   </Link>
                 </li>
+                {/* 
                 <li>
                   <Link className="dropdown-item" to="/clubs" onClick={() => handleNavigation('/clubs')}>
                     <i className="fas fa-search me-2"></i>
                     Rechercher un club
                   </Link>
                 </li>
+                */}
                 <li>
                   <Link className="dropdown-item" to="/mes-clubs" onClick={() => handleNavigation('/mes-clubs')}>
                     <i className="fas fa-user-friends me-2"></i>
@@ -133,6 +137,12 @@ export default function Navbar() {
               <Link className="nav-link" to="/competitions" onClick={() => handleNavigation('/competitions')}>
                 <i className="fas fa-trophy me-1"></i>
                 Compétitions
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/reglement" onClick={() => handleNavigation('/reglement')}>
+                <i className="fas fa-gavel me-1"></i>
+                Règlement
               </Link>
             </li>
           </ul>

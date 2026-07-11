@@ -198,6 +198,91 @@ router.get('/recommendations', auth, async (req, res) => {
 
 
 
+// Fonction helper pour calculer le palmarès d'un joueur
+async function getPlayerPalmares(player) {
+  const Competition = require('../models/Competition');
+  
+  // 1. Récupérer les trophées collectifs via ses clubs
+  const clubIds = player.clubs ? player.clubs.map(c => c.clubId) : [];
+  let clubsTrophees = [];
+  
+  if (clubIds.length > 0) {
+    clubsTrophees = await Competition.find({
+      statut: 'Terminé',
+      $or: [
+        { gagnant: { $in: clubIds } },
+        { finaliste: { $in: clubIds } },
+        { troisieme: { $in: clubIds } }
+      ]
+    }).populate('gagnant finaliste troisieme', 'nom');
+  }
+
+  // 2. Récupérer les récompenses individuelles
+  const individuelTrophees = await Competition.find({
+    statut: 'Terminé',
+    $or: [
+      { 'statistiques.meilleurButeur.joueur': player.pseudo },
+      { 'statistiques.meilleurPasseur.joueur': player.pseudo },
+      { 'statistiques.meilleurJoueur.joueur': player.pseudo }
+    ]
+  });
+
+  const palmares = {
+    clubs: clubsTrophees.map(comp => {
+      let typeTrophée = '';
+      let clubNom = '';
+      if (comp.gagnant && clubIds.some(id => id.toString() === comp.gagnant._id.toString())) {
+        typeTrophée = 'vainqueur';
+        clubNom = comp.gagnant.nom;
+      } else if (comp.finaliste && clubIds.some(id => id.toString() === comp.finaliste._id.toString())) {
+        typeTrophée = 'finaliste';
+        clubNom = comp.finaliste.nom;
+      } else if (comp.troisieme && clubIds.some(id => id.toString() === comp.troisieme._id.toString())) {
+        typeTrophée = 'troisieme';
+        clubNom = comp.troisieme.nom;
+      }
+      return {
+        _id: comp._id,
+        nom: comp.nom,
+        type: comp.type,
+        typeTrophée,
+        clubNom,
+        date: comp.dateDebut
+      };
+    }),
+    individuel: []
+  };
+
+  individuelTrophees.forEach(comp => {
+    if (comp.statistiques?.meilleurButeur?.joueur === player.pseudo) {
+      palmares.individuel.push({
+        nom: 'Soulier d\'Or ⚽',
+        description: `Meilleur Buteur de la compétition "${comp.nom}" avec ${comp.statistiques.meilleurButeur.buts} buts.`,
+        date: comp.dateDebut,
+        competitionId: comp._id
+      });
+    }
+    if (comp.statistiques?.meilleurPasseur?.joueur === player.pseudo) {
+      palmares.individuel.push({
+        nom: 'Meilleur Passeur 🅰️',
+        description: `Meilleur Passeur de la compétition "${comp.nom}" avec ${comp.statistiques.meilleurPasseur.passes} passes décisives.`,
+        date: comp.dateDebut,
+        competitionId: comp._id
+      });
+    }
+    if (comp.statistiques?.meilleurJoueur?.joueur === player.pseudo) {
+      palmares.individuel.push({
+        nom: 'MVP de la Compétition 🌟',
+        description: `Élu Meilleur Joueur de la compétition "${comp.nom}".`,
+        date: comp.dateDebut,
+        competitionId: comp._id
+      });
+    }
+  });
+
+  return palmares;
+}
+
 // GET /api/players/me - Récupérer mon profil joueur
 router.get('/me', auth, async (req, res) => {
   try {
@@ -212,6 +297,9 @@ router.get('/me', auth, async (req, res) => {
     playerObj.winRate = player.winRate;
     playerObj.goalsPerMatch = player.goalsPerMatch;
     playerObj.assistsPerMatch = player.assistsPerMatch;
+
+    // Ajouter le palmarès
+    playerObj.palmares = await getPlayerPalmares(player);
 
     res.json(playerObj);
   } catch (error) {
@@ -244,6 +332,9 @@ router.get('/:id', async (req, res) => {
     playerObj.winRate = player.winRate;
     playerObj.goalsPerMatch = player.goalsPerMatch;
     playerObj.assistsPerMatch = player.assistsPerMatch;
+
+    // Ajouter le palmarès
+    playerObj.palmares = await getPlayerPalmares(player);
 
     res.json(playerObj);
   } catch (error) {

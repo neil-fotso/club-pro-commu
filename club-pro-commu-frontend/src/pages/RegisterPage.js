@@ -4,10 +4,8 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
-import { getAllCountries } from '../utils/countryUtils';
-import { getAllPositions } from '../utils/positionUtils';
 
-// Schéma de validation Yup
+// Schéma de validation Yup simplifié
 const registerSchema = yup.object({
   pseudo: yup
     .string()
@@ -15,13 +13,6 @@ const registerSchema = yup.object({
     .min(3, 'Le pseudo doit contenir au moins 3 caractères')
     .max(20, 'Le pseudo ne peut pas dépasser 20 caractères')
     .matches(/^[a-zA-Z0-9_-]+$/, 'Le pseudo ne peut contenir que des lettres, chiffres, tirets et underscores'),
-  
-  pseudoPlateforme: yup
-    .string()
-    .when('useSamePseudo', {
-      is: false,
-      then: yup.string().required('Le pseudo plateforme est obligatoire')
-    }),
   
   email: yup
     .string()
@@ -39,30 +30,9 @@ const registerSchema = yup.object({
     .required('La confirmation du mot de passe est obligatoire')
     .oneOf([yup.ref('password')], 'Les mots de passe ne correspondent pas'),
   
-  plateforme: yup
-    .string()
-    .required('La plateforme est obligatoire'),
-  
-  postePrincipal: yup
-    .string()
-    .required('Le poste principal est obligatoire'),
-  
-  age: yup
-    .mixed()
-    .optional(),
-  
-  pays: yup
-    .string()
-    .nullable()
-    .optional(),
-  
   acceptedTerms: yup
     .boolean()
-    .oneOf([true], 'Vous devez accepter les conditions d\'utilisation'),
-  
-  acceptedPrivacy: yup
-    .boolean()
-    .oneOf([true], 'Vous devez accepter la politique de confidentialité')
+    .oneOf([true], 'Vous devez accepter les conditions d\'utilisation et la politique de confidentialité')
 });
 
 export default function RegisterPage() {
@@ -71,12 +41,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
   const [success, setSuccess] = useState('');
-  const [useSamePseudo, setUseSamePseudo] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const allCountries = getAllCountries();
-  const allPositions = getAllPositions();
 
   const {
     register,
@@ -90,9 +56,6 @@ export default function RegisterPage() {
     mode: 'onChange'
   });
 
-  // Surveiller les changements pour réinitialiser les erreurs
-  const watchedFields = watch();
-
   // Réinitialiser les erreurs quand l'utilisateur corrige
   React.useEffect(() => {
     const subscription = watch((value, { name }) => {
@@ -104,35 +67,20 @@ export default function RegisterPage() {
     return () => subscription.unsubscribe();
   }, [watch, errors, clearErrors]);
 
-  // Gérer le changement de pseudo plateforme
-  const handleUseSamePseudo = (e) => {
-    const checked = e.target.checked;
-    setUseSamePseudo(checked);
-    
-    if (checked) {
-      setValue('pseudoPlateforme', watchedFields.pseudo);
-      clearErrors('pseudoPlateforme');
-    } else {
-      setValue('pseudoPlateforme', '');
-    }
-  };
-
   const onSubmit = async (data) => {
     setLoading(true);
     setServerError('');
     setSuccess('');
 
     try {
-      // Préparer les données pour l'API
+      // Préparer les données simplifiées pour l'API
       const userData = {
         pseudo: data.pseudo,
-        pseudoPlateforme: useSamePseudo ? data.pseudo : data.pseudoPlateforme,
+        pseudoPlateforme: data.pseudo,
         email: data.email,
         password: data.password,
-        plateforme: data.plateforme,
-        postePrincipal: data.postePrincipal,
-        age: data.age || undefined,
-        pays: data.pays || undefined
+        plateforme: 'PS5', // Valeur par défaut requise par le backend
+        postePrincipal: 'BU' // Valeur par défaut requise par le backend
       };
 
       const result = await registerUser(userData);
@@ -193,7 +141,7 @@ export default function RegisterPage() {
            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
            minHeight: '100vh'
          }}>
-      <div className="card border-0 shadow-lg" style={{maxWidth: 600, width: '100%'}}>
+      <div className="card border-0 shadow-lg" style={{maxWidth: 500, width: '100%'}}>
         <div className="card-body p-5">
           <div className="text-center mb-4">
             <h2 className="card-title mb-3">
@@ -203,8 +151,6 @@ export default function RegisterPage() {
             <p className="text-muted">Rejoignez la communauté Club Pro</p>
           </div>
 
-
-
           {serverError && (
             <div className="alert alert-danger alert-dismissible fade show" role="alert">
               <i className="fas fa-exclamation-triangle me-2"></i>
@@ -213,106 +159,47 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="row">
-              {/* Pseudo */}
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-user me-1"></i>
-                  Pseudo *
-                </label>
-                <input
-                  type="text"
-                  className={`form-control form-control-lg ${errors.pseudo ? 'is-invalid' : ''}`}
-                  {...register('pseudo')}
-                  placeholder="Votre pseudo"
-                />
-                {errors.pseudo && (
-                  <div className="invalid-feedback">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.pseudo.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Pseudo Plateforme */}
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-gamepad me-1"></i>
-                  Pseudo Plateforme *
-                </label>
-                <input
-                  type="text"
-                  className={`form-control form-control-lg ${errors.pseudoPlateforme ? 'is-invalid' : ''}`}
-                  {...register('pseudoPlateforme')}
-                  placeholder="Pseudo sur votre plateforme"
-                  disabled={useSamePseudo}
-                />
-                <div className="form-check mt-2">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="useSamePseudo"
-                    checked={useSamePseudo}
-                    onChange={handleUseSamePseudo}
-                  />
-                  <label className="form-check-label" htmlFor="useSamePseudo">
-                    Utiliser le même pseudo
-                  </label>
+            {/* Pseudo */}
+            <div className="mb-3">
+              <label className="form-label fw-bold">
+                <i className="fas fa-user me-1"></i>
+                Pseudo *
+              </label>
+              <input
+                type="text"
+                className={`form-control form-control-lg ${errors.pseudo ? 'is-invalid' : ''}`}
+                {...register('pseudo')}
+                placeholder="Votre pseudo"
+              />
+              {errors.pseudo && (
+                <div className="invalid-feedback">
+                  <i className="fas fa-exclamation-circle me-1"></i>
+                  {errors.pseudo.message}
                 </div>
-                {errors.pseudoPlateforme && (
-                  <div className="invalid-feedback">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.pseudoPlateforme.message}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
-            <div className="row">
-              {/* Email */}
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-envelope me-1"></i>
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  className={`form-control form-control-lg ${errors.email ? 'is-invalid' : ''}`}
-                  {...register('email')}
-                  placeholder="votre@email.com"
-                />
-                {errors.email && (
-                  <div className="invalid-feedback">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.email.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Plateforme */}
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-tv me-1"></i>
-                  Plateforme *
-                </label>
-                <select
-                  className={`form-select form-select-lg ${errors.plateforme ? 'is-invalid' : ''}`}
-                  {...register('plateforme')}
-                >
-                  <option value="">Sélectionnez votre plateforme</option>
-                  <option value="PC">🖥️ PC</option>
-                  <option value="PS5">🎮 PS5</option>
-                  <option value="Xbox">🎮 Xbox</option>
-                </select>
-                {errors.plateforme && (
-                  <div className="invalid-feedback">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.plateforme.message}
-                  </div>
-                )}
-              </div>
+            {/* Email */}
+            <div className="mb-3">
+              <label className="form-label fw-bold">
+                <i className="fas fa-envelope me-1"></i>
+                Email *
+              </label>
+              <input
+                type="email"
+                className={`form-control form-control-lg ${errors.email ? 'is-invalid' : ''}`}
+                {...register('email')}
+                placeholder="votre@email.com"
+              />
+              {errors.email && (
+                <div className="invalid-feedback">
+                  <i className="fas fa-exclamation-circle me-1"></i>
+                  {errors.email.message}
+                </div>
+              )}
             </div>
 
+            {/* Mot de passe & Confirmation */}
             <div className="row">
               {/* Mot de passe */}
               <div className="col-md-6 mb-3">
@@ -336,7 +223,7 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <div className="invalid-feedback">
+                  <div className="invalid-feedback d-block">
                     <i className="fas fa-exclamation-circle me-1"></i>
                     {errors.password.message}
                   </div>
@@ -365,7 +252,7 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <div className="invalid-feedback">
+                  <div className="invalid-feedback d-block">
                     <i className="fas fa-exclamation-circle me-1"></i>
                     {errors.confirmPassword.message}
                   </div>
@@ -373,83 +260,9 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="row">
-              {/* Poste principal */}
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-futbol me-1"></i>
-                  Poste principal *
-                </label>
-                <select
-                  className={`form-select form-select-lg ${errors.postePrincipal ? 'is-invalid' : ''}`}
-                  {...register('postePrincipal')}
-                >
-                  <option value="">Sélectionnez votre poste</option>
-                  {allPositions.map(position => (
-                    <option key={position.code} value={position.code}>
-                      {position.icon} {position.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.postePrincipal && (
-                  <div className="invalid-feedback">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.postePrincipal.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Âge */}
-              <div className="col-md-6 mb-3">
-                <label className="form-label fw-bold">
-                  <i className="fas fa-birthday-cake me-1"></i>
-                  Âge (optionnel)
-                </label>
-                <input
-                  type="number"
-                  className={`form-control form-control-lg ${errors.age ? 'is-invalid' : ''}`}
-                  {...register('age')}
-                  placeholder="Votre âge"
-                  min="13"
-                  max="100"
-                />
-                {errors.age && (
-                  <div className="invalid-feedback">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.age.message}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Nationalité */}
-            <div className="mb-3">
-              <label className="form-label fw-bold">
-                <i className="fas fa-flag me-1"></i>
-                Nationalité (optionnel)
-              </label>
-              <select
-                className={`form-select form-select-lg ${errors.pays ? 'is-invalid' : ''}`}
-                {...register('pays')}
-              >
-                <option value="">Sélectionnez votre nationalité</option>
-                {allCountries.map(country => (
-                  <option key={country.code} value={country.code}>
-                    {country.flag} {country.name}
-                  </option>
-                ))}
-              </select>
-              {errors.pays && (
-                <div className="invalid-feedback">
-                  <i className="fas fa-exclamation-circle me-1"></i>
-                  {errors.pays.message}
-                </div>
-              )}
-            </div>
-
             {/* Conditions */}
             <div className="mb-4">
-              <div className="form-check mb-2">
+              <div className="form-check">
                 <input
                   className={`form-check-input ${errors.acceptedTerms ? 'is-invalid' : ''}`}
                   type="checkbox"
@@ -457,30 +270,12 @@ export default function RegisterPage() {
                   {...register('acceptedTerms')}
                 />
                 <label className="form-check-label" htmlFor="acceptedTerms">
-                  J'accepte les <Link to="/terms" target="_blank">conditions d'utilisation</Link> *
+                  J'accepte les <Link to="/terms" target="_blank">conditions d'utilisation</Link> et la <Link to="/privacy" target="_blank">politique de confidentialité</Link> *
                 </label>
                 {errors.acceptedTerms && (
                   <div className="invalid-feedback d-block">
                     <i className="fas fa-exclamation-circle me-1"></i>
                     {errors.acceptedTerms.message}
-                  </div>
-                )}
-              </div>
-
-              <div className="form-check">
-                <input
-                  className={`form-check-input ${errors.acceptedPrivacy ? 'is-invalid' : ''}`}
-                  type="checkbox"
-                  id="acceptedPrivacy"
-                  {...register('acceptedPrivacy')}
-                />
-                <label className="form-check-label" htmlFor="acceptedPrivacy">
-                  J'accepte la <Link to="/privacy" target="_blank">politique de confidentialité</Link> *
-                </label>
-                {errors.acceptedPrivacy && (
-                  <div className="invalid-feedback d-block">
-                    <i className="fas fa-exclamation-circle me-1"></i>
-                    {errors.acceptedPrivacy.message}
                   </div>
                 )}
               </div>
@@ -527,4 +322,4 @@ export default function RegisterPage() {
       </div>
     </div>
   );
-} 
+}

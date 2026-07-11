@@ -71,8 +71,38 @@ router.get('/:id', async (req, res) => {
     if (!club) {
       return res.status(404).json({ message: 'Club non trouvé.' });
     }
+
+    // Récupérer les trophées de ce club de manière dynamique
+    const Competition = require('../models/Competition');
+    const completedCompetitions = await Competition.find({
+      statut: 'Terminé',
+      $or: [
+        { gagnant: club._id },
+        { finaliste: club._id },
+        { troisieme: club._id }
+      ]
+    }).select('nom type dotation cashprizeFinal gagnant finaliste troisieme dateDebut');
+
+    const trophees = completedCompetitions.map(comp => {
+      let typeTrophée = '';
+      if (comp.gagnant && comp.gagnant.toString() === club._id.toString()) typeTrophée = 'vainqueur';
+      else if (comp.finaliste && comp.finaliste.toString() === club._id.toString()) typeTrophée = 'finaliste';
+      else if (comp.troisieme && comp.troisieme.toString() === club._id.toString()) typeTrophée = 'troisieme';
+
+      return {
+        _id: comp._id,
+        nom: comp.nom,
+        type: comp.type,
+        typeTrophée,
+        cashprize: comp.cashprizeFinal || comp.dotation || 0,
+        date: comp.dateDebut
+      };
+    });
     
-    res.json(club);
+    res.json({
+      ...club.toObject(),
+      trophees
+    });
   } catch (error) {
     console.error('Erreur récupération club:', error);
     res.status(500).json({ message: 'Erreur serveur.' });

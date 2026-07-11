@@ -42,7 +42,7 @@ const createWorkingAdmin = async () => {
       prenom: 'Test',
       pseudo: 'AdminTest',
       email: adminEmail,
-      password: hashedPassword,
+      password: adminPassword, // Passer le mot de passe en clair pour laisser Mongoose le hasher une seule fois
       isAdmin: true,
       pays: 'France',
       ville: 'Paris',

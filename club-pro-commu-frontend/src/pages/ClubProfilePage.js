@@ -990,6 +990,71 @@ export default function ClubProfilePage() {
             </div>
           )}
 
+          {/* Vitrine des Trophées */}
+          <div className="mt-4">
+            <h5 className="text-primary mb-3">
+              <i className="fas fa-trophy me-2 text-warning"></i>
+              Vitrine des Trophées
+            </h5>
+            {!club.trophees || club.trophees.length === 0 ? (
+              <div className="card bg-light border-0 shadow-sm">
+                <div className="card-body text-center py-4 text-muted">
+                  <i className="fas fa-award fa-3x mb-3 text-secondary opacity-50"></i>
+                  <p className="mb-0">Ce club n'a pas encore remporté de trophées. Participez à des compétitions pour remplir l'armoire ! ⚽</p>
+                </div>
+              </div>
+            ) : (
+              <div className="row g-3">
+                {club.trophees.map((trophy, idx) => {
+                  let trophyClass = '';
+                  let trophyTitle = '';
+                  let iconColor = '';
+                  
+                  if (trophy.typeTrophée === 'vainqueur') {
+                    trophyClass = 'border-warning bg-warning bg-opacity-10';
+                    trophyTitle = '🏆 Vainqueur';
+                    iconColor = '#ffc107'; // Gold
+                  } else if (trophy.typeTrophée === 'finaliste') {
+                    trophyClass = 'border-secondary bg-secondary bg-opacity-10';
+                    trophyTitle = '🥈 Finaliste';
+                    iconColor = '#6c757d'; // Silver
+                  } else {
+                    trophyClass = 'border-danger bg-danger bg-opacity-10';
+                    trophyTitle = '🥉 3ème Place';
+                    iconColor = '#b05d23'; // Bronze
+                  }
+
+                  return (
+                    <div key={idx} className="col-md-4 col-sm-6 col-12">
+                      <div className={`card h-100 border-2 shadow-sm ${trophyClass}`} style={{ borderRadius: '15px' }}>
+                        <div className="card-body text-center p-3">
+                          <div className="mb-2" style={{ fontSize: '3rem', color: iconColor }}>
+                            {trophy.typeTrophée === 'vainqueur' ? '🏆' : trophy.typeTrophée === 'finaliste' ? '🥈' : '🥉'}
+                          </div>
+                          <h6 className="fw-bold mb-1 text-uppercase letter-spacing-1">{trophyTitle}</h6>
+                          <h5 className="card-title fw-semibold text-truncate mb-2" title={trophy.nom}>
+                            {trophy.nom}
+                          </h5>
+                          <div className="text-muted small mb-2">
+                            Type: <span className="text-capitalize">{trophy.type}</span>
+                          </div>
+                          {trophy.cashprize > 0 && (
+                            <span className="badge bg-success px-3 py-1.5 fs-6 fw-bold">
+                              +{trophy.cashprize}€
+                            </span>
+                          )}
+                          <div className="text-muted small mt-2">
+                            {trophy.date ? new Date(trophy.date).toLocaleDateString('fr-FR') : ''}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Membres - Desktop */}
           {club.membres && club.membres.length > 0 && (
             <div className="d-none d-md-block mt-4">

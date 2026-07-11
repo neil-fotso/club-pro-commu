@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI } from '../services/api';
@@ -9,34 +9,28 @@ const CreateCompetitionPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (!user || !user.isAdmin) {
+      navigate('/competitions');
+    }
+  }, [user, navigate]);
+
   const [formData, setFormData] = useState({
-    nom: '',
+    nom: 'la street club pro compétition',
     type: 'elimination_directe',
     modeMatch: 'simple',
     description: '',
-    reglement: '',
-    dateDebut: '',
+    dateDebut: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     dateFin: '',
     nombreEquipes: 8,
     nombreEquipesParPoule: 4,
-
     plateforme: 'PS5',
     visibilite: 'publique',
     modeInscription: 'libre',
-    limiteInscriptions: 8,
-    lienDiscord: '',
-    zoneHoraire: 'Europe/Paris',
-    notifications: {
-      rappelMatch: true,
-      delaiRappel: 24
-    },
-    recompenses: {
-      champion: '🏆 Champion',
-      finaliste: '🥈 Finaliste',
-      troisieme: '🥉 3ème place',
-      meilleurJoueur: '🎖️ Meilleur joueur',
-      meilleurButeur: '🎯 Meilleur buteur'
-    }
+    inscriptionGratuite: true,
+    montantInscription: 0,
+    cashprizeFinal: 0,
+    cashprizeMinimal: 0
   });
 
   const handleInputChange = (e) => {
@@ -52,10 +46,28 @@ const CreateCompetitionPage = () => {
         }
       }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
+      // Si le type change, ajuster automatiquement le nombre d'équipes
+      if (name === 'type') {
+        let newNombreEquipes = 8; // Valeur par défaut
+        if (value === 'elimination_directe') {
+          newNombreEquipes = 8;
+        } else if (value === 'poule_elimination') {
+          newNombreEquipes = 8;
+        } else if (value === 'championnat') {
+          newNombreEquipes = 8;
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          nombreEquipes: newNombreEquipes
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value
+        }));
+      }
     }
   };
 
@@ -70,18 +82,31 @@ const CreateCompetitionPage = () => {
         throw new Error('Veuillez remplir tous les champs obligatoires');
       }
 
-      // Validation du nombre d'équipes pour élimination directe
+      // Validation du nombre d'équipes selon le type
       if (formData.type === 'elimination_directe') {
-        const isValidPowerOfTwo = (n) => n > 0 && (n & (n - 1)) === 0;
-        if (!isValidPowerOfTwo(formData.nombreEquipes)) {
-          throw new Error('Le nombre d\'équipes doit être une puissance de 2 pour un tournoi à élimination directe (2, 4, 8, 16, 32, 64, 128)');
+        const validNumbers = [2, 4, 8, 16, 32];
+        if (!validNumbers.includes(parseInt(formData.nombreEquipes))) {
+          throw new Error('Le nombre d\'équipes doit être 2, 4, 8, 16 ou 32 pour un tournoi à élimination directe');
+        }
+      }
+      
+      if (formData.type === 'poule_elimination') {
+        const validNumbers = [4, 8, 16, 32];
+        if (!validNumbers.includes(parseInt(formData.nombreEquipes))) {
+          throw new Error('Le nombre d\'équipes doit être 4, 8, 16 ou 32 pour une compétition avec phase de poules + élimination');
         }
       }
 
-      const competition = await competitionAPI.createCompetition(formData, user.token);
+      // Définir automatiquement la limite d'inscriptions basée sur le nombre d'équipes
+      const competitionData = {
+        ...formData,
+        limiteInscriptions: parseInt(formData.nombreEquipes)
+      };
+
+      const competition = await competitionAPI.createCompetition(competitionData, user.token);
       
       alert('Compétition créée avec succès !');
-      navigate(`/competitions/${competition._id}`);
+      navigate(`/competition/${competition._id}`);
     } catch (error) {
       console.error('Erreur création compétition:', error);
       setError(error.message || 'Erreur lors de la création');
@@ -110,7 +135,7 @@ const CreateCompetitionPage = () => {
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
-        <div className="col-lg-10">
+        <div className="col-lg-8">
           <div className="card shadow">
             <div className="card-header bg-primary text-white">
               <h2 className="mb-0">
@@ -136,6 +161,7 @@ const CreateCompetitionPage = () => {
                     </h4>
                   </div>
                   
+                  {/* Nom masqué car nom unique par défaut
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Nom de la compétition *</strong>
@@ -151,7 +177,9 @@ const CreateCompetitionPage = () => {
                       placeholder="Ex: Coupe de France 2024"
                     />
                   </div>
+                  */}
 
+                  {/* Sélecteur de type masqué car format unique (élimination directe) par défaut
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Type de compétition *</strong>
@@ -171,6 +199,7 @@ const CreateCompetitionPage = () => {
                       {getTypeDescription(formData.type)}
                     </small>
                   </div>
+                  */}
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
@@ -190,27 +219,71 @@ const CreateCompetitionPage = () => {
                     </small>
                   </div>
 
+                  {/* Nombre d'équipes masqué car dynamique en fonction des inscrits
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Nombre d'équipes *</strong>
                     </label>
-                    <input
-                      type="number"
-                      className="form-control"
+                    <select
+                      className="form-select"
                       name="nombreEquipes"
                       value={formData.nombreEquipes}
                       onChange={handleInputChange}
                       required
-                      min="2"
-                      max="128"
-                    />
+                    >
+                      {formData.type === 'elimination_directe' && (
+                        <>
+                          <option value="2">2 équipes</option>
+                          <option value="4">4 équipes</option>
+                          <option value="8">8 équipes</option>
+                          <option value="16">16 équipes</option>
+                          <option value="32">32 équipes</option>
+                        </>
+                      )}
+                      {formData.type === 'poule_elimination' && (
+                        <>
+                          <option value="4">4 équipes</option>
+                          <option value="8">8 équipes</option>
+                          <option value="16">16 équipes</option>
+                          <option value="32">32 équipes</option>
+                        </>
+                      )}
+                      {formData.type === 'championnat' && (
+                        <>
+                          <option value="4">4 équipes</option>
+                          <option value="6">6 équipes</option>
+                          <option value="8">8 équipes</option>
+                          <option value="10">10 équipes</option>
+                          <option value="12">12 équipes</option>
+                          <option value="14">14 équipes</option>
+                          <option value="16">16 équipes</option>
+                          <option value="18">18 équipes</option>
+                          <option value="20">20 équipes</option>
+                        </>
+                      )}
+                    </select>
                     {formData.type === 'elimination_directe' && (
-                      <small className="form-text text-warning">
-                        ⚠️ Doit être une puissance de 2 (2, 4, 8, 16, 32, 64, 128)
+                      <small className="form-text text-info">
+                        <i className="fas fa-info-circle me-1"></i>
+                        Format élimination directe : 2, 4, 8, 16 ou 32 équipes
+                      </small>
+                    )}
+                    {formData.type === 'poule_elimination' && (
+                      <small className="form-text text-info">
+                        <i className="fas fa-info-circle me-1"></i>
+                        Format poules + élimination : 4, 8, 16 ou 32 équipes
+                      </small>
+                    )}
+                    {formData.type === 'championnat' && (
+                      <small className="form-text text-info">
+                        <i className="fas fa-info-circle me-1"></i>
+                        Format championnat : 4 à 20 équipes (nombre pair recommandé)
                       </small>
                     )}
                   </div>
+                  */}
 
+                  {/* Choix plateforme masqué
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Plateforme</strong>
@@ -228,8 +301,22 @@ const CreateCompetitionPage = () => {
                       <option value="Cross-Platform">Cross-Platform</option>
                     </select>
                   </div>
+                  */}
 
-
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">
+                      <strong>Visibilité</strong>
+                    </label>
+                    <select
+                      className="form-select"
+                      name="visibilite"
+                      value={formData.visibilite}
+                      onChange={handleInputChange}
+                    >
+                      <option value="publique">Publique</option>
+                      <option value="privée">Privée</option>
+                    </select>
+                  </div>
                 </div>
 
                 {/* Configuration des équipes */}
@@ -259,7 +346,7 @@ const CreateCompetitionPage = () => {
                   </div>
                 )}
 
-                {/* Calendrier */}
+                {/* Calendrier masqué temporairement
                 <div className="row mb-4">
                   <div className="col-12">
                     <h4 className="text-primary mb-3">
@@ -294,23 +381,107 @@ const CreateCompetitionPage = () => {
                       onChange={handleInputChange}
                     />
                   </div>
+                </div>
+                */}
+
+                {/* Tarification & Cashprize */}
+                <div className="row mb-4">
+                  <div className="col-12">
+                    <h4 className="text-primary mb-3">
+                      <i className="fas fa-hand-holding-usd me-2"></i>
+                      Tarification & Cashprize
+                    </h4>
+                  </div>
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
-                      <strong>Zone horaire</strong>
+                      <strong>Type d'inscription *</strong>
                     </label>
                     <select
                       className="form-select"
-                      name="zoneHoraire"
-                      value={formData.zoneHoraire}
-                      onChange={handleInputChange}
+                      name="inscriptionGratuite"
+                      value={formData.inscriptionGratuite ? "true" : "false"}
+                      onChange={(e) => {
+                        const val = e.target.value === "true";
+                        setFormData({
+                          ...formData,
+                          inscriptionGratuite: val,
+                          montantInscription: val ? 0 : formData.montantInscription,
+                          cashprizeFinal: val ? formData.cashprizeFinal : 0,
+                          cashprizeMinimal: val ? 0 : formData.cashprizeMinimal
+                        });
+                      }}
                     >
-                      <option value="Europe/Paris">Europe/Paris</option>
-                      <option value="Europe/London">Europe/London</option>
-                      <option value="America/New_York">America/New_York</option>
-                      <option value="Asia/Tokyo">Asia/Tokyo</option>
+                      <option value="true">🆓 Gratuite</option>
+                      <option value="false">💳 Payante</option>
                     </select>
                   </div>
+
+                  {formData.inscriptionGratuite ? (
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">
+                        <strong>Cashprize final (€) *</strong>
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        name="cashprizeFinal"
+                        value={formData.cashprizeFinal}
+                        onChange={(e) => setFormData({ ...formData, cashprizeFinal: Number(e.target.value) })}
+                        min="0"
+                        required
+                      />
+                      <small className="form-text text-muted">
+                        Somme garantie offerte au vainqueur (peut être 0).
+                      </small>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">
+                          <strong>Montant d'inscription (€) *</strong>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="montantInscription"
+                          value={formData.montantInscription}
+                          onChange={(e) => setFormData({ ...formData, montantInscription: Number(e.target.value) })}
+                          min="1"
+                          step="0.01"
+                          required
+                        />
+                        <small className="form-text text-muted">
+                          Frais d'inscription par équipe participante.
+                        </small>
+                      </div>
+
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">
+                          <strong>Cashprize minimal garanti (€) *</strong>
+                        </label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          name="cashprizeMinimal"
+                          value={formData.cashprizeMinimal}
+                          onChange={(e) => setFormData({ ...formData, cashprizeMinimal: Number(e.target.value) })}
+                          min="0"
+                          required
+                        />
+                        <small className="form-text text-muted">
+                          Somme minimale garantie pour le vainqueur.
+                        </small>
+                      </div>
+
+                      <div className="col-12 mt-2">
+                        <div className="alert alert-info">
+                          <i className="fas fa-calculator me-2"></i>
+                          <strong>Note sur le Cashprize :</strong> Le vainqueur remportera <strong>80%</strong> des inscriptions collectées, avec un minimum garanti de <strong>{formData.cashprizeMinimal || 0} €</strong>.
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Inscriptions */}
@@ -322,7 +493,7 @@ const CreateCompetitionPage = () => {
                     </h4>
                   </div>
                   
-                  <div className="col-md-6 mb-3">
+                  <div className="col-12 mb-3">
                     <label className="form-label">
                       <strong>Mode d'inscription</strong>
                     </label>
@@ -338,43 +509,15 @@ const CreateCompetitionPage = () => {
                     </select>
                   </div>
 
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">
-                      <strong>Limite d'inscriptions</strong>
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="limiteInscriptions"
-                      value={formData.limiteInscriptions}
-                      onChange={handleInputChange}
-                      min="2"
-                      max="128"
-                    />
-                  </div>
 
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">
-                      <strong>Visibilité</strong>
-                    </label>
-                    <select
-                      className="form-select"
-                      name="visibilite"
-                      value={formData.visibilite}
-                      onChange={handleInputChange}
-                    >
-                      <option value="publique">Publique</option>
-                      <option value="privée">Privée</option>
-                    </select>
-                  </div>
                 </div>
 
-                {/* Description et règlement */}
+                {/* Description */}
                 <div className="row mb-4">
                   <div className="col-12">
                     <h4 className="text-primary mb-3">
                       <i className="fas fa-file-text me-2"></i>
-                      Description et règlement
+                      Description
                     </h4>
                   </div>
                   
@@ -391,76 +534,6 @@ const CreateCompetitionPage = () => {
                       maxLength={2000}
                       placeholder="Décrivez votre compétition..."
                     />
-                  </div>
-
-                  <div className="col-12 mb-3">
-                    <label className="form-label">
-                      <strong>Règlement</strong>
-                    </label>
-                    <textarea
-                      className="form-control"
-                      name="reglement"
-                      value={formData.reglement}
-                      onChange={handleInputChange}
-                      rows="6"
-                      maxLength={5000}
-                      placeholder="Règlement de la compétition..."
-                    />
-                  </div>
-                </div>
-
-                {/* Liens et notifications */}
-                <div className="row mb-4">
-                  <div className="col-12">
-                    <h4 className="text-primary mb-3">
-                      <i className="fas fa-link me-2"></i>
-                      Liens et notifications
-                    </h4>
-                  </div>
-                  
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">
-                      <strong>Lien Discord (optionnel)</strong>
-                    </label>
-                    <input
-                      type="url"
-                      className="form-control"
-                      name="lienDiscord"
-                      value={formData.lienDiscord}
-                      onChange={handleInputChange}
-                      placeholder="https://discord.gg/..."
-                    />
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">
-                      <strong>Délai de rappel (heures)</strong>
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      name="notifications.delaiRappel"
-                      value={formData.notifications.delaiRappel}
-                      onChange={handleInputChange}
-                      min="1"
-                      max="168"
-                    />
-                  </div>
-
-                  <div className="col-12 mb-3">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        name="notifications.rappelMatch"
-                        checked={formData.notifications.rappelMatch}
-                        onChange={handleInputChange}
-                        id="rappelMatch"
-                      />
-                      <label className="form-check-label" htmlFor="rappelMatch">
-                        <strong>Activer les rappels de match</strong>
-                      </label>
-                    </div>
                   </div>
                 </div>
 

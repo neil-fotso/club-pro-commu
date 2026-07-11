@@ -3,7 +3,80 @@ const Competition = require('../models/Competition');
 const Club = require('../models/Club');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 const discordSimple = require('../services/discordSimple');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+// S'assurer que les dossiers de destination existent
+const uploadDir = path.resolve('uploads/disputes');
+const uploadPhotoDir = path.resolve('uploads/disputes/photos');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+if (!fs.existsSync(uploadPhotoDir)) {
+  fs.mkdirSync(uploadPhotoDir, { recursive: true });
+}
+
+// Configurer le stockage multer (vidéo)
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'dispute-' + req.params.matchId + '-' + uniqueSuffix + ext);
+  }
+});
+
+// Filtrer pour n'autoriser que les vidéos
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('video/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Uniquement les fichiers vidéo sont autorisés !'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 100 * 1024 * 1024 // Limite de 100 Mo
+  }
+});
+
+// Configurer le stockage multer pour les photos de litige
+const photoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadPhotoDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'photo-' + req.params.matchId + '-' + uniqueSuffix + ext);
+  }
+});
+
+// Filtrer pour n'autoriser que les images
+const photoFileFilter = (req, file, cb) => {
+  const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Uniquement les images (JPG, PNG, WEBP) sont autorisées !'), false);
+  }
+};
+
+const uploadPhoto = multer({
+  storage: photoStorage,
+  fileFilter: photoFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Limite de 5 Mo
+  }
+});
 
 const router = express.Router();
 
@@ -79,7 +152,19 @@ router.get('/mes-competitions', auth, async (req, res) => {
 // GET /api/competitions/:id - Récupérer une compétition spécifique
 router.get('/:id', async (req, res) => {
   try {
-    const competition = await Competition.findById(req.params.id)
+    let competition = await Competition.findById(req.params.id);
+    if (!competition) {
+      return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    // Exécuter la vérification automatique des minuteurs/forfaits
+    const modified = await checkMatchTimers(competition);
+    if (modified) {
+      await competition.save();
+    }
+
+    // Re-charger avec toutes les relations popuplées
+    competition = await Competition.findById(req.params.id)
       .populate('createurId', 'pseudo _id')
       .populate({
         path: 'equipesInscrites.clubId',
@@ -104,12 +189,6 @@ router.get('/:id', async (req, res) => {
       .populate('statistiques.meilleurPasseur.club', 'nom logo')
       .populate('statistiques.meilleurJoueur.club', 'nom logo');
 
-    if (!competition) {
-      return res.status(404).json({ message: 'Compétition non trouvée' });
-    }
-
-
-
     res.json(competition);
   } catch (error) {
     console.error('Erreur récupération compétition:', error);
@@ -118,7 +197,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/competitions - Créer une nouvelle compétition
-router.post('/', auth, async (req, res) => {
+router.post('/', adminAuth, async (req, res) => {
   try {
     const {
       nom,
@@ -137,7 +216,11 @@ router.post('/', auth, async (req, res) => {
       lienDiscord,
       recompenses,
       zoneHoraire,
-      notifications
+      notifications,
+      inscriptionGratuite,
+      montantInscription,
+      cashprizeFinal,
+      cashprizeMinimal
     } = req.body;
 
     // Validation des données
@@ -147,7 +230,8 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Vérifier si une compétition avec le même nom existe déjà
+    // Vérifier si une compétition avec le même nom existe déjà (désactivé temporairement car format unique "la street club pro compétition")
+    /*
     const competitionExistante = await Competition.findOne({ 
       nom: nom.trim(),
       createurId: req.user.id,
@@ -159,6 +243,7 @@ router.post('/', auth, async (req, res) => {
         message: 'Une compétition avec ce nom existe déjà. Veuillez choisir un autre nom.' 
       });
     }
+    */
 
     // Validation du nombre d'équipes selon le type
     if (type === 'elimination_directe') {
@@ -190,7 +275,11 @@ router.post('/', auth, async (req, res) => {
       zoneHoraire: zoneHoraire || 'Europe/Paris',
       notifications,
       createurId: req.user.id,
-      statut: 'Brouillon'
+      statut: 'Brouillon',
+      inscriptionGratuite: inscriptionGratuite !== undefined ? inscriptionGratuite : true,
+      montantInscription: montantInscription || 0,
+      cashprizeFinal: cashprizeFinal || 0,
+      cashprizeMinimal: cashprizeMinimal || 0
     });
 
     await competition.save();
@@ -292,11 +381,6 @@ router.post('/:id/inscription', auth, async (req, res) => {
       return res.status(400).json({ message: 'Les inscriptions sont fermées' });
     }
 
-    // Vérifier que la compétition n'est pas pleine
-    if (competition.equipesInscrites.length >= competition.limiteInscriptions) {
-      return res.status(400).json({ message: 'La compétition a atteint sa limite d\'équipes' });
-    }
-
     // Vérifier que le club n'est pas déjà inscrit
     const dejaInscrit = competition.equipesInscrites.some(
       equipe => equipe.clubId.toString() === clubId
@@ -332,7 +416,8 @@ router.post('/:id/inscription', auth, async (req, res) => {
       // Inscription directe
       competition.equipesInscrites.push({
         clubId,
-        statut: 'Inscrit'
+        statut: competition.inscriptionGratuite ? 'Confirmé' : 'Inscrit',
+        statutPaiement: competition.inscriptionGratuite ? 'Gratuit' : 'En attente'
       });
     }
 
@@ -419,6 +504,84 @@ router.delete('/:id/inscription', auth, async (req, res) => {
   }
 });
 
+// POST /api/competitions/:id/inscriptions/:clubId/payer - Simuler le paiement des frais d'inscription
+router.post('/:id/inscriptions/:clubId/payer', auth, async (req, res) => {
+  try {
+    const { id: competitionId, clubId } = req.params;
+    const { numeroCarte, dateExpiration, cvv, nomTitulaire } = req.body;
+
+    // Validation factice minimale
+    if (!numeroCarte || !dateExpiration || !cvv || !nomTitulaire) {
+      return res.status(400).json({ message: 'Toutes les informations bancaires sont requises pour la simulation' });
+    }
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    if (competition.inscriptionGratuite) {
+      return res.status(400).json({ message: 'Cette compétition est gratuite' });
+    }
+
+    const equipe = competition.equipesInscrites.find(
+      e => e.clubId.toString() === clubId
+    );
+
+    if (!equipe) {
+      return res.status(404).json({ message: 'Le club n\'est pas inscrit à cette compétition' });
+    }
+
+    if (equipe.statutPaiement === 'Payé') {
+      return res.status(400).json({ message: 'L\'inscription de ce club a déjà été payée' });
+    }
+
+    // Effectuer le paiement factice
+    equipe.statutPaiement = 'Payé';
+    equipe.statut = 'Confirmé'; // Devient confirmé pour participer
+    equipe.transactionId = `tx_stripe_${Math.random().toString(36).substring(2, 15)}`;
+    equipe.datePaiement = new Date();
+
+    // Recalculer le cashprize final en fonction des équipes payées
+    const equipesPayees = competition.equipesInscrites.filter(
+      e => e.statutPaiement === 'Payé'
+    ).length;
+
+    const recolteInscriptions = equipesPayees * competition.montantInscription;
+    competition.cashprizeFinal = Math.max(
+      competition.cashprizeMinimal || 0,
+      recolteInscriptions * 0.8
+    );
+
+    await competition.save();
+
+    // Optionnel : notification Discord
+    try {
+      const Club = require('../models/Club');
+      const clubObj = await Club.findById(clubId);
+      await discordSimple.sendNotification(
+        `💳 **Paiement d'inscription confirmé**\n` +
+        `📝 Compétition: ${competition.nom}\n` +
+        `🏆 Club: ${clubObj?.nom || 'Inconnu'}\n` +
+        `💸 Montant: ${competition.montantInscription}€\n` +
+        `💰 Cagnotte mise à jour: ${competition.cashprizeFinal}€\n` +
+        `⏰ ${new Date().toLocaleString('fr-FR')}`
+      );
+    } catch (err) {
+      console.error('Erreur notification Discord paiement:', err);
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Paiement simulé avec succès. L\'inscription est confirmée !',
+      cashprizeFinal: competition.cashprizeFinal
+    });
+  } catch (error) {
+    console.error('Erreur simulation paiement:', error);
+    res.status(500).json({ message: 'Erreur lors du traitement du paiement' });
+  }
+});
+
 // 🔹 3. GESTION DES DEMANDES D'INSCRIPTION
 
 // PUT /api/competitions/:id/demandes/:demandeId - Traiter une demande d'inscription
@@ -450,11 +613,6 @@ router.put('/:id/demandes/:demandeId', auth, async (req, res) => {
       return res.status(400).json({ message: 'Cette demande a déjà été traitée' });
     }
 
-    // Vérifier que la compétition n'est pas pleine si on accepte
-    if (action === 'accepter' && competition.equipesInscrites.length >= competition.limiteInscriptions) {
-      return res.status(400).json({ message: 'La compétition a atteint sa limite d\'équipes' });
-    }
-
     // Traiter la demande
     demande.statut = action === 'accepter' ? 'Acceptée' : 'Refusée';
     demande.reponse = reponse;
@@ -463,7 +621,8 @@ router.put('/:id/demandes/:demandeId', auth, async (req, res) => {
       // Ajouter l'équipe à la compétition
       competition.equipesInscrites.push({
         clubId: demande.clubId,
-        statut: 'Inscrit'
+        statut: competition.inscriptionGratuite ? 'Confirmé' : 'Inscrit',
+        statutPaiement: competition.inscriptionGratuite ? 'Gratuit' : 'En attente'
       });
     }
 
@@ -519,43 +678,47 @@ router.put('/:id/lancer', auth, async (req, res) => {
     }
 
     // Vérifier qu'il y a assez d'équipes
-    const equipesConfirmees = competition.equipesInscrites.filter(e => e.statut === 'Inscrit');
+    const equipesConfirmees = competition.equipesInscrites.filter(e => e.statut === 'Confirmé');
     if (equipesConfirmees.length < 2) {
       return res.status(400).json({ message: 'Il faut au moins 2 équipes pour lancer la compétition' });
     }
 
     // Générer les matchs selon le type
     if (competition.type === 'championnat') {
+      // Planifier intelligemment les journées du championnat
+      const matchs = [];
+      const nombreEquipes = equipesConfirmees.length;
+      
       // Générer tous les matchs aller-retour
-      for (let i = 0; i < equipesConfirmees.length; i++) {
-        for (let j = i + 1; j < equipesConfirmees.length; j++) {
+      for (let i = 0; i < nombreEquipes; i++) {
+        for (let j = i + 1; j < nombreEquipes; j++) {
           // Match aller
-          competition.poules[0].matchs.push({
+          matchs.push({
             equipe1: equipesConfirmees[i].clubId,
             equipe2: equipesConfirmees[j].clubId,
-            statut: 'Programmé'
+            statut: 'Programmé',
+            type: 'aller'
           });
           // Match retour
-          competition.poules[0].matchs.push({
+          matchs.push({
             equipe1: equipesConfirmees[j].clubId,
             equipe2: equipesConfirmees[i].clubId,
-            statut: 'Programmé'
+            statut: 'Programmé',
+            type: 'retour'
           });
         }
       }
+      
+      // Planifier les journées intelligemment
+      const matchsPlanifies = planifierJourneesChampionnat(matchs, nombreEquipes);
+      
+      // Ajouter les matchs planifiés à la poule
+      competition.poules[0].matchs = matchsPlanifies;
+      
+      console.log(`🏆 Championnat planifié: ${matchsPlanifies.length} matchs sur ${Math.ceil(matchsPlanifies.length / Math.floor(nombreEquipes / 2))} journées`);
     } else if (competition.type === 'elimination_directe') {
-      // Générer les matchs d'élimination directe
-      for (let i = 0; i < equipesConfirmees.length; i += 2) {
-        if (i + 1 < equipesConfirmees.length) {
-          competition.matchsElimination.push({
-            equipe1: equipesConfirmees[i].clubId,
-            equipe2: equipesConfirmees[i + 1].clubId,
-            phase: 'Huitième',
-            tour: 1,
-            statut: 'Programmé'
-          });
-        }
-      }
+      // Générer les matchs d'élimination directe avec byes (tas binaire)
+      generateEliminationBracket(competition, equipesConfirmees);
     } else if (competition.type === 'poule_elimination') {
       // Générer les poules puis les matchs d'élimination
       const equipesParPoule = Math.ceil(equipesConfirmees.length / competition.nombreEquipesParPoule);
@@ -580,6 +743,27 @@ router.put('/:id/lancer', auth, async (req, res) => {
         
         competition.poules.push(poule);
       }
+    }
+
+    // ─── Calcul de l'heure limite de début pour chaque match du premier tour ───
+    // Les matchs du premier tour doivent tous commencer au plus tard +10 min après le lancement
+    const DELAI_LANCEMENT = (competition.delaiLancementMatch || 10) * 60 * 1000;
+    const dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT);
+
+    // Appliquer dateLimiteDebut à tous les matchs qui ont déjà leurs deux équipes connues
+    competition.matchsElimination.forEach(match => {
+      if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut) {
+        match.dateLimiteDebut = dateLimiteDebut;
+      }
+    });
+    if (competition.poules) {
+      competition.poules.forEach(poule => {
+        poule.matchs.forEach(match => {
+          if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut) {
+            match.dateLimiteDebut = dateLimiteDebut;
+          }
+        });
+      });
     }
 
     competition.statut = 'En cours';
@@ -703,6 +887,140 @@ router.put('/:id/matchs/:matchId/date', auth, async (req, res) => {
   }
 });
 
+// ─── Utilitaire : Vérifier les forfaits automatiques sur tous les matchs en cours ───
+async function checkMatchTimers(competition) {
+  const READY_TIMEOUT_MS  = 10 * 60 * 1000; // 10 minutes
+  const INGAME_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+  const now = Date.now();
+  let modified = false;
+
+  // Collecte tous les matchs (poules + élimination)
+  const allMatches = [
+    ...competition.matchsElimination,
+    ...(competition.poules || []).flatMap(p => p.matchs)
+  ].filter(m => m && m.statut !== 'Terminé' && m.statut !== 'Annulé' && m.equipe1 && m.equipe2);
+
+  for (const match of allMatches) {
+    // Phase Préparation (Ready Check) — 10 min
+    if (match.dateDebutPreparation && !match.dateDebutMatch) {
+      const elapsed = now - new Date(match.dateDebutPreparation).getTime();
+      if (elapsed >= READY_TIMEOUT_MS) {
+        const e1Ready = match.equipe1Prete;
+        const e2Ready = match.equipe2Prete;
+        if (!e1Ready && !e2Ready) {
+          // Double forfait
+          match.score1 = 0; match.score2 = 0;
+          match.statut = 'Terminé';
+          match.valideParEquipe1 = true; match.valideParEquipe2 = true;
+          console.log(`⏰ Forfait double (aucun prêt) - match ${match._id}`);
+        } else if (!e1Ready) {
+          match.score1 = 0; match.score2 = 3;
+          match.statut = 'Terminé';
+          match.valideParEquipe1 = true; match.valideParEquipe2 = true;
+          console.log(`⏰ Forfait Équipe 1 (non prête) - match ${match._id}`);
+        } else if (!e2Ready) {
+          match.score1 = 3; match.score2 = 0;
+          match.statut = 'Terminé';
+          match.valideParEquipe1 = true; match.valideParEquipe2 = true;
+          console.log(`⏰ Forfait Équipe 2 (non prête) - match ${match._id}`);
+        }
+        modified = true;
+        if (match.statut === 'Terminé' && competition.type === 'elimination_directe' && match.phase) {
+          await handleEliminationProgression(competition, match);
+        }
+      }
+    }
+
+    // Phase In-Game — 20 min pour saisir le score
+    if (match.dateDebutMatch && match.statut === 'En cours') {
+      const elapsed = now - new Date(match.dateDebutMatch).getTime();
+      if (elapsed >= INGAME_TIMEOUT_MS) {
+        const prop = match.propositionScore;
+        const scorePropose = prop && prop.proposePar !== null;
+        if (!scorePropose) {
+          // Aucun score saisi — double forfait
+          match.score1 = 0; match.score2 = 0;
+          match.statut = 'Terminé';
+          match.valideParEquipe1 = true; match.valideParEquipe2 = true;
+          console.log(`⏰ Forfait double (aucun score) - match ${match._id}`);
+        } else {
+          // Un seul score saisi — le valider automatiquement
+          match.score1 = prop.score1;
+          match.score2 = prop.score2;
+          match.statut = 'Terminé';
+          match.valideParEquipe1 = true; match.valideParEquipe2 = true;
+          console.log(`⏰ Score validé par défaut (${prop.proposePar}) - match ${match._id}`);
+        }
+        modified = true;
+        if (match.statut === 'Terminé' && competition.type === 'elimination_directe' && match.phase) {
+          await handleEliminationProgression(competition, match);
+        }
+      }
+    }
+  }
+  return modified;
+}
+
+// POST /api/competitions/:id/matchs/:matchId/pret - Signaler qu'une équipe est prête
+router.post('/:id/matchs/:matchId/pret', auth, async (req, res) => {
+  try {
+    const { id: competitionId, matchId } = req.params;
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    // Chercher le match
+    let match = competition.matchsElimination.id(matchId);
+    if (!match) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    if (match.statut === 'Terminé' || match.statut === 'Annulé') {
+      return res.status(400).json({ message: 'Ce match est déjà terminé' });
+    }
+    if (!match.equipe1 || !match.equipe2) {
+      return res.status(400).json({ message: 'Les deux équipes ne sont pas encore connues' });
+    }
+
+    // Déterminer quelle équipe est le capitaine
+    const estAdminEquipe1 = await Club.findOne({ _id: match.equipe1, 'membres.userId': req.user.id, 'membres.role': 'Admin' });
+    const estAdminEquipe2 = await Club.findOne({ _id: match.equipe2, 'membres.userId': req.user.id, 'membres.role': 'Admin' });
+
+    if (!estAdminEquipe1 && !estAdminEquipe2) {
+      return res.status(403).json({ message: 'Seuls les capitaines des équipes peuvent se déclarer prêts' });
+    }
+
+    if (estAdminEquipe1) match.equipe1Prete = true;
+    if (estAdminEquipe2) match.equipe2Prete = true;
+
+    // Si les deux équipes sont prêtes → lancer le chrono de jeu
+    if (match.equipe1Prete && match.equipe2Prete && !match.dateDebutMatch) {
+      match.dateDebutMatch = new Date();
+      match.statut = 'En cours';
+      console.log(`🏟️  Les deux équipes sont prêtes ! Chrono de 20 min lancé pour match ${match._id}`);
+    }
+
+    // Initialiser le ready check si pas encore fait
+    if (!match.dateDebutPreparation) {
+      match.dateDebutPreparation = new Date();
+    }
+
+    await competition.save();
+    res.json({
+      message: match.equipe1Prete && match.equipe2Prete ? 'Les deux équipes sont prêtes ! Le match commence.' : 'Statut "Prêt" enregistré, en attente de l\'adversaire.',
+      equipe1Prete: match.equipe1Prete,
+      equipe2Prete: match.equipe2Prete,
+      dateDebutMatch: match.dateDebutMatch
+    });
+  } catch (error) {
+    console.error('Erreur ready check:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 // PUT /api/competitions/:id/matchs/:matchId/score - Mettre à jour le score d'un match
 router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
   try {
@@ -762,42 +1080,292 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
       });
     }
 
-    // Mettre à jour le score
-    match.score1 = score1;
-    match.score2 = score2;
-    match.statut = 'Terminé';
-    match.stats = stats || {};
-    if (captureEcran) match.captureEcran = captureEcran;
+    // ─── Double Validation des scores ────────────────────────────────────────────
+    const isAdmin = estAdminSite || estCreateurCompetition;
+    const teamRole = estAdminEquipe1 ? 'equipe1' : estAdminEquipe2 ? 'equipe2' : null;
 
-    // Marquer comme validé par l'équipe correspondante
-    if (estAdminEquipe1) {
+    if (isAdmin) {
+      // L'admin force le score directement sans double validation
+      match.score1 = score1;
+      match.score2 = score2;
+      match.statut = 'Terminé';
+      match.litige = false;
       match.valideParEquipe1 = true;
-    }
-    if (estAdminEquipe2) {
       match.valideParEquipe2 = true;
+      match.stats = stats || {};
+      if (captureEcran) match.captureEcran = captureEcran;
+    } else {
+      // Un capitaine propose son score
+      const prop = match.propositionScore;
+      const dejaPropose = prop && prop.proposePar !== null;
+
+      if (!dejaPropose) {
+        // Première proposition
+        match.propositionScore = {
+          score1,
+          score2,
+          proposePar: teamRole,
+          dateSaisie: new Date()
+        };
+        await competition.save();
+        return res.json({
+          message: 'Score soumis. En attente de la validation de l\'équipe adverse.',
+          statut: 'en_attente_validation',
+          propositionScore: match.propositionScore
+        });
+      } else {
+        // Deuxième proposition — comparer avec la première
+        if (prop.proposePar === teamRole) {
+          return res.status(400).json({ message: 'Vous avez déjà soumis votre score. En attente de l\'adversaire.' });
+        }
+
+        if (prop.score1 === score1 && prop.score2 === score2) {
+          // ✅ Scores concordants → Valider définitivement
+          match.score1 = score1;
+          match.score2 = score2;
+          match.statut = 'Terminé';
+          match.litige = false;
+          match.valideParEquipe1 = true;
+          match.valideParEquipe2 = true;
+          match.stats = stats || {};
+          if (captureEcran) match.captureEcran = captureEcran;
+        } else {
+          // ❌ Scores divergents → Litige automatique
+          match.litige = true;
+          match.litigeDetails = {
+            signalePar: req.user.id,
+            clubId: estAdminEquipe1 ? match.equipe1 : match.equipe2,
+            description: `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${score1}-${score2}. Capture d'écran requise.`,
+            preuveVideo: captureEcran || null,
+            dateSignalement: new Date(),
+            statut: 'En attente'
+          };
+          match.statut = 'En cours'; // Bloqué, en attente de l'admin
+          await competition.save();
+          return res.json({
+            message: '⚠️ Les scores ne correspondent pas. Le match est en litige. L\'administrateur va trancher.',
+            statut: 'litige',
+            litigeDetails: match.litigeDetails
+          });
+        }
+      }
     }
 
-    // Si les deux équipes ont validé, mettre à jour les statistiques
-    if (match.valideParEquipe1 && match.valideParEquipe2) {
-      // Mettre à jour les statistiques des équipes
-      await updateTeamStats(competition, match);
-      
-      // Recalculer les statistiques individuelles
-      const individualStats = await calculateCompetitionStats(competition);
-      competition.statistiques = individualStats;
-      
-      // Gérer la progression en élimination directe
-      if (competition.type === 'elimination_directe' && match.phase) {
-        await handleEliminationProgression(competition, match);
-      }
+    // Mettre à jour les statistiques des équipes (pour tous les types de compétitions)
+    await updateTeamStats(competition, match);
+    
+    // Recalculer les statistiques individuelles
+    const individualStats = await calculateCompetitionStats(competition);
+    competition.statistiques = individualStats;
+    
+    // Gérer la progression en élimination directe
+    if (competition.type === 'elimination_directe' && match.phase) {
+      await handleEliminationProgression(competition, match);
     }
 
     await competition.save();
 
-    res.json({ message: 'Score mis à jour avec succès' });
+    res.json({ message: 'Score validé et enregistré avec succès !' });
   } catch (error) {
     console.error('Erreur mise à jour score:', error);
     res.status(500).json({ message: 'Erreur lors de la mise à jour' });
+  }
+});
+
+
+// POST /api/competitions/:id/matchs/:matchId/litige - Déclarer un litige sur un match
+router.post('/:id/matchs/:matchId/litige', auth, async (req, res) => {
+  try {
+    const { description, preuveVideo } = req.body;
+    const { id: competitionId, matchId } = req.params;
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    // Chercher le match dans les poules
+    let match = null;
+    let pouleIndex = -1;
+    
+    for (let i = 0; i < competition.poules.length; i++) {
+      match = competition.poules[i].matchs.id(matchId);
+      if (match) {
+        pouleIndex = i;
+        break;
+      }
+    }
+
+    // Si pas trouvé dans les poules, chercher dans l'élimination
+    if (!match) {
+      match = competition.matchsElimination.id(matchId);
+    }
+
+    if (!match) {
+      return res.status(404).json({ message: 'Match non trouvé' });
+    }
+
+    // Vérifier que l'utilisateur est admin ou capitaine d'une des deux équipes
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+    
+    // Pour les clubs
+    const club1 = await Club.findById(match.equipe1);
+    const club2 = await Club.findById(match.equipe2);
+    
+    const estMembreEquipe1 = club1 && club1.membres.some(m => m.userId.toString() === req.user.id && (m.role === 'Admin' || m.role === 'Capitaine'));
+    const estMembreEquipe2 = club2 && club2.membres.some(m => m.userId.toString() === req.user.id && (m.role === 'Admin' || m.role === 'Capitaine'));
+    
+    if (!estAdminSite && !estCreateurCompetition && !estMembreEquipe1 && !estMembreEquipe2) {
+      return res.status(403).json({ 
+        message: 'Vous devez être capitaine ou administrateur de l\'une des équipes du match pour signaler un litige.' 
+      });
+    }
+
+    // Déterminer de quel club provient le signalement
+    let clubSignataireId = null;
+    if (estMembreEquipe1) {
+      clubSignataireId = match.equipe1;
+    } else if (estMembreEquipe2) {
+      clubSignataireId = match.equipe2;
+    }
+
+    // Mettre à jour le statut de litige
+    match.litige = true;
+    match.litigeDetails = {
+      signalePar: req.user.id,
+      clubId: clubSignataireId,
+      description: description || 'Litige signalé',
+      preuveVideo: preuveVideo || '',
+      dateSignalement: new Date(),
+      statut: 'En attente'
+    };
+
+    await competition.save();
+
+    res.json({ success: true, message: 'Litige signalé avec succès' });
+  } catch (error) {
+    console.error('Erreur signalement litige:', error);
+    res.status(500).json({ message: 'Erreur lors du signalement du litige' });
+  }
+});
+
+// POST /api/competitions/:id/matchs/:matchId/upload-video - Charger une vidéo de preuve
+router.post('/:id/matchs/:matchId/upload-video', auth, upload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Veuillez sélectionner un fichier vidéo' });
+    }
+
+    const fileUrl = `/uploads/disputes/${req.file.filename}`;
+    res.json({ 
+      success: true, 
+      videoUrl: fileUrl,
+      message: 'Fichier vidéo chargé avec succès' 
+    });
+  } catch (error) {
+    console.error('Erreur chargement vidéo:', error);
+    res.status(500).json({ message: 'Erreur lors du chargement de la vidéo' });
+  }
+});
+
+// POST /api/competitions/:id/matchs/:matchId/upload-photo - Charger une photo de preuve litige
+router.post('/:id/matchs/:matchId/upload-photo', auth, uploadPhoto.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Veuillez sélectionner une image (JPG, PNG, WEBP)' });
+    }
+
+    const { id: competitionId, matchId } = req.params;
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    // Chercher le match et mettre à jour la preuve photo du litige
+    let match = competition.matchsElimination.id(matchId);
+    if (!match) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (match && match.litige && match.litigeDetails) {
+      const photoUrl = `/uploads/disputes/photos/${req.file.filename}`;
+      match.litigeDetails.preuveVideo = photoUrl;
+      await competition.save();
+    }
+
+    const photoUrl = `/uploads/disputes/photos/${req.file.filename}`;
+    res.json({
+      success: true,
+      photoUrl: photoUrl,
+      message: 'Photo de preuve chargée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur chargement photo:', error);
+    res.status(500).json({ message: 'Erreur lors du chargement de la photo' });
+  }
+});
+
+// POST /api/competitions/:id/matchs/:matchId/forfait - Déclarer forfait manuellement (admin)
+router.post('/:id/matchs/:matchId/forfait', auth, async (req, res) => {
+  try {
+    const { id: competitionId, matchId } = req.params;
+    const { equipeEnForfait } = req.body; // 'equipe1', 'equipe2' ou 'double'
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    // Vérifier que l'utilisateur est admin du site ou créateur de la compétition
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+
+    if (!estAdminSite && !estCreateurCompetition) {
+      return res.status(403).json({ message: 'Seuls les admins peuvent déclarer un forfait manuellement' });
+    }
+
+    // Trouver le match
+    let match = competition.matchsElimination.id(matchId);
+    if (!match) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+    if (match.statut === 'Terminé') return res.status(400).json({ message: 'Ce match est déjà terminé' });
+
+    // Appliquer le forfait
+    if (equipeEnForfait === 'double') {
+      match.score1 = 0; match.score2 = 0;
+    } else if (equipeEnForfait === 'equipe1') {
+      match.score1 = 0; match.score2 = 3;
+    } else if (equipeEnForfait === 'equipe2') {
+      match.score1 = 3; match.score2 = 0;
+    } else {
+      return res.status(400).json({ message: 'equipeEnForfait doit être "equipe1", "equipe2" ou "double"' });
+    }
+
+    match.statut = 'Terminé';
+    match.valideParEquipe1 = true;
+    match.valideParEquipe2 = true;
+
+    // Progression en élimination directe
+    if (competition.type === 'elimination_directe' && match.phase) {
+      await handleEliminationProgression(competition, match);
+    }
+
+    await updateTeamStats(competition, match);
+    await competition.save();
+
+    res.json({ success: true, message: `Forfait déclaré : ${equipeEnForfait === 'double' ? 'les deux équipes' : equipeEnForfait} forfait.` });
+  } catch (error) {
+    console.error('Erreur déclaration forfait:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
@@ -809,6 +1377,23 @@ async function updateTeamStats(competition, match) {
   const equipe2 = competition.equipesInscrites.find(e => e.clubId.toString() === match.equipe2.toString());
 
   if (equipe1 && equipe2) {
+    // Initialiser les statistiques si elles n'existent pas
+    if (!equipe1.matchsJoues) equipe1.matchsJoues = 0;
+    if (!equipe1.victoires) equipe1.victoires = 0;
+    if (!equipe1.nuls) equipe1.nuls = 0;
+    if (!equipe1.defaites) equipe1.defaites = 0;
+    if (!equipe1.butsPour) equipe1.butsPour = 0;
+    if (!equipe1.butsContre) equipe1.butsContre = 0;
+    if (!equipe1.points) equipe1.points = 0;
+
+    if (!equipe2.matchsJoues) equipe2.matchsJoues = 0;
+    if (!equipe2.victoires) equipe2.victoires = 0;
+    if (!equipe2.nuls) equipe2.nuls = 0;
+    if (!equipe2.defaites) equipe2.defaites = 0;
+    if (!equipe2.butsPour) equipe2.butsPour = 0;
+    if (!equipe2.butsContre) equipe2.butsContre = 0;
+    if (!equipe2.points) equipe2.points = 0;
+
     // Mettre à jour les statistiques
     equipe1.matchsJoues += 1;
     equipe2.matchsJoues += 1;
@@ -839,6 +1424,190 @@ async function updateTeamStats(competition, match) {
   }
 }
 
+// Fonction pour planifier intelligemment les journées du championnat
+function planifierJourneesChampionnat(matchs, nombreEquipes) {
+  const matchsPlanifies = [];
+  const matchsParJournee = Math.floor(nombreEquipes / 2);
+  const nombreJourneesAller = nombreEquipes - 1;
+  const nombreJourneesTotal = nombreJourneesAller * 2; // Aller + Retour
+  
+  // Séparer les matchs aller et retour
+  const matchsAller = matchs.filter(m => m.type === 'aller');
+  const matchsRetour = matchs.filter(m => m.type === 'retour');
+  
+  // Planifier les matchs aller
+  for (let journee = 1; journee <= nombreJourneesAller; journee++) {
+    const matchsJournee = [];
+    const equipesUtilisees = new Set();
+    
+    // Prendre les matchs non encore planifiés
+    for (const match of matchsAller) {
+      if (matchsJournee.length >= matchsParJournee) break;
+      
+      // Vérifier qu'aucune des deux équipes n'a déjà joué cette journée
+      if (!equipesUtilisees.has(match.equipe1.toString()) && 
+          !equipesUtilisees.has(match.equipe2.toString())) {
+        
+        match.journee = journee;
+        match.dateMatch = new Date(Date.now() + (journee - 1) * 7 * 24 * 60 * 60 * 1000); // 7 jours entre chaque journée
+        matchsJournee.push(match);
+        equipesUtilisees.add(match.equipe1.toString());
+        equipesUtilisees.add(match.equipe2.toString());
+      }
+    }
+    
+    matchsPlanifies.push(...matchsJournee);
+  }
+  
+  // Planifier les matchs retour (après les matchs aller)
+  for (let journee = 1; journee <= nombreJourneesAller; journee++) {
+    const matchsJournee = [];
+    const equipesUtilisees = new Set();
+    
+    // Prendre les matchs retour non encore planifiés
+    for (const match of matchsRetour) {
+      if (matchsJournee.length >= matchsParJournee) break;
+      
+      // Vérifier qu'aucune des deux équipes n'a déjà joué cette journée
+      if (!equipesUtilisees.has(match.equipe1.toString()) && 
+          !equipesUtilisees.has(match.equipe2.toString())) {
+        
+        match.journee = nombreJourneesAller + journee;
+        match.dateMatch = new Date(Date.now() + (nombreJourneesAller + journee - 1) * 7 * 24 * 60 * 60 * 1000);
+        matchsJournee.push(match);
+        equipesUtilisees.add(match.equipe1.toString());
+        equipesUtilisees.add(match.equipe2.toString());
+      }
+    }
+    
+    matchsPlanifies.push(...matchsJournee);
+  }
+  
+  // Nettoyer les propriétés temporaires
+  matchsPlanifies.forEach(match => {
+    delete match.type;
+  });
+  
+  return matchsPlanifies;
+}
+
+// Fonction utilitaire pour générer le bracket d'élimination directe avec byes (tas binaire)
+function generateEliminationBracket(competition, equipesConfirmees) {
+  const N = equipesConfirmees.length;
+  if (N < 2) return;
+
+  // Déterminer la taille du heap (prochaine puissance de 2 >= N)
+  const M = Math.pow(2, Math.ceil(Math.log2(N)));
+  
+  // Mélanger aléatoirement les équipes
+  const equipesShuffled = [...equipesConfirmees].sort(() => Math.random() - 0.5);
+  
+  // Initialiser le tableau heap de taille 2M - 1
+  const heap = new Array(2 * M - 1).fill(null);
+  
+  // Remplir les feuilles du heap
+  for (let i = 0; i < M; i++) {
+    heap[M - 1 + i] = (i < N) ? equipesShuffled[i].clubId : null;
+  }
+  
+  // Vider les matchs d'élimination existants
+  competition.matchsElimination = [];
+  
+  // Helper pour trouver le nom de la phase
+  const getPhaseName = (index, M) => {
+    if (index === 0) return 'Finale';
+    if (index >= 1 && index <= 2) return 'Demi';
+    if (index >= 3 && index <= 6) return 'Quart';
+    if (index >= 7 && index <= 14) return 'Huitième';
+    if (index >= 15 && index <= 30) return 'Seizième';
+    if (index >= 31 && index <= 62) return 'Trente-deuxième';
+    return 'Éliminatoire';
+  };
+  
+  // Tableau pour suivre si un match a été créé à un index donné
+  const matchCreatedAtIndex = new Array(M - 1).fill(false);
+  
+  // Parcourir de bas en haut (de M-2 à 0)
+  for (let p = M - 2; p >= 0; p--) {
+    const c1 = 2 * p + 1;
+    const c2 = 2 * p + 2;
+    
+    const active1 = (heap[c1] !== null) || (c1 < M - 1 && matchCreatedAtIndex[c1]);
+    const active2 = (heap[c2] !== null) || (c2 < M - 1 && matchCreatedAtIndex[c2]);
+    
+    if (active1 && active2) {
+      // Les deux enfants sont actifs -> Créer un match à l'index p
+      matchCreatedAtIndex[p] = true;
+      
+      const phase = getPhaseName(p, M);
+      
+      competition.matchsElimination.push({
+        equipe1: heap[c1],
+        equipe2: heap[c2],
+        score1: null,
+        score2: null,
+        dateMatch: null,
+        statut: 'Programmé',
+        phase: phase,
+        tour: p,
+        valideParEquipe1: false,
+        valideParEquipe2: false,
+        equipe1Prete: false,
+        equipe2Prete: false,
+        // Les matchs du 1er tour ont leurs équipes connues dès le départ => chrono Ready Check lance
+        dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+        dateDebutMatch: null,
+        propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
+        captureEcran: null,
+        stats: {
+          buteurs: [],
+          passeurs: [],
+          cartonsJaunes: [],
+          cartonsRouges: []
+        },
+        litige: false,
+        arbitre: null
+      });
+      
+      heap[p] = null; // Gagnant déterminé plus tard
+    } else if (active1) {
+      // Un seul enfant actif (gauche) -> le club obtient un bye
+      heap[p] = heap[c1];
+    } else if (active2) {
+      // Un seul enfant actif (droit) -> le club obtient un bye
+      heap[p] = heap[c2];
+    } else {
+      // Aucun enfant actif
+      heap[p] = null;
+    }
+  }
+  
+  // Gérer la petite finale si le tournoi a au moins des demi-finales (M >= 4)
+  if (M >= 4) {
+    competition.matchsElimination.push({
+      equipe1: null,
+      equipe2: null,
+      score1: null,
+      score2: null,
+      dateMatch: new Date(Date.now() + (M) * 24 * 60 * 60 * 1000),
+      statut: 'Programmé',
+      phase: 'Petite finale',
+      tour: -2, // Index spécial pour la petite finale
+      valideParEquipe1: false,
+      valideParEquipe2: false,
+      captureEcran: null,
+      stats: {
+        buteurs: [],
+        passeurs: [],
+        cartonsJaunes: [],
+        cartonsRouges: []
+      },
+      litige: false,
+      arbitre: null
+    });
+  }
+}
+
 // Fonction pour gérer la progression des équipes en élimination directe
 async function handleEliminationProgression(competition, completedMatch) {
   try {
@@ -852,138 +1621,109 @@ async function handleEliminationProgression(competition, completedMatch) {
     
     console.log(`   Gagnant: ${winner}, Phase: ${completedMatch.phase}`);
     
-    // Définir la progression des phases
-    const phaseProgression = {
-      'Huitième': 'Quart',
-      'Quart': 'Demi', 
-      'Demi': 'Finale'
-    };
-    
-    const nextPhase = phaseProgression[completedMatch.phase];
-    
-    if (!nextPhase) {
-      // C'est la finale ou petite finale
-      if (completedMatch.phase === 'Finale') {
-        competition.gagnant = winner;
-        competition.finaliste = loser;
-        console.log('   🏆 Champion déterminé !');
-        
-        // Mettre à jour le statut des équipes
-        const gagnantEquipe = competition.equipesInscrites.find(e => 
-          e.clubId.toString() === winner.toString());
-        const finalisteEquipe = competition.equipesInscrites.find(e => 
-          e.clubId.toString() === loser.toString());
-        
-        if (gagnantEquipe) gagnantEquipe.statut = 'Gagnant';
-        if (finalisteEquipe) finalisteEquipe.statut = 'Finaliste';
-        
-        // Marquer la compétition comme terminée
-        competition.statut = 'Terminé';
-      } else if (completedMatch.phase === 'Petite finale') {
-        competition.troisieme = winner;
-        console.log('   🥉 3ème place déterminée !');
-        
-        const troisiemeEquipe = competition.equipesInscrites.find(e => 
-          e.clubId.toString() === winner.toString());
-        if (troisiemeEquipe) troisiemeEquipe.statut = 'Troisième';
-      }
+    if (completedMatch.phase === 'Finale') {
+      competition.gagnant = winner;
+      competition.finaliste = loser;
+      console.log('   🏆 Champion déterminé !');
+      
+      // Mettre à jour le statut des équipes
+      const gagnantEquipe = competition.equipesInscrites.find(e => 
+        e.clubId.toString() === winner.toString());
+      const finalisteEquipe = competition.equipesInscrites.find(e => 
+        e.clubId.toString() === loser.toString());
+      
+      if (gagnantEquipe) gagnantEquipe.statut = 'Gagnant';
+      if (finalisteEquipe) finalisteEquipe.statut = 'Finaliste';
+      
+      // Marquer la compétition comme terminée
+      competition.statut = 'Terminé';
+      const { cleanCompetitionVideos } = require('../utils/videoCleanup');
+      cleanCompetitionVideos(competition);
       return;
     }
     
-    console.log(`   → Progression vers: ${nextPhase}`);
-    
-    // Chercher ou créer le match de la phase suivante
-    let nextMatch = competition.matchsElimination.find(match => 
-      match.phase === nextPhase && 
-      (!match.equipe1 || !match.equipe2)
-    );
-    
-    if (!nextMatch) {
-      // Créer un nouveau match pour la phase suivante
-      nextMatch = {
-        equipe1: null,
-        equipe2: null,
-        score1: null,
-        score2: null,
-        dateMatch: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Dans 7 jours
-        statut: 'Programmé',
-        phase: nextPhase,
-        tour: 1,
-        valideParEquipe1: false,
-        valideParEquipe2: false,
-        captureEcran: null,
-        stats: {
-          buteurs: [],
-          passeurs: [],
-          cartonsJaunes: [],
-          cartonsRouges: []
-        },
-        litige: false,
-        arbitre: null
-      };
+    if (completedMatch.phase === 'Petite finale') {
+      competition.troisieme = winner;
+      console.log('   🥉 3ème place déterminée !');
       
-      competition.matchsElimination.push(nextMatch);
-      console.log(`   ✅ Nouveau match créé pour ${nextPhase}`);
+      const troisiemeEquipe = competition.equipesInscrites.find(e => 
+        e.clubId.toString() === winner.toString());
+      if (troisiemeEquipe) troisiemeEquipe.statut = 'Troisième';
+      return;
     }
     
-    // Placer l'équipe gagnante dans le match suivant
-    if (!nextMatch.equipe1) {
-      nextMatch.equipe1 = winner;
-      console.log(`   ✅ ${winner} placé en équipe1 du ${nextPhase}`);
-    } else if (!nextMatch.equipe2) {
-      nextMatch.equipe2 = winner;
-      console.log(`   ✅ ${winner} placé en équipe2 du ${nextPhase}`);
+    // Déterminer le parent de ce match
+    // Le heap index du match actuel est stocké dans completedMatch.tour
+    const currentHeapIndex = completedMatch.tour;
+    const parentHeapIndex = Math.floor((currentHeapIndex - 1) / 2);
+    
+    console.log(`   → Progression vers le match parent d'index: ${parentHeapIndex}`);
+    
+    // Chercher le match de la phase suivante par son index de heap (stocké dans tour)
+    let nextMatch = competition.matchsElimination.find(match => 
+      match.tour === parentHeapIndex
+    );
+    
+    if (nextMatch) {
+      // Placer l'équipe gagnante dans le match suivant
+      const isLeftChild = (currentHeapIndex % 2 !== 0);
+      if (isLeftChild) {
+        nextMatch.equipe1 = winner;
+        console.log(`   ✅ ${winner} placé en equipe1 du match parent (index ${parentHeapIndex})`);
+      } else {
+        nextMatch.equipe2 = winner;
+        console.log(`   ✅ ${winner} placé en equipe2 du match parent (index ${parentHeapIndex})`);
+      }
+
+      // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer !
+      if (nextMatch.equipe1 && nextMatch.equipe2) {
+        nextMatch.dateDebutPreparation = new Date();
+        nextMatch.equipe1Prete = false;
+        nextMatch.equipe2Prete = false;
+        // Calculer la dateLimiteDebut : maintenant + delai configurable (défaut 10 min)
+        const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+        nextMatch.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+        console.log(`   ⏰ Salon de match parent prêt. Chrono de préparation de 10 min lancé. Limite: ${nextMatch.dateLimiteDebut}`);
+      }
     } else {
-      console.log(`   ⚠️ Match ${nextPhase} déjà complet`);
+      console.log(`   ⚠️ Match parent (index ${parentHeapIndex}) introuvable !`);
     }
     
     // Marquer l'équipe perdante comme éliminée
-    const loserEquipe = competition.equipesInscrites.find(e => 
-      e.clubId.toString() === loser.toString());
-    if (loserEquipe && loserEquipe.statut === 'Confirmé') {
-      loserEquipe.statut = 'Eliminé';
-      console.log(`   ❌ ${loser} éliminé`);
+    if (loser) {
+      const loserEquipe = competition.equipesInscrites.find(e => 
+        e.clubId.toString() === loser.toString());
+      if (loserEquipe && loserEquipe.statut === 'Confirmé') {
+        loserEquipe.statut = 'Eliminé';
+        console.log(`   ❌ ${loser} éliminé`);
+      }
     }
     
     // Gérer la petite finale (3ème place)
     if (completedMatch.phase === 'Demi') {
       let petiteFinale = competition.matchsElimination.find(match => 
-        match.phase === 'Petite finale');
+        match.tour === -2 // index spécial pour la petite finale
+      );
       
-      if (!petiteFinale) {
-        petiteFinale = {
-          equipe1: null,
-          equipe2: null,
-          score1: null,
-          score2: null,
-          dateMatch: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 1 jour avant la finale
-          statut: 'Programmé',
-          phase: 'Petite finale',
-          tour: 1,
-          valideParEquipe1: false,
-          valideParEquipe2: false,
-          captureEcran: null,
-          stats: {
-            buteurs: [],
-            passeurs: [],
-            cartonsJaunes: [],
-            cartonsRouges: []
-          },
-          litige: false,
-          arbitre: null
-        };
-        
-        competition.matchsElimination.push(petiteFinale);
-        console.log(`   ✅ Petite finale créée`);
-      }
-      
-      // Placer l'équipe perdante dans la petite finale
-      if (!petiteFinale.equipe1) {
-        petiteFinale.equipe1 = loser;
-        console.log(`   ✅ ${loser} placé en petite finale (équipe1)`);
-      } else if (!petiteFinale.equipe2) {
-        petiteFinale.equipe2 = loser;
-        console.log(`   ✅ ${loser} placé en petite finale (équipe2)`);
+      if (petiteFinale && loser) {
+        const isLeftChild = (currentHeapIndex % 2 !== 0);
+        if (isLeftChild) {
+          petiteFinale.equipe1 = loser;
+          console.log(`   ✅ ${loser} placé en petite finale (equipe1)`);
+        } else {
+          petiteFinale.equipe2 = loser;
+          console.log(`   ✅ ${loser} placé en petite finale (equipe2)`);
+        }
+
+        // Si les deux équipes de la petite finale sont maintenant connues, lancer le ready check timer !
+        if (petiteFinale.equipe1 && petiteFinale.equipe2) {
+          petiteFinale.dateDebutPreparation = new Date();
+          petiteFinale.equipe1Prete = false;
+          petiteFinale.equipe2Prete = false;
+          const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+          petiteFinale.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+          console.log(`   ⏰ Salon de petite finale prêt. Chrono de préparation de 10 min lancé.`);
+        }
       }
     }
     
@@ -1130,7 +1870,7 @@ router.get('/:id/classement', async (req, res) => {
 
     // Trier par points, différence de buts, buts pour
     const classement = competition.equipesInscrites
-      .filter(equipe => equipe.statut === 'Inscrit')
+      .filter(equipe => equipe.statut === 'Confirmé')
       .sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
@@ -1188,51 +1928,8 @@ router.post('/:id/generer-elimination', async (req, res) => {
 
     console.log(`🏆 Génération bracket élimination pour ${equipes.length} équipes`);
 
-    // Déterminer la phase de départ selon le nombre d'équipes
-    let phaseDepart = 'Finale';
-    if (equipes.length > 2) phaseDepart = 'Demi';
-    if (equipes.length > 4) phaseDepart = 'Quart';
-    if (equipes.length > 8) phaseDepart = 'Huitième';
-    
-    console.log(`🔍 Analyse: ${equipes.length} équipes → Phase de départ: ${phaseDepart}`);
-
-    // Vider les matchs d'élimination existants
-    competition.matchsElimination = [];
-
-    // Mélanger les équipes pour un appariement aléatoire
-    const equipesShuffled = [...equipes].sort(() => Math.random() - 0.5);
-
-    // Créer les matchs de la première phase
-    const matchsToCreate = Math.floor(equipesShuffled.length / 2);
-    
-    for (let i = 0; i < matchsToCreate; i++) {
-      const equipe1 = equipesShuffled[i * 2];
-      const equipe2 = equipesShuffled[i * 2 + 1];
-
-      const match = {
-        equipe1: equipe1.clubId,
-        equipe2: equipe2.clubId,
-        score1: null,
-        score2: null,
-        dateMatch: new Date(Date.now() + (i + 1) * 24 * 60 * 60 * 1000), // Étalé sur plusieurs jours
-        statut: 'Programmé',
-        phase: phaseDepart,
-        tour: 1,
-        valideParEquipe1: false,
-        valideParEquipe2: false,
-        captureEcran: null,
-        stats: {
-          buteurs: [],
-          passeurs: [],
-          cartonsJaunes: [],
-          cartonsRouges: []
-        },
-        litige: false,
-        arbitre: null
-      };
-
-      competition.matchsElimination.push(match);
-    }
+    // Utiliser la fonction utilitaire
+    generateEliminationBracket(competition, equipes);
 
     // Marquer les équipes comme confirmées
     equipes.forEach(equipe => {
@@ -1243,12 +1940,8 @@ router.post('/:id/generer-elimination', async (req, res) => {
 
     await competition.save();
 
-    console.log(`✅ ${matchsToCreate} matchs créés en phase ${phaseDepart}`);
-
     res.json({ 
       message: `Bracket d'élimination généré avec succès`,
-      phase: phaseDepart,
-      matchsCrees: matchsToCreate,
       matchsElimination: competition.matchsElimination
     });
   } catch (error) {
@@ -1282,5 +1975,10 @@ router.post('/:id/recalculer-statistiques', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+// Exposer les fonctions utilitaires pour d'autres routeurs (ex: admin.js)
+router.updateTeamStats = updateTeamStats;
+router.calculateCompetitionStats = calculateCompetitionStats;
+router.handleEliminationProgression = handleEliminationProgression;
 
 module.exports = router; 

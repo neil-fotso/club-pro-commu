@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI } from '../services/api';
+import CompetitionCountdown from '../components/CompetitionCountdown';
 
 export default function MesCompetitionsPage() {
   const { user } = useAuth();
@@ -229,10 +230,12 @@ export default function MesCompetitionsPage() {
                         </p>
                       )}
 
+                      <CompetitionCountdown dateDebut={competition.dateDebut} statut={competition.statut} />
+
                       <div className="row text-center mb-3">
                         <div className="col-4">
                           <small className="text-muted d-block">Équipes</small>
-                          <strong>{competition.equipesInscrites.length}/{competition.nombreEquipes}</strong>
+                          <strong>{competition.equipesInscrites.length}</strong>
                         </div>
                         <div className="col-4">
                           <small className="text-muted d-block">Début</small>
@@ -314,6 +317,8 @@ export default function MesCompetitionsPage() {
                           </p>
                         )}
 
+                        <CompetitionCountdown dateDebut={competition.dateDebut} statut={competition.statut} />
+
                         <div className="row text-center mb-3">
                           <div className="col-4">
                             <small className="text-muted d-block">Mon club</small>
@@ -321,7 +326,7 @@ export default function MesCompetitionsPage() {
                           </div>
                           <div className="col-4">
                             <small className="text-muted d-block">Équipes</small>
-                            <strong>{competition.equipesInscrites.length}/{competition.nombreEquipes}</strong>
+                            <strong>{competition.equipesInscrites.length}</strong>
                           </div>
                           <div className="col-4">
                             <small className="text-muted d-block">Début</small>

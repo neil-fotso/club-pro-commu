@@ -1,0 +1,18 @@
+# Dependency directories
+node_modules/
+club-pro-commu-backend/node_modules/
+club-pro-commu-frontend/node_modules/
+
+# Local databases & logs
+mongodb_data/
+mongodb.log
+*.log
+
+# Environment variables
+.env
+.env.local
+club-pro-commu-backend/.env
+club-pro-commu-frontend/.env
+
+# OS files
+.DS_Store

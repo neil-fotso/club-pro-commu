@@ -554,6 +554,77 @@ const PlayerProfilePage = () => {
                   </div>
                 </div>
               )}
+              {/* Section Palmarès & Trophées */}
+              <div className="card profile-card mb-4 shadow-sm border-0">
+                <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'}}>
+                  <h5 className="mb-0">
+                    <i className="fas fa-award me-2"></i>
+                    Palmarès & Trophées
+                  </h5>
+                </div>
+                <div className="card-body">
+                  {(!player.palmares || ((!player.palmares.clubs || player.palmares.clubs.length === 0) && (!player.palmares.individuel || player.palmares.individuel.length === 0))) ? (
+                    <div className="text-center py-4 text-muted">
+                      <i className="fas fa-medal fa-3x mb-3 text-secondary opacity-50"></i>
+                      <p className="mb-0">Aucun trophée ou distinction individuelle enregistré pour le moment. 🌟</p>
+                    </div>
+                  ) : (
+                    <div>
+                      {/* Trophées de clubs */}
+                      {player.palmares.clubs && player.palmares.clubs.length > 0 && (
+                        <div className="mb-4">
+                          <h6 className="text-primary mb-3 fw-bold"><i className="fas fa-shield-alt me-2 text-warning"></i>Trophées Collectifs (Clubs)</h6>
+                          <div className="row g-2">
+                            {player.palmares.clubs.map((trophy, idx) => (
+                              <div key={idx} className="col-md-6 col-12">
+                                <div className="d-flex align-items-center p-3 border rounded bg-light">
+                                  <span className="fs-2 me-3">
+                                    {trophy.typeTrophée === 'vainqueur' ? '🏆' : trophy.typeTrophée === 'finaliste' ? '🥈' : '🥉'}
+                                  </span>
+                                  <div>
+                                    <h6 className="mb-0 fw-bold small text-dark">{trophy.nom}</h6>
+                                    <small className="text-muted d-block text-truncate" style={{maxWidth: '200px'}}>
+                                      Avec <strong>{trophy.clubNom}</strong>
+                                    </small>
+                                    <span className="badge bg-secondary text-capitalize mt-1" style={{fontSize: '0.75rem'}}>
+                                      {trophy.typeTrophée}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Récompenses Individuelles */}
+                      {player.palmares.individuel && player.palmares.individuel.length > 0 && (
+                        <div>
+                          <h6 className="text-primary mb-3 fw-bold"><i className="fas fa-star me-2 text-warning"></i>Distinctions Individuelles</h6>
+                          <div className="row g-2">
+                            {player.palmares.individuel.map((award, idx) => (
+                              <div key={idx} className="col-12">
+                                <div className="d-flex align-items-center p-3 border border-warning border-opacity-25 rounded bg-warning bg-opacity-10">
+                                  <span className="fs-2 me-3">
+                                    {award.nom.includes('Soulier') ? '⚽' : award.nom.includes('Passeur') ? '🅰️' : '🌟'}
+                                  </span>
+                                  <div>
+                                    <h6 className="mb-1 fw-bold text-dark">{award.nom}</h6>
+                                    <p className="mb-0 text-muted small">{award.description}</p>
+                                    <small className="text-muted small mt-1 d-block">
+                                      Obtenu le {award.date ? new Date(award.date).toLocaleDateString('fr-FR') : ''}
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Sidebar */}

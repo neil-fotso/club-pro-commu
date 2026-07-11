@@ -498,6 +498,76 @@ export default function MyProfilePage() {
               )}
             </div>
           </div>
+
+          {/* Section Palmarès & Trophées */}
+          <div className="card shadow-lg border-0 mt-4">
+            <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'}}>
+              <h4 className="mb-0">
+                <i className="fas fa-award me-2"></i>
+                Mon Palmarès & Trophées
+              </h4>
+            </div>
+            <div className="card-body p-4">
+              {(!player.palmares || ((!player.palmares.clubs || player.palmares.clubs.length === 0) && (!player.palmares.individuel || player.palmares.individuel.length === 0))) ? (
+                <div className="text-center py-4 text-muted">
+                  <i className="fas fa-medal fa-3x mb-3 text-secondary opacity-50"></i>
+                  <p className="mb-0">Aucun trophée ou distinction individuelle enregistré pour le moment. Jouez des matchs de tournois pour remplir votre palmarès ! 🌟</p>
+                </div>
+              ) : (
+                <div>
+                  {/* Trophées de clubs */}
+                  {player.palmares.clubs && player.palmares.clubs.length > 0 && (
+                    <div className="mb-4">
+                      <h5 className="text-primary mb-3"><i className="fas fa-shield-alt me-2 text-warning"></i>Trophées Collectifs (Clubs)</h5>
+                      <div className="row g-3">
+                        {player.palmares.clubs.map((trophy, idx) => (
+                          <div key={idx} className="col-md-6 col-12">
+                            <div className="d-flex align-items-center p-3 border rounded bg-light">
+                              <span className="fs-1 me-3">
+                                {trophy.typeTrophée === 'vainqueur' ? '🏆' : trophy.typeTrophée === 'finaliste' ? '🥈' : '🥉'}
+                              </span>
+                              <div>
+                                <h6 className="mb-1 fw-bold text-dark">{trophy.nom}</h6>
+                                <small className="text-muted d-block">
+                                  Avec <strong>{trophy.clubNom}</strong> • <span className="text-capitalize">{trophy.typeTrophée}</span>
+                                </small>
+                                <small className="text-muted text-capitalize small">{trophy.type}</small>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Récompenses Individuelles */}
+                  {player.palmares.individuel && player.palmares.individuel.length > 0 && (
+                    <div>
+                      <h5 className="text-primary mb-3"><i className="fas fa-star me-2 text-warning"></i>Distinctions Individuelles</h5>
+                      <div className="row g-3">
+                        {player.palmares.individuel.map((award, idx) => (
+                          <div key={idx} className="col-12">
+                            <div className="d-flex align-items-center p-3 border border-warning border-opacity-25 rounded bg-warning bg-opacity-10">
+                              <span className="fs-1 me-3">
+                                {award.nom.includes('Soulier') ? '⚽' : award.nom.includes('Passeur') ? '🅰️' : '🌟'}
+                              </span>
+                              <div>
+                                <h6 className="mb-1 fw-bold text-dark">{award.nom}</h6>
+                                <p className="mb-0 text-muted small">{award.description}</p>
+                                <small className="text-muted small mt-1 d-block">
+                                  Obtenu le {award.date ? new Date(award.date).toLocaleDateString('fr-FR') : ''}
+                                </small>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         
         {/* Sidebar avec statistiques */}

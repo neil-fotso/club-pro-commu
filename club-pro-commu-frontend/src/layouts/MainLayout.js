@@ -20,7 +20,7 @@ export default function MainLayout({ children }) {
       <Navbar />
       <main>{children}</main>
       <NotificationPopup />
-      <Chatbot />
+      {/* <Chatbot /> */}
       
       {/* Footer avec liens légaux */}
       <footer className="bg-dark text-white py-4 mt-5">

@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { playerAPI, clubAPI } from '../services/api';
 import Avatar from '../components/Avatar';
-import APITest from '../components/APITest';
 import bgHeader from '../assets/bg-header.jpg';
 import logo from '../assets/logo.png';
 
@@ -132,8 +131,8 @@ const HomePage = () => {
                 🏆 Club Pro Communauté
               </h1>
               <p className="lead mb-4 text-white-90">
-                La plateforme ultime pour les joueurs EA Sports FC Pro Clubs.
-                Trouvez votre équipe, recrutez des talents et construisez votre légende.
+                La plateforme ultime pour organiser et participer aux compétitions de clubs.
+                Rejoignez ou créez votre équipe, et inscrivez-vous aux tournois pour affronter la communauté.
               </p>
               {!user ? (
                 <div className="d-flex gap-3 flex-column flex-md-row">
@@ -148,13 +147,9 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="d-flex gap-3 flex-column flex-md-row">
-                  <Link to="/recherche-joueur" className="btn btn-light btn-lg px-4 fw-bold">
-                    <i className="fas fa-users me-2"></i>
-                    Voir les joueurs
-                  </Link>
-                  <Link to="/clubs" className="btn btn-outline-light btn-lg px-4 fw-bold">
-                    <i className="fas fa-shield-alt me-2"></i>
-                    Voir les clubs
+                  <Link to="/competitions" className="btn btn-light btn-lg px-4 fw-bold">
+                    <i className="fas fa-trophy me-2"></i>
+                    Voir les compétitions
                   </Link>
                 </div>
               )}
@@ -196,256 +191,27 @@ const HomePage = () => {
             </p>
           </div>
           
-          <div className="col-lg-4 col-md-6 mb-4">
-            <Link to="/recherche-joueur" className="text-decoration-none">
-              <div className="card border-0 shadow-sm h-100 text-center p-4 feature-card">
-                <div className="mb-3 feature-icon" style={{fontSize: '3rem'}}>🔍</div>
-                <h4 className="text-primary mb-3">Recherche de Joueurs</h4>
-                <p className="text-muted">
-                  Trouvez des joueurs selon leurs compétences, plateforme et disponibilité.
-                  Filtres avancés pour des résultats précis.
-                </p>
-                <div className="btn btn-outline-primary">
-                  <i className="fas fa-search me-2"></i>
-                  Rechercher
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          <div className="col-lg-4 col-md-6 mb-4">
-            <Link to="/clubs" className="text-decoration-none">
-              <div className="card border-0 shadow-sm h-100 text-center p-4 feature-card">
-                <div className="mb-3 feature-icon" style={{fontSize: '3rem'}}>🏆</div>
-                <h4 className="text-primary mb-3">Gestion de Clubs</h4>
-                <p className="text-muted">
-                  Créez votre club, recrutez des membres et gérez votre équipe.
-                  Système de rôles et permissions avancé.
-                </p>
-                <div className="btn btn-outline-primary">
-                  <i className="fas fa-shield-alt me-2"></i>
-                  Voir les clubs
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          <div className="col-lg-4 col-md-6 mb-4">
+          {/* Section Compétitions uniquement */}
+          <div className="col-md-8 col-lg-6 mx-auto mb-4">
             <Link to="/competitions" className="text-decoration-none">
               <div className="card border-0 shadow-sm h-100 text-center p-4 feature-card">
                 <div className="mb-3 feature-icon" style={{fontSize: '3rem'}}>🎮</div>
-                <h4 className="text-primary mb-3">Compétitions</h4>
+                <h4 className="text-primary mb-3">Compétitions & Tournois</h4>
                 <p className="text-muted">
-                  Organisez et participez à des tournois. Système de récompenses
-                  et classements en temps réel.
+                  Participez à des tournois à élimination directe. Gérez les feuilles de match, faites progresser votre club pro dans le bracket et suivez les scores en temps réel.
                 </p>
                 <div className="btn btn-outline-primary">
                   <i className="fas fa-trophy me-2"></i>
-                  Voir les compétitions
+                  Accéder aux compétitions
                 </div>
               </div>
             </Link>
           </div>
         </div>
 
-        {/* Section Meilleurs Performeurs */}
-        <div className="row mb-5">
-          <div className="col-12 text-center mb-4">
-            <h2 className="display-5 fw-bold text-primary mb-3">
-              🏆 Meilleurs Performeurs
-            </h2>
-            <p className="lead text-muted">
-              Découvrez les joueurs et clubs avec les meilleurs ratios de victoire
-            </p>
-          </div>
-
-          {/* Meilleurs Joueurs */}
-          <div className="col-lg-6 mb-4">
-            <div className="card border-0 shadow-lg h-100">
-              <div className="card-header bg-gradient-primary text-white">
-                <h4 className="mb-0">
-                  <i className="fas fa-crown me-2"></i>
-                  Top 3 Joueurs
-                </h4>
-              </div>
-              <div className="card-body">
-                {topPlayers.length > 0 ? (
-                  <div className="row">
-                    {topPlayers.map((player, index) => (
-                      <div key={player._id} className="col-12 mb-3">
-                        <Link to={`/player/${player._id}`} className="text-decoration-none">
-                          <div className="d-flex align-items-center p-3 rounded-3 hover-card">
-                            <div className="position-relative me-3">
-                              <Avatar
-                                src={player.photoProfil}
-                                name={player.pseudo}
-                                size="md"
-                              />
-                              <div className="position-absolute top-0 start-100 translate-middle badge bg-warning text-dark rounded-pill">
-                                #{index + 1}
-                              </div>
-                            </div>
-                            <div className="flex-grow-1">
-                              <h6 className="mb-1 text-dark">{player.pseudo}</h6>
-                              <p className="text-muted mb-0 small">
-                                {player.plateforme} • {player.pays || 'Non renseigné'}
-                              </p>
-                            </div>
-                            <div className="text-end">
-                              <div className="h5 mb-0 text-success fw-bold">
-                                {player.winRate}%
-                              </div>
-                              <small className="text-muted">Victoires</small>
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <i className="fas fa-trophy text-muted" style={{fontSize: '3rem'}}></i>
-                    <p className="text-muted mt-2">Aucun joueur avec des statistiques disponibles</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Meilleurs Clubs */}
-          <div className="col-lg-6 mb-4">
-            <div className="card border-0 shadow-lg h-100">
-              <div className="card-header bg-gradient-success text-white">
-                <h4 className="mb-0">
-                  <i className="fas fa-shield-alt me-2"></i>
-                  Top 3 Clubs
-                </h4>
-              </div>
-              <div className="card-body">
-                {topClubs.length > 0 ? (
-                  <div className="row">
-                    {topClubs.map((club, index) => (
-                      <div key={club._id} className="col-12 mb-3">
-                        <Link to={`/club/${club._id}`} className="text-decoration-none">
-                          <div className="d-flex align-items-center p-3 rounded-3 hover-card">
-                            <div className="position-relative me-3">
-                              <Avatar
-                                src={club.logo}
-                                name={club.nom}
-                                size="md"
-                                type="club"
-                              />
-                              <div className="position-absolute top-0 start-100 translate-middle badge bg-warning text-dark rounded-pill">
-                                #{index + 1}
-                              </div>
-                            </div>
-                            <div className="flex-grow-1">
-                              <h6 className="mb-1 text-dark">{club.nom}</h6>
-                              <p className="text-muted mb-0 small">
-                                {club.plateforme} • {club.pays || 'Non renseigné'}
-                              </p>
-                            </div>
-                            <div className="text-end">
-                              <div className="h5 mb-0 text-success fw-bold">
-                                {club.winRate}%
-                              </div>
-                              <small className="text-muted">Victoires</small>
-                            </div>
-                          </div>
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <i className="fas fa-shield-alt text-muted" style={{fontSize: '3rem'}}></i>
-                    <p className="text-muted mt-2">Aucun club avec des statistiques disponibles</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section Joueurs Récents */}
-        {recentPlayers.length > 0 && (
-          <div className="row mb-5">
-            <div className="col-12">
-              <h3 className="text-primary mb-4">
-                <i className="fas fa-users me-2"></i>
-                Joueurs récents
-              </h3>
-              <div className="row">
-                {recentPlayers.map((player) => (
-                  <div key={player._id} className="col-lg-4 col-md-6 mb-3">
-                    <div className="card border-0 shadow-sm">
-                      <div className="card-body text-center">
-                        <Avatar
-                          src={player.photoProfil}
-                          name={player.pseudo}
-                          size="lg"
-                          className="mb-3"
-                        />
-                        <h5 className="card-title">{player.pseudo}</h5>
-                        <p className="text-muted mb-2">
-                          {player.plateforme} • {player.pays}
-                        </p>
-                        <Link to={`/player/${player._id}`} className="btn btn-outline-primary btn-sm">
-                          Voir profil
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Section Clubs Récents */}
-        {recentClubs.length > 0 && (
-          <div className="row mb-5">
-            <div className="col-12">
-              <h3 className="text-primary mb-4">
-                <i className="fas fa-shield-alt me-2"></i>
-                Clubs récents
-              </h3>
-              <div className="row">
-                {recentClubs.map((club) => (
-                  <div key={club._id} className="col-lg-4 col-md-6 mb-3">
-                    <div className="card border-0 shadow-sm">
-                      <div className="card-body text-center">
-                        <Avatar
-                          src={club.logo}
-                          name={club.nom}
-                          size="lg"
-                          type="club"
-                          className="mb-3"
-                        />
-                        <h5 className="card-title">{club.nom}</h5>
-                        <p className="text-muted mb-2">
-                          {club.plateforme} • {club.pays}
-                        </p>
-                        <Link to={`/club/${club._id}`} className="btn btn-outline-primary btn-sm">
-                          Voir club
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Section Diagnostic pour utilisateurs non connectés */}
-        {!user && (
-          <div className="row mb-5">
-            <div className="col-12">
-              <APITest />
-            </div>
-          </div>
-        )}
+        {/* 
+        Meilleurs Performeurs, Joueurs Récents et Clubs Récents désactivés temporairement
+        */}
 
         {/* Section Call to Action */}
         <div className="row">
@@ -477,9 +243,9 @@ const HomePage = () => {
                       <i className="fas fa-user me-2"></i>
                       Mon profil
                     </Link>
-                    <Link to="/recherche-joueur" className="btn btn-outline-light btn-lg px-4">
-                      <i className="fas fa-search me-2"></i>
-                      Rechercher des joueurs
+                    <Link to="/competitions" className="btn btn-outline-light btn-lg px-4">
+                      <i className="fas fa-trophy me-2"></i>
+                      Voir les compétitions
                     </Link>
                   </div>
                 )}

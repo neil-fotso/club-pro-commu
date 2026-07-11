@@ -57,7 +57,7 @@ const createAdditionalTestData = async () => {
         user = new User({
           email: email,
           pseudo: playerData.pseudo,
-          password: hashedPassword,
+          password: commonPassword,
           isAdmin: false,
           dateCreation: new Date(),
           derniereConnexion: new Date()
