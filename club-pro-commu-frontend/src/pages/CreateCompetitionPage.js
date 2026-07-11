@@ -115,15 +115,6 @@ const CreateCompetitionPage = () => {
     }
   };
 
-  const getTypeDescription = (type) => {
-    const descriptions = {
-      elimination_directe: '⚽ Tournoi à élimination directe - Les équipes s\'affrontent en matchs uniques jusqu\'à la finale',
-      poule_elimination: '🔁 Phase de poules + élimination - Les équipes sont réparties en groupes, puis élimination directe',
-      championnat: '🏅 Championnat - Classement par points avec matchs aller-retour'
-    };
-    return descriptions[type] || '';
-  };
-
   const getModeMatchDescription = (mode) => {
     const descriptions = {
       simple: 'Match unique entre les équipes',

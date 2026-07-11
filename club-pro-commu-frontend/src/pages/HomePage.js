@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { playerAPI, clubAPI } from '../services/api';
-import Avatar from '../components/Avatar';
 import bgHeader from '../assets/bg-header.jpg';
 import logo from '../assets/logo.png';
 
@@ -68,8 +67,6 @@ const HomePage = () => {
   const { user } = useAuth();
   const [recentPlayers, setRecentPlayers] = useState([]);
   const [recentClubs, setRecentClubs] = useState([]);
-  const [topPlayers, setTopPlayers] = useState([]);
-  const [topClubs, setTopClubs] = useState([]);
   const [, setLoading] = useState(true);
 
   useEffect(() => {
@@ -83,20 +80,6 @@ const HomePage = () => {
         // Données récentes
         setRecentPlayers(playersResponse.slice(0, 3));
         setRecentClubs(clubsResponse.slice(0, 3));
-
-        // Meilleurs joueurs (par ratio de victoire)
-        const sortedPlayers = playersResponse
-          .filter(player => player.winRate && player.winRate > 0)
-          .sort((a, b) => b.winRate - a.winRate)
-          .slice(0, 3);
-        setTopPlayers(sortedPlayers);
-
-        // Meilleurs clubs (par ratio de victoire)
-        const sortedClubs = clubsResponse
-          .filter(club => club.winRate && club.winRate > 0)
-          .sort((a, b) => b.winRate - a.winRate)
-          .slice(0, 3);
-        setTopClubs(sortedClubs);
       } catch (error) {
         console.error('Erreur lors du chargement des données:', error);
       } finally {

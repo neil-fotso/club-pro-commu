@@ -63,7 +63,6 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
   const [submittingScore, setSubmittingScore] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [photoPreview, setPhotoPreview] = useState(null);
   const [adminForfaitSelected, setAdminForfaitSelected] = useState('double');
 
   // Suivi de l'état "Prêt" précédent pour jouer le son de début ou de prêt
@@ -195,14 +194,13 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
     setUploadProgress(0);
     try {
       const token = localStorage.getItem('token');
-      const res = await competitionAPI.uploadPhotoLitige(
+      await competitionAPI.uploadPhotoLitige(
         competitionId,
         match._id,
         file,
         token,
         (progress) => setUploadProgress(progress)
       );
-      setPhotoPreview(res.photoUrl);
       if (onRefresh) onRefresh();
     } catch (err) {
       alert(err.message);

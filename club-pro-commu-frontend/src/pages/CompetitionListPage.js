@@ -9,7 +9,7 @@ export default function CompetitionListPage() {
   const navigate = useNavigate();
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     statut: '',
     plateforme: '',
     type: 'elimination_directe'
@@ -41,11 +41,6 @@ export default function CompetitionListPage() {
   useEffect(() => {
     fetchCompetitions();
   }, [fetchCompetitions]);
-
-  const handleFilterChange = (name, value) => {
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-  };
 
   const getStatutBadge = (statut) => {
     const badges = {

@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import NotificationPopup from '../components/NotificationPopup';
-import Chatbot from '../components/Chatbot';
 
 export default function MainLayout({ children }) {
   const { user } = useAuth();
