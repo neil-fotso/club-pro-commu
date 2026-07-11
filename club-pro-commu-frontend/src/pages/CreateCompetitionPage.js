@@ -337,7 +337,7 @@ const CreateCompetitionPage = () => {
                   </div>
                 )}
 
-                {/* Calendrier masqué temporairement
+                {/* Calendrier */}
                 <div className="row mb-4">
                   <div className="col-12">
                     <h4 className="text-primary mb-3">
@@ -348,7 +348,7 @@ const CreateCompetitionPage = () => {
                   
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
-                      <strong>Date de début *</strong>
+                      <strong>Date et heure de début *</strong>
                     </label>
                     <input
                       type="datetime-local"
@@ -362,7 +362,7 @@ const CreateCompetitionPage = () => {
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
-                      <strong>Date de fin</strong>
+                      <strong>Date et heure de fin</strong>
                     </label>
                     <input
                       type="datetime-local"
@@ -373,7 +373,6 @@ const CreateCompetitionPage = () => {
                     />
                   </div>
                 </div>
-                */}
 
                 {/* Tarification & Cashprize */}
                 <div className="row mb-4">
