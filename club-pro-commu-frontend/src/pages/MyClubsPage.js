@@ -215,15 +215,6 @@ export default function MyClubsPage() {
     }
   };
 
-  const getRoleBadgeColor = (role) => {
-    const colors = {
-      'Admin': 'danger',
-      'Capitaine': 'warning',
-      'Joueur': 'primary',
-      'Membre': 'secondary'
-    };
-    return colors[role] || 'secondary';
-  };
 
   const getRoleBadgeClass = (role) => {
     switch(role) {
