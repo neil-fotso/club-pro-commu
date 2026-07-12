@@ -838,7 +838,7 @@ export default function MatchLobbyPage() {
             </div>
             <div className="timer-values">
               <div className="timer-label">
-                {match.statut === 'En cours' ? 'Temps restant pour saisir les scores (Forfait double sinon)' : 'Délai d\'attente avant forfait (Ready Check)'}
+                {match.statut === 'En cours' ? 'Temps restant pour saisir les scores (Forfait double sinon)' : 'Délai d\'attente avant forfait (Validation de présence)'}
               </div>
               <div className="timer-countdown">{timeLeft}</div>
             </div>
@@ -1175,7 +1175,7 @@ export default function MatchLobbyPage() {
             <span>Règlement et aide du lobby</span>
           </div>
           <ul className="rules-list">
-            <li><strong>Ready Check :</strong> Les deux capitaines doivent marquer leur présence sous peine de double forfait automatique à l'issue du décompte.</li>
+            <li><strong>Validation de présence :</strong> Les deux capitaines doivent marquer leur présence sous peine de double forfait automatique à l'issue du décompte.</li>
             <li><strong>Saisie de score :</strong> Saisissez le score à la fin de la rencontre. Si les deux capitaines proposent des résultats différents, un litige est ouvert automatiquement.</li>
             <li><strong>Signalement :</strong> Vous pouvez déclarer un litige manuellement en insérant des preuves (vidéo, photo du score final ou lien Twitch/Youtube).</li>
             <li><strong>Arbitrage :</strong> Les décisions de l'administrateur ou du créateur de la compétition sont définitives et clôturent le match.</li>

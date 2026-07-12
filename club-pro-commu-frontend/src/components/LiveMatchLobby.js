@@ -245,7 +245,7 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
           <div className="d-flex align-items-center">
             {match.statut === 'Programmé' && (
               <span className="badge bg-warning text-dark px-3 py-2 fw-semibold">
-                <i className="fas fa-stopwatch me-1 animate-spin"></i> Ready Check ({timeLeft})
+                <i className="fas fa-stopwatch me-1 animate-spin"></i> Validation de présence ({timeLeft})
               </span>
             )}
             {match.statut === 'En cours' && !match.litige && (
