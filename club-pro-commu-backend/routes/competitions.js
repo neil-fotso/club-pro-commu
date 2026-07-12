@@ -881,7 +881,7 @@ router.put('/:id/matchs/:matchId/date', auth, async (req, res) => {
 // ─── Utilitaire : Vérifier les forfaits automatiques sur tous les matchs en cours ───
 async function checkMatchTimers(competition) {
   const READY_TIMEOUT_MS  = 10 * 60 * 1000; // 10 minutes
-  const INGAME_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+  const INGAME_TIMEOUT_MS = 25 * 60 * 1000; // 25 minutes
   const now = Date.now();
   let modified = false;
 

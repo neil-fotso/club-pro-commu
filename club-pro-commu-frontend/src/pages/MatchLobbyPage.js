@@ -505,8 +505,8 @@ export default function MatchLobbyPage() {
         limitDate = new Date(match.dateLimiteDebut).getTime();
         durationMax = (competition?.delaiLancementMatch || 10) * 60 * 1000;
       } else if (match.statut === 'En cours' && match.dateDebutMatch) {
-        limitDate = new Date(match.dateDebutMatch).getTime() + (20 * 60 * 1000); // 20 minutes in game
-        durationMax = 20 * 60 * 1000;
+        limitDate = new Date(match.dateDebutMatch).getTime() + (25 * 60 * 1000); // 25 minutes in game
+        durationMax = 25 * 60 * 1000;
       }
 
       if (!limitDate) {
