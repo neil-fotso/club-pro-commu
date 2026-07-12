@@ -238,7 +238,7 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
       <div className="card-body p-4 pt-5">
         
         {/* En-tête avec Phase et statut */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
           <span className="badge bg-primary text-uppercase px-3 py-2 fw-bold letter-spacing-1">
             {match.phase}
           </span>
