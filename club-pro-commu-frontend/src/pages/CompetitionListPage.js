@@ -267,7 +267,7 @@ export default function CompetitionListPage() {
                     <div className="col-4 border-end" style={{borderColor: 'rgba(255,255,255,0.08)'}}>
                       <small className="text-uppercase text-muted d-block" style={{fontSize: '0.6rem', letterSpacing: '0.5px'}}>Équipes</small>
                       <strong className="text-white font-rajdhani" style={{fontSize: '0.95rem'}}>
-                        {competition.equipesInscrites?.length || 0}
+                        {competition.equipesInscrites?.length || 0} / {competition.nombreEquipes || 8}
                       </strong>
                     </div>
                     <div className="col-4 border-end" style={{borderColor: 'rgba(255,255,255,0.08)'}}>
@@ -277,7 +277,7 @@ export default function CompetitionListPage() {
                     <div className="col-4">
                       <small className="text-uppercase text-muted d-block" style={{fontSize: '0.6rem', letterSpacing: '0.5px'}}>Dotation</small>
                       <strong className="text-gradient font-rajdhani" style={{fontSize: '0.95rem'}}>
-                        {competition.dotation ? `${competition.dotation}€` : '0€'}
+                        {competition.cashprizeFinal ? `${competition.cashprizeFinal}€` : '0€'}
                       </strong>
                     </div>
                   </div>

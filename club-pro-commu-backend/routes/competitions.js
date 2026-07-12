@@ -339,13 +339,15 @@ router.delete('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Compétition non trouvée' });
     }
 
-    // Vérifier que l'utilisateur est le créateur
-    if (competition.createurId.toString() !== req.user.id) {
+    // Vérifier que l'utilisateur est le créateur ou un administrateur
+    const isCreator = competition.createurId.toString() === req.user.id;
+    const isAdmin = req.user.isAdmin === true;
+    if (!isCreator && !isAdmin) {
       return res.status(403).json({ message: 'Non autorisé' });
     }
 
-    // Empêcher la suppression si la compétition a des équipes inscrites
-    if (competition.equipesInscrites.length > 0) {
+    // Empêcher la suppression si la compétition a des équipes inscrites (sauf pour les admins)
+    if (competition.equipesInscrites.length > 0 && !isAdmin) {
       return res.status(400).json({ 
         message: 'Impossible de supprimer une compétition avec des équipes inscrites' 
       });
@@ -541,17 +543,6 @@ router.post('/:id/inscriptions/:clubId/payer', auth, async (req, res) => {
     equipe.statut = 'Confirmé'; // Devient confirmé pour participer
     equipe.transactionId = `tx_stripe_${Math.random().toString(36).substring(2, 15)}`;
     equipe.datePaiement = new Date();
-
-    // Recalculer le cashprize final en fonction des équipes payées
-    const equipesPayees = competition.equipesInscrites.filter(
-      e => e.statutPaiement === 'Payé'
-    ).length;
-
-    const recolteInscriptions = equipesPayees * competition.montantInscription;
-    competition.cashprizeFinal = Math.max(
-      competition.cashprizeMinimal || 0,
-      recolteInscriptions * 0.8
-    );
 
     await competition.save();
 

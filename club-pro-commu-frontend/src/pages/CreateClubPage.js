@@ -3,27 +3,26 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { clubAPI } from '../services/api';
 
-// Styles améliorés pour la page de création de club
 const createClubStyles = `
   .create-club-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 2rem 0;
   }
   
   .create-club-content {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    animation: fadeInUp 0.8s ease-out;
+    background: rgba(13, 19, 32, 0.75) !important;
+    border: 1px solid var(--border-glass) !important;
+    backdrop-filter: blur(16px);
+    border-radius: 16px !important;
+    padding: 2.5rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+    animation: fadeInUp 0.6s ease-out;
   }
   
   @keyframes fadeInUp {
     0% {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
     }
     100% {
       opacity: 1;
@@ -33,42 +32,28 @@ const createClubStyles = `
   
   .create-club-header {
     text-align: center;
-    margin-bottom: 3rem;
-    animation: slideInDown 0.8s ease-out;
-  }
-  
-  @keyframes slideInDown {
-    0% {
-      opacity: 0;
-      transform: translateY(-30px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    margin-bottom: 2.5rem;
   }
   
   .create-club-header h2 {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 2.5rem;
+    font-family: 'Rajdhani', sans-serif;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     margin-bottom: 0.5rem;
   }
   
   .header-icon {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 72px;
+    height: 72px;
+    background: var(--gradient-esports);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1.5rem;
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-    animation: pulse 2s infinite;
+    margin: 0 auto 1.25rem;
+    box-shadow: 0 5px 20px var(--neon-purple-glow);
+    animation: pulse 2.5s infinite;
   }
   
   @keyframes pulse {
@@ -77,162 +62,169 @@ const createClubStyles = `
     }
     50% {
       transform: scale(1.05);
+      box-shadow: 0 5px 25px rgba(0, 240, 255, 0.4);
     }
   }
   
   .header-icon i {
-    font-size: 2rem;
+    font-size: 1.8rem;
     color: white;
   }
   
   .form-control, .form-select {
-    border: 2px solid transparent;
-    border-radius: 15px;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 10px !important;
     padding: 0.75rem 1rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--text-white) !important;
   }
   
   .form-control:focus, .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    transform: translateY(-2px);
-    background: white;
+    border-color: var(--neon-purple) !important;
+    box-shadow: 0 0 15px var(--neon-purple-glow) !important;
+    transform: translateY(-1px);
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+  
+  .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
   }
   
   .form-label {
+    font-family: 'Outfit', sans-serif;
     font-weight: 600;
-    color: #495057;
+    color: var(--text-silver);
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
   
   .form-label i {
     margin-right: 0.5rem;
-    color: #667eea;
+    color: var(--neon-cyan);
   }
   
   .submit-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    padding: 1rem 2rem;
-    font-weight: 600;
-    font-size: 1.1rem;
+    background: var(--gradient-esports) !important;
+    border: none !important;
+    color: white !important;
+    border-radius: 10px !important;
+    padding: 0.85rem 2rem !important;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-    width: 100%;
+    box-shadow: 0 4px 15px var(--neon-purple-glow) !important;
   }
   
   .submit-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 240, 255, 0.35) !important;
   }
   
   .submit-btn:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     transform: none;
   }
   
   .cancel-btn {
-    background: transparent;
-    border: 2px solid #6c757d;
-    color: #6c757d;
-    border-radius: 25px;
-    padding: 1rem 2rem;
-    font-weight: 600;
+    background: transparent !important;
+    border: 1px solid var(--border-glass) !important;
+    color: var(--text-silver) !important;
+    border-radius: 10px !important;
+    padding: 0.85rem 2rem !important;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
   }
   
   .cancel-btn:hover {
-    background: #6c757d;
-    color: white;
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+    border-color: var(--text-silver) !important;
+    transform: translateY(-1px);
   }
   
   .success-card {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: rgba(13, 19, 32, 0.75) !important;
+    border: 1px solid var(--border-glass) !important;
     color: white;
-    border-radius: 20px;
-    padding: 2rem;
+    border-radius: 16px;
+    padding: 3rem 2.5rem;
     text-align: center;
-    animation: fadeInUp 0.8s ease-out;
   }
   
   .success-icon {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.2);
+    width: 72px;
+    height: 72px;
+    background: rgba(40, 167, 69, 0.15);
+    border: 1px solid #28a745;
+    color: #28a745;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 1.5rem;
-    animation: bounce 1s infinite;
-  }
-  
-  @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {
-      transform: translateY(0);
-    }
-    40% {
-      transform: translateY(-10px);
-    }
-    60% {
-      transform: translateY(-5px);
-    }
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
   }
   
   .club-preview {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
     padding: 1.5rem;
     margin: 1.5rem 0;
-    backdrop-filter: blur(10px);
   }
   
   .platform-badge {
     display: inline-flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
     margin: 0.25rem;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    color: var(--text-white);
   }
   
   .alert {
-    border-radius: 15px;
-    border: none;
-    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    padding: 1rem 1.25rem;
   }
   
   .alert-danger {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    color: white;
+    background: rgba(220, 53, 69, 0.1) !important;
+    color: #ff6b6b !important;
+  }
+  
+  .form-check-input {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: var(--border-glass) !important;
   }
   
   .form-check-input:checked {
-    background-color: #667eea;
-    border-color: #667eea;
+    background-color: var(--neon-purple) !important;
+    border-color: var(--neon-purple) !important;
   }
   
   .form-check-input:focus {
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    box-shadow: 0 0 10px var(--neon-purple-glow) !important;
   }
   
   @media (max-width: 768px) {
     .create-club-content {
-      padding: 1rem;
-      margin: 1rem;
-    }
-    
-    .create-club-header h2 {
-      font-size: 2rem;
+      padding: 1.5rem;
+      margin: 1rem 0;
     }
   }
 `;
@@ -380,9 +372,9 @@ export default function CreateClubPage() {
   };
 
   return (
-    <div className="create-club-container">
+    <div className="create-club-container py-4 px-4 px-md-5 animate-fade-in">
       <style>{createClubStyles}</style>
-      <div className="container">
+      <div className="container-fluid px-0">
         <div className="row justify-content-center">
           <div className="col-lg-8">
             {success ? (
@@ -417,9 +409,9 @@ export default function CreateClubPage() {
                 {/* Header */}
                 <div className="create-club-header">
                   <div className="header-icon">
-                    <i className="fas fa-shield-alt"></i>
+                    <i className="fas fa-shield-alt text-gradient"></i>
                   </div>
-                  <h2>🏆 Créer un Club</h2>
+                  <h2 className="text-gradient">Créer un Club</h2>
                   <p className="text-muted">Fondez votre équipe et commencez votre aventure EA Sports FC Pro Clubs</p>
                 </div>
 

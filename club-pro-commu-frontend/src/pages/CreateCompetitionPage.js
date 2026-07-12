@@ -21,7 +21,6 @@ const CreateCompetitionPage = () => {
     modeMatch: 'simple',
     description: '',
     dateDebut: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    dateFin: '',
     nombreEquipes: 8,
     nombreEquipesParPoule: 4,
     plateforme: 'PS5',
@@ -29,8 +28,7 @@ const CreateCompetitionPage = () => {
     modeInscription: 'libre',
     inscriptionGratuite: true,
     montantInscription: 0,
-    cashprizeFinal: 0,
-    cashprizeMinimal: 0
+    cashprizeFinal: 0
   });
 
   const handleInputChange = (e) => {
@@ -212,7 +210,7 @@ const CreateCompetitionPage = () => {
                     </small>
                   </div>
 
-                  {/* Nombre d'équipes masqué car dynamique en fonction des inscrits
+                  {/* Nombre d'équipes */}
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Nombre d'équipes *</strong>
@@ -274,7 +272,6 @@ const CreateCompetitionPage = () => {
                       </small>
                     )}
                   </div>
-                  */}
 
                   {/* Choix plateforme masqué
                   <div className="col-md-6 mb-3">
@@ -348,7 +345,7 @@ const CreateCompetitionPage = () => {
                     </h4>
                   </div>
                   
-                  <div className="col-md-6 mb-3">
+                  <div className="col-12 mb-3">
                     <label className="form-label">
                       <strong>Date et heure de début *</strong>
                     </label>
@@ -363,25 +360,6 @@ const CreateCompetitionPage = () => {
                         value={formData.dateDebut}
                         onChange={handleInputChange}
                         required
-                        style={{ borderLeft: 'none' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">
-                      <strong>Date et heure de fin</strong>
-                    </label>
-                    <div className="input-group">
-                      <span className="input-group-text bg-dark-navbar text-primary border-glass" style={{ borderRight: 'none' }}>
-                        <i className="fas fa-calendar-check text-gradient"></i>
-                      </span>
-                      <input
-                        type="datetime-local"
-                        className="form-control border-glass ps-1"
-                        name="dateFin"
-                        value={formData.dateFin}
-                        onChange={handleInputChange}
                         style={{ borderLeft: 'none' }}
                       />
                     </div>
@@ -411,8 +389,7 @@ const CreateCompetitionPage = () => {
                           ...formData,
                           inscriptionGratuite: val,
                           montantInscription: val ? 0 : formData.montantInscription,
-                          cashprizeFinal: val ? formData.cashprizeFinal : 0,
-                          cashprizeMinimal: val ? 0 : formData.cashprizeMinimal
+                          cashprizeFinal: formData.cashprizeFinal
                         });
                       }}
                     >
@@ -424,7 +401,7 @@ const CreateCompetitionPage = () => {
                   {formData.inscriptionGratuite ? (
                     <div className="col-md-6 mb-3">
                       <label className="form-label">
-                        <strong>Cashprize final (€) *</strong>
+                        <strong>Cashprize (€) *</strong>
                       </label>
                       <input
                         type="number"
@@ -436,7 +413,7 @@ const CreateCompetitionPage = () => {
                         required
                       />
                       <small className="form-text text-muted">
-                        Somme garantie offerte au vainqueur (peut être 0).
+                        Somme fixe offerte au vainqueur de la compétition.
                       </small>
                     </div>
                   ) : (
@@ -462,27 +439,20 @@ const CreateCompetitionPage = () => {
 
                       <div className="col-md-6 mb-3">
                         <label className="form-label">
-                          <strong>Cashprize minimal garanti (€) *</strong>
+                          <strong>Cashprize (€) *</strong>
                         </label>
                         <input
                           type="number"
                           className="form-control"
-                          name="cashprizeMinimal"
-                          value={formData.cashprizeMinimal}
-                          onChange={(e) => setFormData({ ...formData, cashprizeMinimal: Number(e.target.value) })}
+                          name="cashprizeFinal"
+                          value={formData.cashprizeFinal}
+                          onChange={(e) => setFormData({ ...formData, cashprizeFinal: Number(e.target.value) })}
                           min="0"
                           required
                         />
                         <small className="form-text text-muted">
-                          Somme minimale garantie pour le vainqueur.
+                          Somme fixe offerte au vainqueur de la compétition.
                         </small>
-                      </div>
-
-                      <div className="col-12 mt-2">
-                        <div className="alert alert-info">
-                          <i className="fas fa-calculator me-2"></i>
-                          <strong>Note sur le Cashprize :</strong> Le vainqueur remportera <strong>80%</strong> des inscriptions collectées, avec un minimum garanti de <strong>{formData.cashprizeMinimal || 0} €</strong>.
-                        </div>
                       </div>
                     </>
                   )}

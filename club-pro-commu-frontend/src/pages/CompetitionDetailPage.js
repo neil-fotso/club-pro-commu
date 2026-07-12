@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI, clubAPI } from '../services/api';
 
 export default function CompetitionDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [competition, setCompetition] = useState(null);
   const [userClubs, setUserClubs] = useState([]);
@@ -97,6 +98,21 @@ export default function CompetitionDetailPage() {
     } catch (error) {
       console.error('Erreur lancement:', error);
       alert('Erreur lors du lancement: ' + (error.message || 'Erreur inconnue'));
+    }
+  };
+
+  const handleSupprimerCompetition = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette compétition ? Cette action supprimera définitivement le tournoi.')) {
+      return;
+    }
+
+    try {
+      await competitionAPI.deleteCompetition(id, user.token);
+      alert('Compétition supprimée avec succès !');
+      navigate('/competitions');
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+      alert('Erreur lors de la suppression: ' + (error.message || 'Erreur inconnue'));
     }
   };
 
@@ -290,6 +306,16 @@ export default function CompetitionDetailPage() {
           </div>
           
           <div className="d-flex flex-wrap gap-2 text-md-end justify-content-start justify-content-md-end">
+            {user && (isCreator || user.isAdmin) && (
+              <button 
+                className="btn btn-outline-danger"
+                onClick={handleSupprimerCompetition}
+              >
+                <i className="fas fa-trash me-2"></i>
+                Supprimer
+              </button>
+            )}
+
             {isCreator && (competition.statut === 'Ouvert' || competition.statut === 'Brouillon') && (
               <button 
                 className="btn btn-success"
@@ -388,7 +414,7 @@ export default function CompetitionDetailPage() {
                     </div>
                     <div>
                       <small className="text-uppercase text-muted d-block" style={{fontSize: '0.65rem', letterSpacing: '0.5px'}}>Clubs Inscrits</small>
-                      <span className="fw-bold text-white font-rajdhani" style={{fontSize: '1rem'}}>{competition.equipesInscrites?.length || 0}</span>
+                      <span className="fw-bold text-white font-rajdhani" style={{fontSize: '1rem'}}>{competition.equipesInscrites?.length || 0} / {competition.nombreEquipes || 8}</span>
                     </div>
                   </div>
                 </div>

@@ -20,8 +20,7 @@ export default function CompetitionPage() {
     statut: 'Ouvert',
     inscriptionGratuite: true,
     montantInscription: 0,
-    cashprizeFinal: 0,
-    cashprizeMinimal: 0
+    cashprizeFinal: 0
   });
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -111,8 +110,7 @@ export default function CompetitionPage() {
       statut: 'Ouvert',
       inscriptionGratuite: true,
       montantInscription: 0,
-      cashprizeFinal: 0,
-      cashprizeMinimal: 0
+      cashprizeFinal: 0
     });
     setSuccess(false);
   };
@@ -339,8 +337,7 @@ export default function CompetitionPage() {
                           ...form,
                           inscriptionGratuite: val,
                           montantInscription: val ? 0 : form.montantInscription,
-                          cashprizeFinal: val ? form.cashprizeFinal : 0,
-                          cashprizeMinimal: val ? 0 : form.cashprizeMinimal
+                          cashprizeFinal: form.cashprizeFinal
                         });
                       }}
                     >
@@ -353,7 +350,7 @@ export default function CompetitionPage() {
                     <div className="col-md-6 mb-3">
                       <label className="form-label">
                         <i className="fas fa-trophy me-2"></i>
-                        Cashprize final (€) *
+                        Cashprize (€) *
                       </label>
                       <input
                         type="number"
@@ -365,7 +362,7 @@ export default function CompetitionPage() {
                         required
                       />
                       <small className="form-text text-muted">
-                        Somme garantie offerte au vainqueur (peut être 0).
+                        Somme fixe offerte au vainqueur de la compétition.
                       </small>
                     </div>
                   ) : (
@@ -389,25 +386,21 @@ export default function CompetitionPage() {
 
                       <div className="col-md-6 mb-3">
                         <label className="form-label">
-                          <i className="fas fa-wallet me-2"></i>
-                          Cashprize minimal garanti (€) *
+                          <i className="fas fa-trophy me-2"></i>
+                          Cashprize (€) *
                         </label>
                         <input
                           type="number"
                           className="form-control"
-                          name="cashprizeMinimal"
-                          value={form.cashprizeMinimal}
-                          onChange={(e) => setForm({ ...form, cashprizeMinimal: Number(e.target.value) })}
+                          name="cashprizeFinal"
+                          value={form.cashprizeFinal}
+                          onChange={(e) => setForm({ ...form, cashprizeFinal: Number(e.target.value) })}
                           min="0"
                           required
                         />
-                      </div>
-
-                      <div className="col-12 mb-3">
-                        <div className="alert alert-info">
-                          <i className="fas fa-calculator me-2"></i>
-                          <strong>Note sur le Cashprize :</strong> Le vainqueur remportera <strong>80%</strong> des inscriptions collectées, avec un minimum garanti de <strong>{form.cashprizeMinimal || 0} €</strong>.
-                        </div>
+                        <small className="form-text text-muted">
+                          Somme fixe offerte au vainqueur de la compétition.
+                        </small>
                       </div>
                     </>
                   )}
