@@ -262,28 +262,13 @@ export default function CompetitionDetailPage() {
                 <i className="fas fa-arrow-left me-1"></i>
                 Retour
               </Link>
-              {competition.statut === 'En cours' && (
-                ((user?.isAdmin) || 
-                 (competition.equipesInscrites?.some(equipe => {
-                   const clubId = typeof equipe.clubId === 'object' ? equipe.clubId._id : equipe.clubId;
-                   const userClub = userClubs.find(club => compareClubIds(club._id, clubId));
-                   const isAdminOfClub = userClub && userClub.membres.some(m => 
-                     compareUserIds(m.userId, user) && m.role === 'Admin'
-                   );
-                   return isAdminOfClub;
-                 }))) && (
-                  <Link to={`/competition/${competition._id}/matchs`} className="btn btn-sm btn-primary">
-                    <i className="fas fa-calendar-alt me-1"></i>
-                    Calendrier & Matchs
-                  </Link>
-                 )
-              )}
               {(competition.statut === 'En cours' || competition.statut === 'Terminé') && (
-                <Link to={`/competition/${competition._id}/stats`} className="btn btn-sm btn-info">
-                  <i className="fas fa-chart-bar me-1"></i>
-                  Statistiques
+                <Link to={`/competition/${competition._id}/matchs`} className="btn btn-sm btn-primary">
+                  <i className="fas fa-calendar-alt me-1"></i>
+                  Calendrier & Matchs
                 </Link>
               )}
+
             </div>
             
             <h1 className="gaming-title mb-2" style={{fontSize: '2rem'}}>{competition.nom}</h1>

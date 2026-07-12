@@ -4,6 +4,356 @@ import { useAuth } from '../context/AuthContext';
 import { competitionAPI, clubAPI } from '../services/api';
 import LiveMatchLobby from '../components/LiveMatchLobby';
 
+const matchesPageStyles = `
+  .matches-page-container {
+    min-height: 100vh;
+  }
+  
+  .gaming-matches-card {
+    background: rgba(13, 19, 32, 0.75) !important;
+    border: 1px solid var(--border-glass) !important;
+    backdrop-filter: blur(16px);
+    border-radius: 16px !important;
+    padding: 2rem !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+    color: var(--text-white) !important;
+  }
+  
+  .gaming-stat-card-custom {
+    background: rgba(13, 19, 32, 0.6) !important;
+    border: 1px solid var(--border-glass) !important;
+    backdrop-filter: blur(12px);
+    border-radius: 12px !important;
+    padding: 1.25rem !important;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+  }
+  
+  .gaming-stat-card-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35) !important;
+  }
+  
+  .gaming-table {
+    background: transparent !important;
+    color: var(--text-silver) !important;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+  
+  .gaming-table tr {
+    background: rgba(255, 255, 255, 0.01);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+  
+  .gaming-table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  
+  .gaming-table th {
+    background: transparent !important;
+    color: var(--text-white) !important;
+    font-family: 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-bottom: 2px solid var(--border-glass) !important;
+    padding: 1rem !important;
+  }
+  
+  .gaming-table td {
+    padding: 1rem !important;
+    border: none !important;
+    vertical-align: middle;
+  }
+  
+  /* Bracket visualization tree styling */
+  .tournament-bracket {
+    width: 100%;
+    overflow-x: auto;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neon-cyan) rgba(0,0,0,0.1);
+  }
+
+  .tournament-bracket::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .tournament-bracket::-webkit-scrollbar-thumb {
+    background: var(--neon-cyan);
+    border-radius: 10px;
+  }
+
+  .bracket-container {
+    display: flex;
+    align-items: center;
+    gap: 40px; /* Space between rounds */
+    padding: 2rem;
+  }
+
+  .bracket-node {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .bracket-children {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 20px;
+    position: relative;
+  }
+
+  .bracket-match-wrapper {
+    width: 240px;
+    position: relative;
+    z-index: 2;
+    margin: 10px 0;
+  }
+
+  .match-card-container {
+    background: rgba(13, 19, 32, 0.85) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .match-card-container:hover {
+    transform: translateY(-3px);
+    border-color: var(--neon-cyan) !important;
+    box-shadow: 0 8px 25px var(--neon-cyan-glow) !important;
+  }
+
+  .match-card-container.termine {
+    border-left: 4px solid #28a745 !important;
+  }
+
+  .match-card-container.programme {
+    border-left: 4px solid #00f0ff !important;
+  }
+  
+  .match-card-container.annule {
+    border-left: 4px solid #dc3545 !important;
+  }
+
+  .match-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-silver);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .match-card-teams {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .match-card-team {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-silver);
+  }
+
+  .match-card-team.winner {
+    color: white !important;
+    font-weight: 700;
+  }
+
+  .match-card-team-name {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .match-card-team-score {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    min-width: 25px;
+    text-align: center;
+  }
+
+  .match-card-team.winner .match-card-team-score {
+    background: rgba(40, 167, 69, 0.2);
+    color: #81c784;
+  }
+
+  .match-card-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+  }
+  
+  .match-card-actions .btn {
+    flex-grow: 1;
+    font-size: 0.75rem !important;
+    padding: 0.35rem 0.5rem !important;
+    min-height: auto !important;
+  }
+
+  .match-card-placeholder {
+    background: rgba(13, 19, 32, 0.4);
+    border: 1px dashed var(--border-glass);
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-silver);
+  }
+  
+  /* Champion / Podium cards */
+  .champion-card {
+    border-radius: 16px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    color: white !important;
+    transition: transform 0.3s ease;
+  }
+
+  .champion-card h5,
+  .champion-card p,
+  .champion-card .champion-name {
+    color: white !important;
+  }
+
+  .champion-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .champion-card .trophy-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .champion-card .champion-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .champion-card.gold {
+    background: linear-gradient(135deg, rgba(255, 200, 0, 0.25), rgba(255, 160, 0, 0.15));
+    border: 2px solid rgba(255, 200, 0, 0.5);
+    box-shadow: 0 0 20px rgba(255, 200, 0, 0.2);
+  }
+
+  .champion-card.silver {
+    background: linear-gradient(135deg, rgba(180, 180, 200, 0.25), rgba(140, 140, 160, 0.15));
+    border: 2px solid rgba(180, 180, 200, 0.5);
+    box-shadow: 0 0 20px rgba(180, 180, 200, 0.2);
+  }
+
+  .champion-card.bronze {
+    background: linear-gradient(135deg, rgba(180, 110, 60, 0.25), rgba(140, 80, 40, 0.15));
+    border: 2px solid rgba(180, 110, 60, 0.5);
+    box-shadow: 0 0 20px rgba(180, 110, 60, 0.2);
+  }
+
+  /* Stat cards */
+  .gaming-stat-card {
+    background: rgba(13, 19, 32, 0.75) !important;
+    border: 1px solid var(--border-glass) !important;
+    backdrop-filter: blur(12px);
+    border-radius: 12px !important;
+    color: white !important;
+  }
+
+  .gaming-stat-card .card-text {
+    color: rgba(255,255,255,0.7) !important;
+  }
+
+  .gaming-mobile-match-card {
+    background: rgba(13, 19, 32, 0.7) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 14px !important;
+    padding: 1.25rem !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    margin-bottom: 1rem;
+  }
+  
+  .gaming-mobile-match-card .team-container {
+    width: 40%;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .gaming-mobile-match-card .vs-score-container {
+    width: 20%;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  @media (max-width: 768px) {
+    .gaming-matches-card {
+      padding: 1rem !important;
+    }
+
+    .matches-page-container.container {
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
+      padding-top: 1.5rem !important;
+    }
+
+    .matches-page-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 0.75rem;
+    }
+
+    .matches-page-header .header-left {
+      width: 100%;
+    }
+
+    .matches-page-header .header-right {
+      align-self: flex-start;
+    }
+
+    .matches-page-title {
+      font-size: 1.25rem !important;
+      line-height: 1.3 !important;
+      margin-top: 0.5rem !important;
+      display: block !important;
+    }
+
+    .matches-page-title .competition-name {
+      display: block;
+      font-size: 1.5rem !important;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00f0ff, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-top: 0.2rem;
+    }
+
+    .matches-back-btn {
+      font-size: 0.85rem !important;
+      padding: 0.4rem 0.8rem !important;
+    }
+  }
+`;
+
 const CompetitionMatchesPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
@@ -701,22 +1051,24 @@ const CompetitionMatchesPage = () => {
   }
 
   return (
-    <div className="container py-5">
+    <div className="matches-page-container container py-5">
+      <style>{matchesPageStyles}</style>
       {/* Header */}
       <div className="row mb-4">
         <div className="col-12">
-          <div className="d-flex align-items-center justify-content-between">
-            <div>
-              <Link to={`/competition/${id}`} className="btn btn-outline-secondary me-3">
+          <div className="d-flex matches-page-header" style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="header-left">
+              <Link to={`/competition/${id}`} className="btn btn-outline-secondary matches-back-btn">
                 <i className="fas fa-arrow-left me-2"></i>
-                Retour à la compétition
+                Retour
               </Link>
-              <h1 className="d-inline-block mb-0">
-                <i className="fas fa-calendar-alt me-2"></i>
-                Calendrier - {competition.nom}
+              <h1 className="matches-page-title mb-0 d-inline-block ms-3">
+                <i className="fas fa-calendar-alt me-2" style={{ opacity: 0.7 }}></i>
+                Calendrier
+                <span className="competition-name ms-1">{competition.nom}</span>
               </h1>
             </div>
-            <div>
+            <div className="header-right">
               <span className={`badge ${getMatchStatusText(competition.statut) === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
                 {competition.statut}
               </span>
@@ -728,7 +1080,7 @@ const CompetitionMatchesPage = () => {
       {/* Statistiques générales */}
       <div className="row mb-4">
         <div className="col-md-3">
-          <div className="card text-center">
+          <div className="card text-center gaming-stat-card">
             <div className="card-body">
               <h5 className="card-title">
                 <i className="fas fa-users text-primary"></i>
@@ -739,7 +1091,7 @@ const CompetitionMatchesPage = () => {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card text-center">
+          <div className="card text-center gaming-stat-card">
             <div className="card-body">
               <h5 className="card-title">
                 <i className="fas fa-futbol text-success"></i>
@@ -753,7 +1105,7 @@ const CompetitionMatchesPage = () => {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card text-center">
+          <div className="card text-center gaming-stat-card">
             <div className="card-body">
               <h5 className="card-title">
                 <i className="fas fa-trophy text-warning"></i>
@@ -768,7 +1120,7 @@ const CompetitionMatchesPage = () => {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card text-center">
+          <div className="card text-center gaming-stat-card">
             <div className="card-body">
               <h5 className="card-title">
                 <i className="fas fa-chart-line text-info"></i>
@@ -871,145 +1223,136 @@ const CompetitionMatchesPage = () => {
                               <i className="fas fa-calendar-day me-2"></i>
                               {journee.label}
                             </h6>
-                            <div className="table-responsive">
-                              <table className="table table-hover table-sm">
+                            {/* Version Desktop : Tableau classique */}
+                            <div className="table-responsive d-none d-md-block">
+                              <table className="table gaming-table">
                                 <thead>
                                   <tr>
                                     <th>Date</th>
                                     <th>Équipe 1</th>
-                                    <th>Score</th>
+                                    <th className="text-center">Score</th>
                                     <th>Équipe 2</th>
                                     <th>Statut</th>
-                                    <th>Actions</th>
+                                    <th className="text-end">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {journee.matchs.map((match, matchIndex) => (
-                            <tr key={matchIndex}>
-                              <td>
-                                {match.dateMatch ? 
-                                  new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
-                                  'À programmer'
-                                }
-                              </td>
-                              <td>
-                                <strong>{match.equipe1?.nom || 'TBD'}</strong>
-                              </td>
-                              <td>
-                                {match.statut === 'Terminé' ? (
-                                  <span className="badge bg-success">
-                                    {match.score1} - {match.score2}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted">-</span>
-                                )}
-                              </td>
-                              <td>
-                                <strong>{match.equipe2?.nom || 'TBD'}</strong>
-                              </td>
-                              <td>
-                                <span className={`badge ${getMatchStatus(match)}`}>
-                                  {getMatchStatusText(match)}
-                                </span>
-                              </td>
-                              <td>
-                                <div className="btn-group" role="group">
-                                  {!match.dateMatch && (user?.isAdmin || 
-                                    userClubs.some(club => 
-                                      (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
-                                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                                    )) && (
-                                    <button 
-                                      className="btn btn-sm btn-outline-secondary"
-                                      onClick={() => openDateModal(match)}
-                                      title="Programmer une date"
-                                    >
-                                      <i className="fas fa-calendar-plus me-1"></i>
-                                      Programmer
-                                    </button>
-                                  )}
-                                  {match.statut === 'Programmé' && canEditMatchScore(match) && (
-                                    <button 
-                                      className="btn btn-sm btn-primary"
-                                      onClick={() => openScoreModal(match)}
-                                    >
-                                      <i className="fas fa-edit me-1"></i>
-                                      Saisir score
-                                    </button>
-                                  )}
-                                  {match.statut === 'Terminé' && (
-                                    <button 
-                                      className="btn btn-sm btn-outline-primary"
-                                      onClick={() => openScoreModal(match)}
-                                    >
-                                      <i className="fas fa-eye me-1"></i>
-                                      {canEditMatchScore(match) ? 'Modifier' : 'Voir détails'}
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                    <tr key={matchIndex}>
+                                      <td>
+                                        {match.dateMatch ? 
+                                          new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
+                                          'À programmer'
+                                        }
+                                      </td>
+                                      <td>
+                                        <strong className="text-white">{match.equipe1?.nom || 'TBD'}</strong>
+                                      </td>
+                                      <td className="text-center">
+                                        {match.statut === 'Terminé' ? (
+                                          <span className="badge bg-success font-rajdhani px-3 py-1">
+                                            {match.score1} - {match.score2}
+                                          </span>
+                                        ) : (
+                                          <span className="text-muted font-rajdhani">-</span>
+                                        )}
+                                      </td>
+                                      <td>
+                                        <strong className="text-white">{match.equipe2?.nom || 'TBD'}</strong>
+                                      </td>
+                                      <td>
+                                        <span className={`badge ${getMatchStatus(match)}`}>
+                                          {getMatchStatusText(match)}
+                                        </span>
+                                      </td>
+                                      <td className="text-end">
+                                        <div className="btn-group" role="group">
+                                          {!match.dateMatch && (user?.isAdmin || 
+                                            userClubs.some(club => 
+                                              (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                                              club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                            )) && (
+                                            <button 
+                                              className="btn btn-sm btn-outline-secondary"
+                                              onClick={() => openDateModal(match)}
+                                              title="Programmer une date"
+                                            >
+                                              <i className="fas fa-calendar-plus me-1"></i>
+                                              Programmer
+                                            </button>
+                                          )}
+                                          {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                                            <button 
+                                              className="btn btn-sm btn-primary"
+                                              onClick={() => openScoreModal(match)}
+                                            >
+                                              <i className="fas fa-edit me-1"></i>
+                                              Saisir score
+                                            </button>
+                                          )}
+                                          {match.statut === 'Terminé' && (
+                                            <button 
+                                              className="btn btn-sm btn-outline-primary"
+                                              onClick={() => openScoreModal(match)}
+                                            >
+                                              <i className="fas fa-eye me-1"></i>
+                                              {canEditMatchScore(match) ? 'Modifier' : 'Détails'}
+                                            </button>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
                                 </tbody>
                               </table>
                             </div>
-                          </div>
-                        ));
-                      })()
-                    ) : (
-                      // Affichage classique pour les phases de poules
-                      <div className="table-responsive">
-                        <table className="table table-hover">
-                          <thead>
-                            <tr>
-                              <th>Date</th>
-                              <th>Équipe 1</th>
-                              <th>Score</th>
-                              <th>Équipe 2</th>
-                              <th>Statut</th>
-                              <th>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {poule.matchs.map((match, matchIndex) => (
-                              <tr key={matchIndex}>
-                                <td>
-                                  {match.dateMatch ? 
-                                    new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
-                                    'À programmer'
-                                  }
-                                </td>
-                                <td>
-                                  <strong>{match.equipe1?.nom || 'TBD'}</strong>
-                                </td>
-                                <td>
-                                  {match.statut === 'Terminé' ? (
-                                    <span className="badge bg-success">
-                                      {match.score1} - {match.score2}
+
+                            {/* Version Mobile : Cartes de matchs responsives */}
+                            <div className="d-md-none">
+                              {journee.matchs.map((match, matchIndex) => (
+                                <div key={matchIndex} className="gaming-mobile-match-card">
+                                  <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+                                    <span className="small text-muted">
+                                      <i className="far fa-calendar-alt me-1"></i>
+                                      {match.dateMatch ? 
+                                        new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
+                                        'À programmer'
+                                      }
                                     </span>
-                                  ) : (
-                                    <span className="text-muted">-</span>
-                                  )}
-                                </td>
-                                <td>
-                                  <strong>{match.equipe2?.nom || 'TBD'}</strong>
-                                </td>
-                                <td>
-                                  <span className={`badge ${getMatchStatus(match)}`}>
-                                    {getMatchStatusText(match)}
-                                  </span>
-                                </td>
-                                <td>
-                                  <div className="btn-group" role="group">
+                                    <span className={`badge ${getMatchStatus(match)}`}>
+                                      {getMatchStatusText(match)}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="d-flex align-items-center justify-content-between my-3">
+                                    <div className="team-container text-start text-truncate text-white">
+                                      {match.equipe1?.nom || 'TBD'}
+                                    </div>
+                                    
+                                    <div className="vs-score-container">
+                                      {match.statut === 'Terminé' ? (
+                                        <span className="badge bg-success font-rajdhani px-3 py-1">
+                                          {match.score1} - {match.score2}
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted font-rajdhani">VS</span>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="team-container text-end text-truncate text-white">
+                                      {match.equipe2?.nom || 'TBD'}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="d-flex gap-2 mt-2">
                                     {!match.dateMatch && (user?.isAdmin || 
                                       userClubs.some(club => 
                                         (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
                                         club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
                                       )) && (
                                       <button 
-                                        className="btn btn-sm btn-outline-secondary"
+                                        className="btn btn-sm btn-outline-secondary w-100 py-2"
                                         onClick={() => openDateModal(match)}
-                                        title="Programmer une date"
                                       >
                                         <i className="fas fa-calendar-plus me-1"></i>
                                         Programmer
@@ -1017,7 +1360,7 @@ const CompetitionMatchesPage = () => {
                                     )}
                                     {match.statut === 'Programmé' && canEditMatchScore(match) && (
                                       <button 
-                                        className="btn btn-sm btn-primary"
+                                        className="btn btn-sm btn-primary w-100 py-2"
                                         onClick={() => openScoreModal(match)}
                                       >
                                         <i className="fas fa-edit me-1"></i>
@@ -1026,20 +1369,181 @@ const CompetitionMatchesPage = () => {
                                     )}
                                     {match.statut === 'Terminé' && (
                                       <button 
-                                        className="btn btn-sm btn-outline-primary"
+                                        className="btn btn-sm btn-outline-primary w-100 py-2"
                                         onClick={() => openScoreModal(match)}
                                       >
                                         <i className="fas fa-eye me-1"></i>
-                                        {canEditMatchScore(match) ? 'Modifier' : 'Voir détails'}
+                                        {canEditMatchScore(match) ? 'Modifier' : 'Détails'}
                                       </button>
                                     )}
                                   </div>
-                                </td>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()
+                    ) : (
+                      // Affichage classique pour les phases de poules
+                      <>
+                        {/* Version Desktop : Tableau classique */}
+                        <div className="table-responsive d-none d-md-block">
+                          <table className="table gaming-table">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Équipe 1</th>
+                                <th className="text-center">Score</th>
+                                <th>Équipe 2</th>
+                                <th>Statut</th>
+                                <th className="text-end">Actions</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {poule.matchs.map((match, matchIndex) => (
+                                <tr key={matchIndex}>
+                                  <td>
+                                    {match.dateMatch ? 
+                                      new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
+                                      'À programmer'
+                                    }
+                                  </td>
+                                  <td>
+                                    <strong className="text-white">{match.equipe1?.nom || 'TBD'}</strong>
+                                  </td>
+                                  <td className="text-center">
+                                    {match.statut === 'Terminé' ? (
+                                      <span className="badge bg-success font-rajdhani px-3 py-1">
+                                        {match.score1} - {match.score2}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted font-rajdhani">-</span>
+                                    )}
+                                  </td>
+                                  <td>
+                                    <strong className="text-white">{match.equipe2?.nom || 'TBD'}</strong>
+                                  </td>
+                                  <td>
+                                    <span className={`badge ${getMatchStatus(match)}`}>
+                                      {getMatchStatusText(match)}
+                                    </span>
+                                  </td>
+                                  <td className="text-end">
+                                    <div className="btn-group" role="group">
+                                      {!match.dateMatch && (user?.isAdmin || 
+                                        userClubs.some(club => 
+                                          (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                                          club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                        )) && (
+                                        <button 
+                                          className="btn btn-sm btn-outline-secondary"
+                                          onClick={() => openDateModal(match)}
+                                          title="Programmer une date"
+                                        >
+                                          <i className="fas fa-calendar-plus me-1"></i>
+                                          Programmer
+                                        </button>
+                                      )}
+                                      {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                                        <button 
+                                          className="btn btn-sm btn-primary"
+                                          onClick={() => openScoreModal(match)}
+                                        >
+                                          <i className="fas fa-edit me-1"></i>
+                                          Saisir score
+                                        </button>
+                                      )}
+                                      {match.statut === 'Terminé' && (
+                                        <button 
+                                          className="btn btn-sm btn-outline-primary"
+                                          onClick={() => openScoreModal(match)}
+                                        >
+                                          <i className="fas fa-eye me-1"></i>
+                                          {canEditMatchScore(match) ? 'Modifier' : 'Détails'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Version Mobile : Cartes de matchs responsives */}
+                        <div className="d-md-none">
+                          {poule.matchs.map((match, matchIndex) => (
+                            <div key={matchIndex} className="gaming-mobile-match-card">
+                              <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25">
+                                <span className="small text-muted">
+                                  <i className="far fa-calendar-alt me-1"></i>
+                                  {match.dateMatch ? 
+                                    new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
+                                    'À programmer'
+                                  }
+                                </span>
+                                <span className={`badge ${getMatchStatus(match)}`}>
+                                  {getMatchStatusText(match)}
+                                </span>
+                              </div>
+                              
+                              <div className="d-flex align-items-center justify-content-between my-3">
+                                <div className="team-container text-start text-truncate text-white">
+                                  {match.equipe1?.nom || 'TBD'}
+                                </div>
+                                
+                                <div className="vs-score-container">
+                                  {match.statut === 'Terminé' ? (
+                                    <span className="badge bg-success font-rajdhani px-3 py-1">
+                                      {match.score1} - {match.score2}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted font-rajdhani">VS</span>
+                                  )}
+                                </div>
+                                
+                                <div className="team-container text-end text-truncate text-white">
+                                  {match.equipe2?.nom || 'TBD'}
+                                </div>
+                              </div>
+                              
+                              <div className="d-flex gap-2 mt-2">
+                                {!match.dateMatch && (user?.isAdmin || 
+                                  userClubs.some(club => 
+                                    (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                                    club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                  )) && (
+                                  <button 
+                                    className="btn btn-sm btn-outline-secondary w-100 py-2"
+                                    onClick={() => openDateModal(match)}
+                                  >
+                                    <i className="fas fa-calendar-plus me-1"></i>
+                                    Programmer
+                                  </button>
+                                )}
+                                {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                                  <button 
+                                    className="btn btn-sm btn-primary w-100 py-2"
+                                    onClick={() => openScoreModal(match)}
+                                  >
+                                    <i className="fas fa-edit me-1"></i>
+                                    Saisir score
+                                  </button>
+                                )}
+                                {match.statut === 'Terminé' && (
+                                  <button 
+                                    className="btn btn-sm btn-outline-primary w-100 py-2"
+                                    onClick={() => openScoreModal(match)}
+                                  >
+                                    <i className="fas fa-eye me-1"></i>
+                                    {canEditMatchScore(match) ? 'Modifier' : 'Détails'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )
                   ) : (
                     <p className="text-muted">Aucun match programmé dans cette poule.</p>
@@ -1094,9 +1598,15 @@ const CompetitionMatchesPage = () => {
               </div>
             ) : (
               // Visualiseur d'arbre récursif moderne
-              <div className="tournament-bracket">
-                <div className="bracket-container justify-content-center">
-                  {renderBracketNode(0, 1, getMaxDepth())}
+              <>
+                <div className="text-center d-md-none mb-3 text-muted small bg-dark bg-opacity-25 py-2 px-3 rounded border border-secondary border-opacity-10 d-inline-flex align-items-center gap-2 w-100 justify-content-center">
+                  <i className="fas fa-arrows-alt-h text-gradient"></i>
+                  <span>Glissez de gauche à droite pour voir toutes les phases</span>
+                </div>
+                <div className="tournament-bracket">
+                  <div className="bracket-container justify-content-center">
+                    {renderBracketNode(0, 1, getMaxDepth())}
+                  </div>
                 </div>
 
                 {/* Petite finale si elle existe */}
@@ -1197,7 +1707,7 @@ const CompetitionMatchesPage = () => {
                     </div>
                   );
                 })()}
-              </div>
+              </>
             )}
                 
                 {/* Champions */}
