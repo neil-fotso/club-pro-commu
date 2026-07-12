@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI, clubAPI } from '../services/api';
 
@@ -363,7 +363,6 @@ const matchLobbyStyles = `
 export default function MatchLobbyPage() {
   const { id: competitionId, matchId } = useParams();
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const [competition, setCompetition] = useState(null);
   const [match, setMatch] = useState(null);
@@ -577,7 +576,6 @@ export default function MatchLobbyPage() {
   );
   const isCaptain = isCaptainEq1 || isCaptainEq2;
 
-  const userClubBelongs = userClubs.find(c => compareIds(c._id, eq1Id) || compareIds(c._id, eq2Id));
 
   const isAdmin = user?.isAdmin || compareIds(competition?.createurId, currentUserId);
 
