@@ -4,6 +4,157 @@ import { useAuth } from '../context/AuthContext';
 import { clubAPI } from '../services/api';
 import Avatar from '../components/Avatar';
 
+const myClubsStyles = `
+  .gaming-club-card {
+    background: rgba(13, 19, 32, 0.7) !important;
+    border: 1px solid var(--border-glass) !important;
+    backdrop-filter: blur(12px);
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .gaming-club-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--neon-purple) !important;
+    box-shadow: 0 10px 25px var(--neon-purple-glow) !important;
+  }
+  
+  .gaming-club-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-esports);
+  }
+  
+  .gaming-club-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+  }
+  
+  .gaming-stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    color: var(--text-silver);
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  
+  .gaming-stat-val {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: white;
+  }
+  
+  .gaming-badge {
+    padding: 0.35rem 0.75rem !important;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border: 1px solid transparent !important;
+    display: inline-block;
+  }
+  
+  .gaming-badge-admin {
+    background: rgba(220, 53, 69, 0.15) !important;
+    color: #ff6b6b !important;
+    border-color: rgba(220, 53, 69, 0.3) !important;
+  }
+  
+  .gaming-badge-captain {
+    background: rgba(255, 193, 7, 0.15) !important;
+    color: #ffd166 !important;
+    border-color: rgba(255, 193, 7, 0.3) !important;
+  }
+  
+  .gaming-badge-player {
+    background: rgba(0, 240, 255, 0.15) !important;
+    color: #00f0ff !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+  }
+  
+  .gaming-badge-member {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-silver) !important;
+    border-color: var(--border-glass) !important;
+  }
+  
+  .gaming-platform-tag {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-silver);
+  }
+  
+  .gaming-btn-view {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid var(--border-glass) !important;
+    color: white !important;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    border-radius: 8px !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .gaming-btn-view:hover {
+    background: var(--gradient-esports) !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 15px var(--neon-purple-glow);
+    transform: translateY(-1px);
+    color: white !important;
+  }
+  
+  .gaming-btn-leave {
+    background: rgba(220, 53, 69, 0.1) !important;
+    border: 1px solid rgba(220, 53, 69, 0.2) !important;
+    color: #ff6b6b !important;
+    transition: all 0.2s ease;
+    border-radius: 8px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .gaming-btn-leave:hover {
+    background: #dc3545 !important;
+    color: white !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+    transform: translateY(-1px);
+  }
+  
+  .empty-state-card {
+    background: rgba(13, 19, 32, 0.6) !important;
+    border: 1px solid var(--border-glass) !important;
+    border-radius: 16px !important;
+    padding: 3rem;
+    backdrop-filter: blur(12px);
+  }
+`;
+
 export default function MyClubsPage() {
   const { user } = useAuth();
   const [clubs, setClubs] = useState([]);
@@ -74,33 +225,34 @@ export default function MyClubsPage() {
     return colors[role] || 'secondary';
   };
 
+  const getRoleBadgeClass = (role) => {
+    switch(role) {
+      case 'Admin': return 'gaming-badge gaming-badge-admin';
+      case 'Capitaine': return 'gaming-badge gaming-badge-captain';
+      case 'Joueur': return 'gaming-badge gaming-badge-player';
+      default: return 'gaming-badge gaming-badge-member';
+    }
+  };
+
   if (!user) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" 
-           style={{
-             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-           }}>
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <style>{myClubsStyles}</style>
         <div className="container">
           <div className="row justify-content-center">
             <div className="col-lg-6">
-              <div className="card border-0 shadow-lg" 
-                   style={{
-                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                     color: 'white'
-                   }}>
-                <div className="card-body text-center p-5">
-                  <div className="mb-4">
-                    <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '80px', height: '80px'}}>
-                      <i className="fas fa-lock text-white" style={{fontSize: '2.5rem'}}></i>
-                    </div>
-                    <h2 className="card-title mb-3">Connexion requise</h2>
-                    <p className="text-white-90">Vous devez être connecté pour voir vos clubs.</p>
+              <div className="empty-state-card text-center p-5">
+                <div className="mb-4">
+                  <div className="header-icon">
+                    <i className="fas fa-lock text-gradient"></i>
                   </div>
-                  <Link to="/login" className="btn btn-light btn-lg">
-                    <i className="fas fa-sign-in-alt me-2"></i>
-                    Se connecter
-                  </Link>
+                  <h2 className="text-gradient font-rajdhani text-uppercase mb-3">Connexion requise</h2>
+                  <p className="text-muted">Vous devez être connecté pour voir vos clubs.</p>
                 </div>
+                <Link to="/login" className="btn submit-btn btn-lg w-100">
+                  <i className="fas fa-sign-in-alt me-2"></i>
+                  Se connecter
+                </Link>
               </div>
             </div>
           </div>
@@ -110,19 +262,17 @@ export default function MyClubsPage() {
   }
 
   return (
-    <div className="min-vh-100" 
-         style={{
-           background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)'
-         }}>
-      <div className="container py-5">
+    <div className="my-clubs-container py-4 px-4 px-md-5">
+      <style>{myClubsStyles}</style>
+      <div className="container-fluid px-0">
         {/* Header */}
         <div className="text-center mb-5">
-          <h1 className="display-5 fw-bold mb-3">🏆 Mes Clubs</h1>
+          <h1 className="display-5 fw-bold text-gradient font-rajdhani text-uppercase mb-2">Mes Clubs</h1>
           <p className="lead text-muted">Gérez vos clubs et vos adhésions</p>
         </div>
 
         {error && (
-          <div className="alert alert-danger border-0 bg-danger bg-opacity-10 mb-4">
+          <div className="alert alert-danger mb-4">
             <i className="fas fa-exclamation-triangle me-2"></i>
             {error}
           </div>
@@ -130,24 +280,24 @@ export default function MyClubsPage() {
 
         {loading ? (
           <div className="text-center py-5">
-            <div className="spinner-border text-primary" role="status" style={{width: '3rem', height: '3rem'}}>
+            <div className="spinner-border text-primary mb-3" role="status" style={{width: '3rem', height: '3rem'}}>
               <span className="visually-hidden">Chargement...</span>
             </div>
-            <p className="mt-3 text-muted">Chargement de vos clubs...</p>
+            <p className="text-muted">Chargement de vos clubs...</p>
           </div>
         ) : (
           <>
             {clubs.length === 0 ? (
-              <div className="text-center py-5">
+              <div className="empty-state-card text-center py-5">
                 <div className="mb-4" style={{fontSize: '4rem'}}>🏆</div>
-                <h3 className="text-muted">Aucun club trouvé</h3>
-                <p className="text-muted">Vous n'êtes membre d'aucun club pour le moment.</p>
-                <div className="mt-4">
-                  <Link to="/clubs" className="btn btn-primary btn-lg me-3">
+                <h3 className="text-white font-rajdhani text-uppercase mb-2">Aucun club trouvé</h3>
+                <p className="text-muted mb-4">Vous n'êtes membre d'aucun club pour le moment.</p>
+                <div className="d-flex flex-column flex-md-row gap-3 justify-content-center px-4">
+                  <Link to="/clubs" className="btn submit-btn btn-lg">
                     <i className="fas fa-search me-2"></i>
                     Rechercher un club
                   </Link>
-                  <Link to="/create-club" className="btn btn-outline-primary btn-lg">
+                  <Link to="/create-club" className="btn cancel-btn btn-lg">
                     <i className="fas fa-plus me-2"></i>
                     Créer un club
                   </Link>
@@ -171,24 +321,9 @@ export default function MyClubsPage() {
                   
                   const userRole = isCreateur ? 'Admin' : (userMember ? userMember.role : 'Membre');
 
-                  // Debug: afficher les informations pour comprendre le problème
-                  console.log('Debug rôle utilisateur:', {
-                    userId: user.id,
-                    user_id: user._id,
-                    userMember,
-                    isCreateur,
-                    userRole,
-                    membres: club.membres.map(m => ({ userId: m.userId._id, role: m.role })),
-                    createurId: club.createurId?._id
-                  });
-
                   return (
                     <div key={club._id} className="col-lg-6 col-xl-4">
-                      <div className="card border-0 shadow-sm hover-shadow h-100" 
-                           style={{
-                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                             color: 'white'
-                           }}>
+                      <div className="card gaming-club-card h-100">
                         <div className="card-body p-4">
                           <div className="d-flex align-items-center mb-3">
                             <Avatar
@@ -200,25 +335,30 @@ export default function MyClubsPage() {
                             />
                             <div className="flex-grow-1">
                               <h5 className="mb-1">
-                                <Link to={`/club/${club._id}`} className="text-decoration-none text-white">
+                                <Link to={`/club/${club._id}`} className="text-decoration-none text-white gaming-club-title">
                                   {club.nom}
                                 </Link>
                               </h5>
-                              <small className="text-white-75">
-                                {getPlatformIcon(club.plateforme)} {club.plateforme} • {club.pays}
-                              </small>
+                              <div className="d-flex gap-2 mt-1">
+                                <span className="gaming-platform-tag">
+                                  {getPlatformIcon(club.plateforme)} {club.plateforme}
+                                </span>
+                                <span className="gaming-platform-tag">
+                                  🇫🇷 {club.pays}
+                                </span>
+                              </div>
                             </div>
                           </div>
                           
                           <div className="row mb-3">
                             <div className="col-6">
-                              <small className="text-white-75">Effectif</small>
-                              <div className="fw-bold">{club.effectifActuel}/{club.effectifMax}</div>
+                              <small className="gaming-stat-label">Effectif</small>
+                              <div className="gaming-stat-val">{club.effectifActuel} / {club.effectifMax}</div>
                             </div>
                             <div className="col-6">
-                              <small className="text-white-75">Votre rôle</small>
-                              <div className="fw-bold">
-                                <span className={`badge bg-${getRoleBadgeColor(userRole)}`}>
+                              <small className="gaming-stat-label">Votre rôle</small>
+                              <div className="mt-1">
+                                <span className={getRoleBadgeClass(userRole)}>
                                   {userRole}
                                 </span>
                               </div>
@@ -227,32 +367,36 @@ export default function MyClubsPage() {
                           
                           <div className="row mb-3">
                             <div className="col-6">
-                              <small className="text-white-75">Créé par</small>
-                              <div className="fw-bold">{club.createurId?.pseudo}</div>
+                              <small className="gaming-stat-label">Créé par</small>
+                              <div className="gaming-stat-val text-truncate" style={{maxWidth: '120px'}} title={club.createurId?.pseudo}>
+                                {club.createurId?.pseudo || 'Inconnu'}
+                              </div>
                             </div>
                             <div className="col-6">
-                              <small className="text-white-75">Créé le</small>
-                              <div className="fw-bold">{new Date(club.dateCreation).toLocaleDateString('fr-FR')}</div>
+                              <small className="gaming-stat-label">Créé le</small>
+                              <div className="gaming-stat-val">
+                                {new Date(club.dateCreation).toLocaleDateString('fr-FR')}
+                              </div>
                             </div>
                           </div>
                           
                           {club.description && (
-                            <p className="text-white-90 mb-3" style={{fontSize: '0.9rem'}}>
-                              {club.description.length > 100 
-                                ? `${club.description.substring(0, 100)}...` 
+                            <p className="text-white-50 mb-3" style={{fontSize: '0.85rem', minHeight: '40px'}}>
+                              {club.description.length > 90 
+                                ? `${club.description.substring(0, 90)}...` 
                                 : club.description
                               }
                             </p>
                           )}
                           
-                          <div className="d-flex gap-2">
-                            <Link to={`/club/${club._id}`} className="btn btn-outline-light btn-sm flex-grow-1">
-                              <i className="fas fa-eye me-1"></i>
+                          <div className="d-flex gap-2 mt-auto">
+                            <Link to={`/club/${club._id}`} className="btn gaming-btn-view flex-grow-1 py-2">
+                              <i className="fas fa-eye me-2"></i>
                               Voir profil
                             </Link>
                             {userRole !== 'Admin' && (
                               <button
-                                className="btn btn-outline-danger btn-sm"
+                                className="btn gaming-btn-leave px-3"
                                 onClick={() => handleLeaveClub(club._id, club.nom)}
                                 title="Quitter le club"
                               >
