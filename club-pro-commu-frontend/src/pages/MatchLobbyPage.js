@@ -1122,34 +1122,46 @@ export default function MatchLobbyPage() {
           {isAdmin && match.statut !== 'Terminé' && (
             <div className="mt-4 pt-3 border-top border-secondary border-opacity-10 bg-dark bg-opacity-25 p-3 rounded">
               <h6 className="text-warning fw-bold mb-2"><i className="fas fa-shield-alt me-2"></i>Contrôles Forfait Rapide</h6>
-              <div className="d-flex gap-2">
-                <button className="btn btn-sm btn-outline-danger flex-fill" onClick={async () => {
-                  if (window.confirm(`Forfait pour ${team1.nom} ?`)) {
-                    try {
-                      await competitionAPI.declarerForfait(competitionId, match._id, 'equipe1', user.token);
-                      alert('Forfait appliqué !');
-                      fetchData();
-                    } catch (e) { alert(e.message); }
-                  }
-                }}>Forfait {team1.nom}</button>
-                <button className="btn btn-sm btn-outline-danger flex-fill" onClick={async () => {
-                  if (window.confirm(`Forfait pour ${team2.nom} ?`)) {
-                    try {
-                      await competitionAPI.declarerForfait(competitionId, match._id, 'equipe2', user.token);
-                      alert('Forfait appliqué !');
-                      fetchData();
-                    } catch (e) { alert(e.message); }
-                  }
-                }}>Forfait {team2.nom}</button>
-                <button className="btn btn-sm btn-outline-danger flex-fill" onClick={async () => {
-                  if (window.confirm('Forfait double pour ce match ?')) {
-                    try {
-                      await competitionAPI.declarerForfait(competitionId, match._id, 'double', user.token);
-                      alert('Double Forfait appliqué !');
-                      fetchData();
-                    } catch (e) { alert(e.message); }
-                  }
-                }}>Double Forfait</button>
+              <div className="row g-2">
+                <div className="col-12 col-md-4">
+                  <button className="btn btn-sm btn-outline-danger w-100 py-2 text-truncate" title={`Forfait ${team1.nom}`} onClick={async () => {
+                    if (window.confirm(`Forfait pour ${team1.nom} ?`)) {
+                      try {
+                        await competitionAPI.declarerForfait(competitionId, match._id, 'equipe1', user.token);
+                        alert('Forfait appliqué !');
+                        fetchData();
+                      } catch (e) { alert(e.message); }
+                    }
+                  }}>
+                    Forfait {team1.nom}
+                  </button>
+                </div>
+                <div className="col-12 col-md-4">
+                  <button className="btn btn-sm btn-outline-danger w-100 py-2 text-truncate" title={`Forfait ${team2.nom}`} onClick={async () => {
+                    if (window.confirm(`Forfait pour ${team2.nom} ?`)) {
+                      try {
+                        await competitionAPI.declarerForfait(competitionId, match._id, 'equipe2', user.token);
+                        alert('Forfait appliqué !');
+                        fetchData();
+                      } catch (e) { alert(e.message); }
+                    }
+                  }}>
+                    Forfait {team2.nom}
+                  </button>
+                </div>
+                <div className="col-12 col-md-4">
+                  <button className="btn btn-sm btn-outline-danger w-100 py-2 text-truncate" title="Double Forfait" onClick={async () => {
+                    if (window.confirm('Forfait double pour ce match ?')) {
+                      try {
+                        await competitionAPI.declarerForfait(competitionId, match._id, 'double', user.token);
+                        alert('Double Forfait appliqué !');
+                        fetchData();
+                      } catch (e) { alert(e.message); }
+                    }
+                  }}>
+                    Double Forfait
+                  </button>
+                </div>
               </div>
             </div>
           )}
