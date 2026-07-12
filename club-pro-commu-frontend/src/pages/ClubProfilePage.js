@@ -516,11 +516,12 @@ const clubProfileStyles = `
     color: #00f0ff;
   }
 
-  .card.bg-light {
+  .club-info-card {
+    background-color: rgba(24, 20, 42, 0.55) !important;
     background: rgba(24, 20, 42, 0.55) !important;
     border: 1px solid rgba(255, 255, 255, 0.05) !important;
     border-radius: 20px;
-    color: #d1cfe2;
+    color: #d1cfe2 !important;
   }
   
   @media (max-width: 768px) {
@@ -1070,7 +1071,7 @@ export default function ClubProfilePage() {
 
           {/* Infos club - Mobile */}
           <div className="d-md-none">
-            <div className="card bg-light border-0 shadow-sm mb-4">
+            <div className="club-info-card border-0 shadow-sm mb-4">
               <div className="card-body">
                 <h5 className="text-primary mb-3">
                   <i className="fas fa-shield-alt me-2"></i>
@@ -1129,7 +1130,7 @@ export default function ClubProfilePage() {
                 <i className="fas fa-comment me-2"></i>
                 Description
               </h5>
-              <div className="card bg-light border-0 shadow-sm">
+              <div className="club-info-card border-0 shadow-sm">
                 <div className="card-body">
                   <p className="mb-0">{club.description}</p>
                 </div>
@@ -1140,7 +1141,7 @@ export default function ClubProfilePage() {
           {/* Description - Mobile */}
           {club.description && (
             <div className="d-md-none mt-4">
-              <div className="card bg-light border-0 shadow-sm">
+              <div className="club-info-card border-0 shadow-sm">
                 <div className="card-body">
                   <h6 className="text-primary mb-2">
                     <i className="fas fa-comment me-2"></i>
@@ -1159,7 +1160,7 @@ export default function ClubProfilePage() {
               Vitrine des Trophées
             </h5>
             {!club.trophees || club.trophees.length === 0 ? (
-              <div className="card bg-light border-0 shadow-sm">
+              <div className="club-info-card border-0 shadow-sm">
                 <div className="card-body text-center py-4 text-muted">
                   <i className="fas fa-award fa-3x mb-3 text-secondary opacity-50"></i>
                   <p className="mb-0">Ce club n'a pas encore remporté de trophées. Participez à des compétitions pour remplir l'armoire ! ⚽</p>
@@ -1303,7 +1304,7 @@ export default function ClubProfilePage() {
                   </div>
                 )}
               </div>
-              <div className="card bg-light border-0 shadow-sm">
+              <div className="club-info-card border-0 shadow-sm">
                 <div className="card-body">
                   <div className="list-group list-group-flush">
                     {club.membres.sort((a, b) => (a.postePrincipal || '').localeCompare(b.postePrincipal || '')).map((membre, index) => {
@@ -1352,7 +1353,7 @@ export default function ClubProfilePage() {
                   <p className="text-muted mt-2">Chargement des demandes...</p>
                 </div>
               ) : requests.length === 0 ? (
-                <div className="card bg-light border-0 shadow-sm">
+                <div className="club-info-card border-0 shadow-sm">
                   <div className="card-body text-center py-4">
                     <i className="fas fa-check-circle fa-3x text-success mb-3"></i>
                     <h6 className="text-success">Aucune demande en attente</h6>
@@ -1360,7 +1361,7 @@ export default function ClubProfilePage() {
                   </div>
                 </div>
               ) : (
-                <div className="card bg-light border-0 shadow-sm">
+                <div className="club-info-card border-0 shadow-sm">
                   <div className="card-body">
                     <div className="row">
                       {requests.map((demande, index) => (
