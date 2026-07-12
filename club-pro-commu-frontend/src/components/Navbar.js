@@ -9,7 +9,6 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
 
   const handleLogout = () => {
@@ -18,7 +17,6 @@ export default function Navbar() {
   };
 
   const handleNavigation = (path) => {
-    setIsMenuOpen(false);
     // Forcer la navigation même si on est déjà sur la même page
     if (location.pathname === path) {
       window.location.reload();
@@ -62,22 +60,15 @@ export default function Navbar() {
   }, [user, loadNotificationCount]);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+    <nav className="navbar navbar-expand-lg navbar-dark" style={{backgroundColor: '#0c101b', borderBottom: '1px solid var(--border-glass)', position: 'sticky', top: 0, zIndex: 1050}}>
       <div className="container">
         <Link className="navbar-brand d-flex align-items-center" to="/">
-          <img src={logo} alt="Club Pro Communauté Logo" style={{ width: '40px', height: '40px', marginRight: '10px' }} />
-          <span>Club Pro Communauté</span>
+          <img src={logo} alt="Club Pro Communauté Logo" style={{ width: '36px', height: '36px', marginRight: '8px' }} />
+          <span style={{fontFamily: 'Rajdhani', fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.5px'}}>Club Pro Communauté</span>
         </Link>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
-
-        <div className={`collapse navbar-collapse ${isMenuOpen ? 'show' : ''}`}>
+        {/* Menu principal - visible uniquement sur desktop */}
+        <div className="collapse navbar-collapse d-none d-lg-flex">
           <ul className="navbar-nav me-auto">
             <li className="nav-item">
               <Link className="nav-link" to="/" onClick={() => handleNavigation('/')}>
@@ -85,20 +76,6 @@ export default function Navbar() {
                 Accueil
               </Link>
             </li>
-            {/* 
-            <li className="nav-item">
-              <Link className="nav-link" to="/recherche-joueur" onClick={() => handleNavigation('/recherche-joueur')}>
-                <i className="fas fa-search me-1"></i>
-                Recherche Joueurs
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/recommandations" onClick={() => handleNavigation('/recommandations')}>
-                <i className="fas fa-star me-1"></i>
-                Recommandations
-              </Link>
-            </li>
-            */}
             <li className="nav-item dropdown">
               <button
                 className="nav-link dropdown-toggle"
@@ -117,14 +94,6 @@ export default function Navbar() {
                     Créer un club
                   </Link>
                 </li>
-                {/* 
-                <li>
-                  <Link className="dropdown-item" to="/clubs" onClick={() => handleNavigation('/clubs')}>
-                    <i className="fas fa-search me-2"></i>
-                    Rechercher un club
-                  </Link>
-                </li>
-                */}
                 <li>
                   <Link className="dropdown-item" to="/mes-clubs" onClick={() => handleNavigation('/mes-clubs')}>
                     <i className="fas fa-user-friends me-2"></i>
@@ -146,110 +115,111 @@ export default function Navbar() {
               </Link>
             </li>
           </ul>
+        </div>
 
-          <ul className="navbar-nav">
+        {/* Zone Utilisateur - Toujours visible en haut à droite (non effondrée) */}
+        <div className="d-flex align-items-center">
+          <ul className="navbar-nav flex-row align-items-center gap-1">
             {user ? (
-              <>
-                <li className="nav-item dropdown">
-                  <button
-                    className="nav-link dropdown-toggle d-flex align-items-center"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                  >
-                    <Avatar
-                      src={user.photoProfil}
-                      name={user.pseudo}
-                      size="sm"
-                      className="me-2"
-                    />
-                    <span className="d-flex align-items-center">
-                      {user.pseudo}
-                      {notificationCount > 0 && (
-                        <span className="badge bg-danger ms-2" style={{fontSize: '0.7rem'}}>
-                          {notificationCount}
-                        </span>
-                      )}
+              <li className="nav-item dropdown">
+                <button
+                  className="nav-link dropdown-toggle d-flex align-items-center px-2"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  style={{ background: 'none', border: 'none' }}
+                >
+                  <Avatar
+                    src={user.photoProfil}
+                    name={user.pseudo}
+                    size="sm"
+                    className="me-2"
+                  />
+                  <span className="d-none d-sm-inline-flex align-items-center text-white me-1">
+                    {user.pseudo}
+                  </span>
+                  {notificationCount > 0 && (
+                    <span className="badge bg-danger rounded-circle p-1 ms-1 d-flex align-items-center justify-content-center" style={{width: '18px', height: '18px', fontSize: '0.65rem'}}>
+                      {notificationCount}
                     </span>
-                  </button>
-                  <ul className="dropdown-menu">
-                    <li>
-                      <Link className="dropdown-item" to="/mon-profil" onClick={() => handleNavigation('/mon-profil')}>
-                        <i className="fas fa-user me-2"></i>
-                        Mon Profil
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/mes-clubs" onClick={() => handleNavigation('/mes-clubs')}>
-                        <i className="fas fa-shield-alt me-2"></i>
-                        Mes Clubs
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/mes-competitions" onClick={() => handleNavigation('/mes-competitions')}>
-                        <i className="fas fa-trophy me-2"></i>
-                        Mes Compétitions
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/invitations" onClick={() => handleNavigation('/invitations')}>
-                        <i className="fas fa-envelope me-2"></i>
-                        Invitations
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item" to="/notifications" onClick={() => handleNavigation('/notifications')}>
-                        <i className="fas fa-bell me-2"></i>
-                        Notifications
-                      </Link>
-                    </li>
-                    {user.isAdmin && (
-                      <>
-                        <li><hr className="dropdown-divider" /></li>
-                        <li>
-                          <Link className="dropdown-item text-danger" to="/admin/dashboard" onClick={() => handleNavigation('/admin/dashboard')}>
-                            <i className="fas fa-tachometer-alt me-2"></i>
-                            Dashboard Admin
-                          </Link>
-                        </li>
-                        <li>
-                          <Link className="dropdown-item text-danger" to="/admin" onClick={() => handleNavigation('/admin')}>
-                            <i className="fas fa-cog me-2"></i>
-                            Administration
-                          </Link>
-                        </li>
-                      </>
-                    )}
-                    <li><hr className="dropdown-divider" /></li>
-                    <li>
-                      <Link className="dropdown-item" to="/compte" onClick={() => handleNavigation('/compte')}>
-                        <i className="fas fa-cog me-2"></i>
-                        Paramètres
-                      </Link>
-                    </li>
-                    <li>
-                      <button className="dropdown-item text-danger" onClick={() => {
-                        setIsMenuOpen(false);
-                        handleLogout();
-                      }}>
-                        <i className="fas fa-sign-out-alt me-2"></i>
-                        Déconnexion
-                      </button>
-                    </li>
-                  </ul>
-                </li>
-              </>
+                  )}
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end" style={{position: 'absolute'}}>
+                  <li>
+                    <Link className="dropdown-item" to="/mon-profil" onClick={() => handleNavigation('/mon-profil')}>
+                      <i className="fas fa-user me-2"></i>
+                      Mon Profil
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/mes-clubs" onClick={() => handleNavigation('/mes-clubs')}>
+                      <i className="fas fa-shield-alt me-2"></i>
+                      Mes Clubs
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/mes-competitions" onClick={() => handleNavigation('/mes-competitions')}>
+                      <i className="fas fa-trophy me-2"></i>
+                      Mes Compétitions
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/invitations" onClick={() => handleNavigation('/invitations')}>
+                      <i className="fas fa-envelope me-2"></i>
+                      Invitations
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="dropdown-item" to="/notifications" onClick={() => handleNavigation('/notifications')}>
+                      <i className="fas fa-bell me-2"></i>
+                      Notifications
+                    </Link>
+                  </li>
+                  {user.isAdmin && (
+                    <>
+                      <li><hr className="dropdown-divider" /></li>
+                      <li>
+                        <Link className="dropdown-item text-danger" to="/admin/dashboard" onClick={() => handleNavigation('/admin/dashboard')}>
+                          <i className="fas fa-tachometer-alt me-2"></i>
+                          Dashboard Admin
+                        </Link>
+                      </li>
+                      <li>
+                        <Link className="dropdown-item text-danger" to="/admin" onClick={() => handleNavigation('/admin')}>
+                          <i className="fas fa-cog me-2"></i>
+                          Administration
+                        </Link>
+                      </li>
+                    </>
+                  )}
+                  <li><hr className="dropdown-divider" /></li>
+                  <li>
+                    <Link className="dropdown-item" to="/compte" onClick={() => handleNavigation('/compte')}>
+                      <i className="fas fa-cog me-2"></i>
+                      Paramètres
+                    </Link>
+                  </li>
+                  <li>
+                    <button className="dropdown-item text-danger" onClick={() => {
+                      handleLogout();
+                    }}>
+                      <i className="fas fa-sign-out-alt me-2"></i>
+                      Déconnexion
+                    </button>
+                  </li>
+                </ul>
+              </li>
             ) : (
               <>
                 <li className="nav-item">
-                  <Link className="nav-link" to="/login" onClick={() => handleNavigation('/login')}>
+                  <Link className="nav-link px-2 text-white" to="/login" onClick={() => handleNavigation('/login')}>
                     <i className="fas fa-sign-in-alt me-1"></i>
-                    Connexion
+                    <span className="d-none d-sm-inline">Connexion</span>
                   </Link>
                 </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/register" onClick={() => handleNavigation('/register')}>
+                <li className="nav-item ms-1">
+                  <Link className="btn btn-sm btn-primary px-3" to="/register" onClick={() => handleNavigation('/register')}>
                     <i className="fas fa-user-plus me-1"></i>
-                    Inscription
+                    <span>S'inscrire</span>
                   </Link>
                 </li>
               </>

@@ -42,15 +42,7 @@ export default function CompetitionListPage() {
     fetchCompetitions();
   }, [fetchCompetitions]);
 
-  const getStatutBadge = (statut) => {
-    const badges = {
-      'Ouvert': 'success',
-      'Fermé': 'secondary',
-      'En cours': 'warning',
-      'Terminé': 'info'
-    };
-    return badges[statut] || 'secondary';
-  };
+
 
   const getTypeIcon = (type) => {
     const icons = {
@@ -88,17 +80,17 @@ export default function CompetitionListPage() {
   }
 
   return (
-    <div className="container py-4">
+    <div className="container py-4 px-4 px-md-5 animate-fade-in">
       {/* En-tête */}
-      <div className="row mb-4">
-        <div className="col-md-8">
-          <h1 className="display-6 fw-bold text-primary">
-            <i className="fas fa-trophy me-3"></i>
+      <div className="gaming-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <h1 className="gaming-title mb-2">
+            <i className="fas fa-trophy text-gradient me-3"></i>
             Compétitions
           </h1>
-          <p className="text-muted">Découvrez et participez aux tournois FIFA</p>
+          <p className="gaming-subtitle">Découvrez et rejoignez les compétitions et championnats officiels</p>
         </div>
-        <div className="col-md-4 text-end">
+        <div>
           {user && user.isAdmin && (
             <Link to="/competitions/creer" className="btn btn-primary">
               <i className="fas fa-plus me-2"></i>
@@ -178,40 +170,40 @@ export default function CompetitionListPage() {
       */}
 
       {/* Statistiques */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card bg-primary text-white">
-            <div className="card-body text-center">
-              <i className="fas fa-trophy fa-2x mb-2"></i>
+      <div className="row mb-4 g-3">
+        <div className="col-md-3 col-6">
+          <div className="card gaming-stat-card purple mb-0 h-100">
+            <div className="card-body text-center py-3">
+              <i className="fas fa-trophy text-gradient mb-2" style={{fontSize: '1.5rem'}}></i>
               <h4>{pagination.total}</h4>
-              <p className="mb-0">Compétitions</p>
+              <p className="mb-0 text-muted">Compétitions</p>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card bg-success text-white">
-            <div className="card-body text-center">
-              <i className="fas fa-door-open fa-2x mb-2"></i>
+        <div className="col-md-3 col-6">
+          <div className="card gaming-stat-card cyan mb-0 h-100">
+            <div className="card-body text-center py-3">
+              <i className="fas fa-door-open text-info mb-2" style={{fontSize: '1.5rem'}}></i>
               <h4>{competitions.filter(c => c.statut === 'Ouvert').length}</h4>
-              <p className="mb-0">Ouvertes</p>
+              <p className="mb-0 text-muted">Ouvertes</p>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card bg-warning text-white">
-            <div className="card-body text-center">
-              <i className="fas fa-play fa-2x mb-2"></i>
+        <div className="col-md-3 col-6">
+          <div className="card gaming-stat-card pink mb-0 h-100">
+            <div className="card-body text-center py-3">
+              <i className="fas fa-play text-danger mb-2" style={{fontSize: '1.5rem'}}></i>
               <h4>{competitions.filter(c => c.statut === 'En cours').length}</h4>
-              <p className="mb-0">En cours</p>
+              <p className="mb-0 text-muted">En cours</p>
             </div>
           </div>
         </div>
-        <div className="col-md-3">
-          <div className="card bg-info text-white">
-            <div className="card-body text-center">
-              <i className="fas fa-check-circle fa-2x mb-2"></i>
+        <div className="col-md-3 col-6">
+          <div className="card gaming-stat-card yellow mb-0 h-100">
+            <div className="card-body text-center py-3">
+              <i className="fas fa-check-circle text-warning mb-2" style={{fontSize: '1.5rem'}}></i>
               <h4>{competitions.filter(c => c.statut === 'Terminé').length}</h4>
-              <p className="mb-0">Terminées</p>
+              <p className="mb-0 text-muted">Terminées</p>
             </div>
           </div>
         </div>
@@ -235,75 +227,69 @@ export default function CompetitionListPage() {
           {competitions.map(competition => (
             <div key={competition._id} className="col-lg-4 col-md-6">
               <div 
-                className="card h-100 shadow-sm competition-card"
+                className="card h-100 hover-shadow competition-card"
                 onClick={() => handleCardClick(competition._id)}
-                style={{ 
-                  cursor: 'pointer', 
-                  transition: 'all 0.3s ease',
-                  border: '1px solid #dee2e6'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-                  e.currentTarget.style.borderColor = '#007bff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
-                  e.currentTarget.style.borderColor = '#dee2e6';
-                }}
+                style={{ cursor: 'pointer' }}
               >
                 <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start mb-3">
-                    <div>
-                      <span className={`badge bg-${getStatutBadge(competition.statut)} me-2`}>
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="d-flex gap-2">
+                      <span className={`badge ${
+                        competition.statut === 'Ouvert' ? 'bg-success' :
+                        competition.statut === 'En cours' ? 'bg-primary' : 'bg-secondary'
+                      }`}>
                         {competition.statut}
                       </span>
-                      <span className="badge bg-secondary">
-                        {competition.type}
+                      <span className="badge bg-secondary text-uppercase" style={{fontSize: '0.7rem'}}>
+                        {competition.type === 'championnat' ? 'Championnat' : 'Coupe'}
                       </span>
                     </div>
-                    <i className={`${getTypeIcon(competition.type)} fa-2x text-primary`}></i>
+                    <div className="p-2 rounded bg-dark-navbar text-primary d-flex align-items-center justify-content-center" style={{width: '36px', height: '36px', border: '1px solid var(--border-glass)'}}>
+                      <i className={`${getTypeIcon(competition.type)} text-gradient`} style={{fontSize: '1rem'}}></i>
+                    </div>
                   </div>
 
-                  <h5 className="card-title mb-2 text-truncate" title={competition.nom}>
+                  <h5 className="card-title mb-2 text-truncate text-white font-rajdhani text-uppercase fw-bold" style={{letterSpacing: '0.5px'}} title={competition.nom}>
                     {competition.nom}
                   </h5>
                   
                   {competition.description && (
-                    <p className="card-text text-muted small mb-3" style={{ height: '60px', overflow: 'hidden' }}>
-                      {competition.description.length > 100 
-                        ? `${competition.description.substring(0, 100)}...` 
+                    <p className="card-text text-silver small mb-3" style={{ height: '48px', overflow: 'hidden', fontSize: '0.85rem' }}>
+                      {competition.description.length > 80 
+                        ? `${competition.description.substring(0, 80)}...` 
                         : competition.description}
                     </p>
                   )}
 
                   <CompetitionCountdown dateDebut={competition.dateDebut} statut={competition.statut} />
 
-                  <div className="row text-center mb-3">
-                    <div className="col-4">
-                      <small className="text-muted d-block">Équipes</small>
-                      <strong className="text-primary">
+                  <div className="row g-0 text-center mb-3 rounded mt-3" style={{background: 'rgba(0,0,0,0.15)', border: '1px solid var(--border-glass)', padding: '0.75rem 0'}}>
+                    <div className="col-4 border-end" style={{borderColor: 'rgba(255,255,255,0.08)'}}>
+                      <small className="text-uppercase text-muted d-block" style={{fontSize: '0.6rem', letterSpacing: '0.5px'}}>Équipes</small>
+                      <strong className="text-white font-rajdhani" style={{fontSize: '0.95rem'}}>
                         {competition.equipesInscrites?.length || 0}
                       </strong>
                     </div>
-                    <div className="col-4">
-                      <small className="text-muted d-block">Début</small>
-                      <strong>{formatDate(competition.dateDebut)}</strong>
+                    <div className="col-4 border-end" style={{borderColor: 'rgba(255,255,255,0.08)'}}>
+                      <small className="text-uppercase text-muted d-block" style={{fontSize: '0.6rem', letterSpacing: '0.5px'}}>Début</small>
+                      <span className="text-white font-rajdhani fw-bold" style={{fontSize: '0.85rem'}}>{formatDate(competition.dateDebut)}</span>
                     </div>
                     <div className="col-4">
-                      <small className="text-muted d-block">Dotation</small>
-                      <strong className="text-success">
-                        {competition.dotation ? `${competition.dotation}€` : 'N/A'}
+                      <small className="text-uppercase text-muted d-block" style={{fontSize: '0.6rem', letterSpacing: '0.5px'}}>Dotation</small>
+                      <strong className="text-gradient font-rajdhani" style={{fontSize: '0.95rem'}}>
+                        {competition.dotation ? `${competition.dotation}€` : '0€'}
                       </strong>
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-center">
+                  <div className="d-flex justify-content-between align-items-center mt-3 pt-2" style={{borderTop: '1px solid var(--border-glass)'}}>
                     <small className="text-muted">
-                      <i className="fas fa-user me-1"></i>
-                      Créé par {competition.createurId?.pseudo || 'Anonyme'}
+                      <i className="fas fa-user-edit me-1 text-primary"></i>
+                      {competition.createurId?.pseudo || 'Anonyme'}
                     </small>
+                    <span className="text-primary font-rajdhani fw-bold text-uppercase" style={{fontSize: '0.75rem'}}>
+                      Rejoindre <i className="fas fa-chevron-right ms-1" style={{fontSize: '0.7rem'}}></i>
+                    </span>
                   </div>
                 </div>
               </div>

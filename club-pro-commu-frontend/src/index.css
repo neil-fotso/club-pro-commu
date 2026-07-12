@@ -1,99 +1,177 @@
-/* Force le mode clair seulement */
-html {
-  color-scheme: light only;
+/* ==========================================
+   DESIGN SYSTEM - DARK ESPORTS & MOBILE-FIRST
+   ========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-dark-obsidian: #080c14;
+  --bg-dark-panel: #111625;
+  --bg-dark-panel-hover: #171d30;
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --bg-glass: rgba(17, 22, 37, 0.75);
+  
+  /* Neon Accents */
+  --neon-purple: #8b5cf6;
+  --neon-purple-glow: rgba(139, 92, 246, 0.25);
+  --neon-cyan: #00f0ff;
+  --neon-cyan-glow: rgba(0, 240, 255, 0.25);
+  --neon-pink: #ff007f;
+  --neon-pink-glow: rgba(255, 0, 127, 0.25);
+  
+  /* Text Colors */
+  --text-silver: #94a3b8;
+  --text-white: #ffffff;
+  
+  /* Brand Gradients */
+  --gradient-esports: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-cyan) 100%);
+  --gradient-esports-hover: linear-gradient(135deg, #7c3aed 0%, #0891b2 100%);
+  --gradient-dark: linear-gradient(135deg, #111625 0%, #080c14 100%);
+}
+
+/* Force dark color scheme */
+html, :root {
+  color-scheme: dark !important;
+  background-color: var(--bg-dark-obsidian);
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background-color: var(--bg-dark-obsidian);
+  color: var(--text-silver);
+  font-family: 'Outfit', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color-scheme: light only;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Effets de hover pour les cartes */
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  color: var(--text-white);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.85rem; }
+h3 { font-size: 1.5rem; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-dark-obsidian);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-purple);
+}
+
+/* Card Overrides (Glassmorphism) */
+.card {
+  background: var(--bg-glass) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card-header {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-bottom: 1px solid var(--border-glass) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+.card-footer {
+  background: rgba(255, 255, 255, 0.01) !important;
+  border-top: 1px solid var(--border-glass) !important;
+  padding: 1.25rem 1.5rem !important;
+}
+
+/* Bootstrap Theme Adaptations */
+.bg-white {
+  background-color: var(--bg-dark-panel) !important;
+}
+
+.bg-light {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--border-glass) !important;
+  color: var(--text-white) !important;
+}
+
+.text-dark {
+  color: var(--text-silver) !important;
+}
+
+.text-muted {
+  color: #64748b !important;
+}
+
+.border {
+  border-color: var(--border-glass) !important;
+}
+
+/* Glowing hover effects */
 .hover-shadow {
   transition: all 0.3s ease;
 }
 
 .hover-shadow:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px var(--neon-purple-glow) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
 }
 
-/* Effet de flou pour le backdrop */
-.backdrop-blur {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-/* Animation pour les icônes */
-.card .bg-opacity-10 {
-  transition: all 0.3s ease;
-}
-
-.card:hover .bg-opacity-10 {
-  transform: scale(1.1);
-}
-
-/* Amélioration des boutons */
 .btn {
-  transition: all 0.3s ease;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
 }
 
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Animation pour les badges */
+.btn:active {
+  transform: translateY(0);
+}
+
 .badge {
-  transition: all 0.3s ease;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+  padding: 0.5em 0.75em;
 }
 
-.badge:hover {
-  transform: scale(1.05);
-}
-
-/* Amélioration des liens */
-a {
-  transition: all 0.3s ease;
-}
-
-a:hover {
-  text-decoration: none;
-}
-
-/* Animation pour les images */
-img {
-  transition: all 0.3s ease;
-}
-
-img:hover {
-  transform: scale(1.05);
-}
-
-/* Effet de gradient pour le texte */
-.text-white-90 {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.text-white-75 {
-  color: rgba(255, 255, 255, 0.75) !important;
-}
-
-/* Animation d'entrée pour les cartes */
+/* Animation presets */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -101,185 +179,98 @@ img:hover {
   }
 }
 
-.card {
-  animation: fadeInUp 0.6s ease-out;
+.animate-fade-in {
+  animation: fadeInUp 0.5s ease-out forwards;
 }
 
-/* ===== AMÉLIORATIONS MOBILE-FIRST ===== */
+/* ===== MOBILE-FIRST CUSTOM STYLES ===== */
 
-/* Optimisations pour mobile */
 @media (max-width: 768px) {
-  /* Images responsives */
-  .img-fluid {
-    max-height: 150px !important;
-  }
+  h1 { font-size: 1.85rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.25rem !important; }
   
-  /* Espacement amélioré pour mobile */
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
   }
   
-  /* Boutons optimisés pour le touch */
+  .card {
+    border-radius: 12px !important;
+    margin-bottom: 1rem;
+  }
+  
+  .card-body {
+    padding: 1.25rem !important;
+  }
+  
   .btn {
     min-height: 44px;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    border-radius: 8px;
-  }
-  
-  /* Cartes avec meilleur espacement */
-  .card {
-    margin-bottom: 1rem;
-    border-radius: 12px;
-  }
-  
-  /* Navigation mobile améliorée */
-  .navbar-nav .nav-link {
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    margin-bottom: 0.125rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-  }
-  
-  .navbar-nav .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  /* Dropdown mobile optimisé */
-  .dropdown-menu {
-    border-radius: 12px;
-    margin-top: 0.25rem;
-    padding: 0.25rem 0;
-  }
-  
-  .dropdown-item {
-    padding: 0.5rem 0.75rem;
+    padding: 0.65rem 1.25rem;
     font-size: 0.95rem;
-    margin-bottom: 0.125rem;
-    border-radius: 6px;
-    margin-left: 0.25rem;
-    margin-right: 0.25rem;
-  }
-  
-  .dropdown-item:hover {
-    background-color: rgba(0, 123, 255, 0.1);
-  }
-  
-  /* Formulaires optimisés */
-  .form-control, .form-select {
-    min-height: 48px;
-    font-size: 1rem;
-    border-radius: 8px;
-  }
-  
-  /* Badges plus lisibles */
-  .badge {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.75rem;
-  }
-  
-  /* Textes optimisés */
-  h1 { font-size: 2rem !important; }
-  h2 { font-size: 1.75rem !important; }
-  h3 { font-size: 1.5rem !important; }
-  h4 { font-size: 1.25rem !important; }
-  h5 { font-size: 1.125rem !important; }
-  h6 { font-size: 1rem !important; }
-  
-  /* Espacement des sections */
-  .py-5 {
-    padding-top: 3rem !important;
-    padding-bottom: 3rem !important;
-  }
-  
-  .mb-5 {
-    margin-bottom: 2rem !important;
-  }
-}
-
-/* Animations tactiles pour mobile */
-@media (hover: none) and (pointer: coarse) {
-  .hover-shadow:hover {
-    transform: none;
-  }
-  
-  .btn:hover {
-    transform: none;
-  }
-  
-  /* Effet de pression pour les boutons */
-  .btn:active {
-    transform: scale(0.98);
-  }
-  
-  /* Effet de pression pour les cartes */
-  .card:active {
-    transform: scale(0.98);
-  }
-}
-
-/* Améliorations pour les écrans tactiles */
-@media (max-width: 768px) {
-  /* Zone de clic minimale */
-  .nav-link, .dropdown-item, .btn {
-    min-height: 44px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
   
-  /* Espacement spécifique pour le menu burger */
-  .navbar-collapse .navbar-nav {
-    padding: 0.25rem 0;
+  .form-control, .form-select {
+    min-height: 46px;
+    font-size: 0.95rem;
   }
   
-  .navbar-collapse .navbar-nav .nav-item {
-    margin-bottom: 0.5rem;
-  }
-  
-  .navbar-collapse .navbar-nav .nav-link {
-    margin-bottom: 0.25rem;
-  }
-  
-  /* Espacement uniforme et compact pour tous les éléments du menu mobile */
-  .navbar-collapse .navbar-nav .nav-item {
-    margin-bottom: 0.125rem;
-  }
-  
-  .navbar-collapse .navbar-nav .nav-item .btn {
-    min-height: 44px;
-    border-radius: 8px;
-    margin-bottom: 0.125rem;
-  }
-  
-  /* Espacement uniforme pour les liens */
-  .navbar-collapse .navbar-nav .nav-link {
-    margin-bottom: 0.125rem;
-  }
-  
-  /* Espacement entre les éléments interactifs */
-  .btn + .btn {
-    margin-left: 0.5rem;
-  }
-  
-  /* Amélioration de la lisibilité */
-  .text-muted {
-    color: #6c757d !important;
-  }
-  
-  /* Ombres plus douces sur mobile */
-  .shadow-sm {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-  }
-  
-  .shadow {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-  }
-  
-  .shadow-lg {
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2) !important;
+  /* Adjust lists on mobile */
+  .list-group-item {
+    padding: 0.85rem 1rem !important;
   }
 }
 
+/* Tactile enhancements */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover, .hover-shadow:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  .btn:active {
+    transform: scale(0.96) !important;
+  }
+  
+  .card:active {
+    transform: scale(0.99) !important;
+  }
+}
 
+/* Table styling in Dark Mode */
+.table {
+  color: var(--text-silver) !important;
+}
+
+.table th {
+  color: var(--text-white) !important;
+  font-family: 'Rajdhani', sans-serif;
+  text-transform: uppercase;
+  border-bottom-color: var(--border-glass) !important;
+}
+
+.table td {
+  border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+  vertical-align: middle;
+}
+
+/* Modal styling overrides */
+.modal-content {
+  background-color: #121829 !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6) !important;
+}
+
+.modal-header, .modal-footer {
+  border-color: var(--border-glass) !important;
+}
+
+.modal-title {
+  font-family: 'Rajdhani', sans-serif;
+  text-transform: uppercase;
+  color: var(--text-white);
+}

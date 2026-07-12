@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
+import BottomNavigation from '../components/BottomNavigation';
 import NotificationPopup from '../components/NotificationPopup';
 
 export default function MainLayout({ children }) {
@@ -18,6 +19,7 @@ export default function MainLayout({ children }) {
     <div>
       <Navbar />
       <main>{children}</main>
+      <BottomNavigation />
       <NotificationPopup />
       {/* <Chatbot /> */}
       

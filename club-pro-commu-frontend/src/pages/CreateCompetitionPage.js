@@ -124,16 +124,18 @@ const CreateCompetitionPage = () => {
   };
 
   return (
-    <div className="container py-5">
+    <div className="container py-4 px-4 px-md-5 animate-fade-in">
       <div className="row justify-content-center">
         <div className="col-lg-8">
-          <div className="card shadow">
-            <div className="card-header bg-primary text-white">
-              <h2 className="mb-0">
-                <i className="fas fa-trophy me-2"></i>
-                Créer une nouvelle compétition
-              </h2>
-            </div>
+          <div className="gaming-header">
+            <h2 className="gaming-title mb-2">
+              <i className="fas fa-plus-circle text-gradient me-2"></i>
+              Créer une compétition
+            </h2>
+            <p className="gaming-subtitle">Configurez les dates, la dotation et lancez le tournoi</p>
+          </div>
+
+          <div className="card">
             <div className="card-body">
               {error && (
                 <div className="alert alert-danger">
@@ -350,27 +352,39 @@ const CreateCompetitionPage = () => {
                     <label className="form-label">
                       <strong>Date et heure de début *</strong>
                     </label>
-                    <input
-                      type="datetime-local"
-                      className="form-control"
-                      name="dateDebut"
-                      value={formData.dateDebut}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <div className="input-group">
+                      <span className="input-group-text bg-dark-navbar text-primary border-glass" style={{ borderRight: 'none' }}>
+                        <i className="fas fa-calendar-alt text-gradient"></i>
+                      </span>
+                      <input
+                        type="datetime-local"
+                        className="form-control border-glass ps-1"
+                        name="dateDebut"
+                        value={formData.dateDebut}
+                        onChange={handleInputChange}
+                        required
+                        style={{ borderLeft: 'none' }}
+                      />
+                    </div>
                   </div>
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Date et heure de fin</strong>
                     </label>
-                    <input
-                      type="datetime-local"
-                      className="form-control"
-                      name="dateFin"
-                      value={formData.dateFin}
-                      onChange={handleInputChange}
-                    />
+                    <div className="input-group">
+                      <span className="input-group-text bg-dark-navbar text-primary border-glass" style={{ borderRight: 'none' }}>
+                        <i className="fas fa-calendar-check text-gradient"></i>
+                      </span>
+                      <input
+                        type="datetime-local"
+                        className="form-control border-glass ps-1"
+                        name="dateFin"
+                        value={formData.dateFin}
+                        onChange={handleInputChange}
+                        style={{ borderLeft: 'none' }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -528,35 +542,37 @@ const CreateCompetitionPage = () => {
                 </div>
 
                 {/* Boutons */}
-                <div className="row">
-                  <div className="col-12 text-center">
-                    <button
-                      type="button"
-                      className="btn btn-secondary me-3"
-                      onClick={() => navigate('/competitions')}
-                      disabled={loading}
-                    >
-                      <i className="fas fa-times me-2"></i>
-                      Annuler
-                    </button>
-                    
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          Création...
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-plus me-2"></i>
-                          Créer la compétition
-                        </>
-                      )}
-                    </button>
+                <div className="row mt-4">
+                  <div className="col-12">
+                    <div className="d-flex flex-column flex-md-row justify-content-center gap-3">
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary w-100 w-md-auto px-4 py-2"
+                        onClick={() => navigate('/competitions')}
+                        disabled={loading}
+                      >
+                        <i className="fas fa-times me-2"></i>
+                        Annuler
+                      </button>
+                      
+                      <button
+                        type="submit"
+                        className="btn btn-primary w-100 w-md-auto px-4 py-2"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Création...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-plus me-2"></i>
+                            Créer la compétition
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </form>
