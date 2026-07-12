@@ -1075,10 +1075,13 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
     const isAdmin = estAdminSite || estCreateurCompetition;
     const teamRole = estAdminEquipe1 ? 'equipe1' : estAdminEquipe2 ? 'equipe2' : null;
 
+    const numScore1 = Number(score1);
+    const numScore2 = Number(score2);
+
     if (isAdmin) {
       // L'admin force le score directement sans double validation
-      match.score1 = score1;
-      match.score2 = score2;
+      match.score1 = numScore1;
+      match.score2 = numScore2;
       match.statut = 'Terminé';
       match.litige = false;
       match.valideParEquipe1 = true;
@@ -1093,8 +1096,8 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
       if (!dejaPropose) {
         // Première proposition
         match.propositionScore = {
-          score1,
-          score2,
+          score1: numScore1,
+          score2: numScore2,
           proposePar: teamRole,
           dateSaisie: new Date()
         };
@@ -1110,10 +1113,10 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
           return res.status(400).json({ message: 'Vous avez déjà soumis votre score. En attente de l\'adversaire.' });
         }
 
-        if (prop.score1 === score1 && prop.score2 === score2) {
+        if (Number(prop.score1) === numScore1 && Number(prop.score2) === numScore2) {
           // ✅ Scores concordants → Valider définitivement
-          match.score1 = score1;
-          match.score2 = score2;
+          match.score1 = numScore1;
+          match.score2 = numScore2;
           match.statut = 'Terminé';
           match.litige = false;
           match.valideParEquipe1 = true;
@@ -1126,7 +1129,7 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
           match.litigeDetails = {
             signalePar: req.user.id,
             clubId: estAdminEquipe1 ? match.equipe1 : match.equipe2,
-            description: `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${score1}-${score2}. Capture d'écran requise.`,
+            description: `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${numScore1}-${numScore2}.`,
             preuveVideo: captureEcran || null,
             dateSignalement: new Date(),
             statut: 'En attente'
@@ -1134,7 +1137,7 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
           match.statut = 'En cours'; // Bloqué, en attente de l'admin
           await competition.save();
           return res.json({
-            message: '⚠️ Les scores ne correspondent pas. Le match est en litige. L\'administrateur va trancher.',
+            message: `⚠️ Les scores ne correspondent pas (${prop.score1}-${prop.score2} vs ${numScore1}-${numScore2}). Le match est en litige. L'administrateur va trancher.`,
             statut: 'litige',
             litigeDetails: match.litigeDetails
           });
@@ -1359,6 +1362,99 @@ router.post('/:id/matchs/:matchId/forfait', auth, async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+// POST /api/competitions/:id/matchs/:matchId/resoudre-litige - Trancher, faire rejouer ou rejeter un litige par l'admin ou le créateur de la compétition
+router.post('/:id/matchs/:matchId/resoudre-litige', auth, async (req, res) => {
+  try {
+    const { id: competitionId, matchId } = req.params;
+    const { action, decisionAdmin, score1, score2 } = req.body;
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    // Vérifier que l'utilisateur est admin du site ou créateur de la compétition
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+
+    if (!estAdminSite && !estCreateurCompetition) {
+      return res.status(403).json({ message: 'Seuls les administrateurs ou le créateur de la compétition peuvent arbitrer les litiges' });
+    }
+
+    // Trouver le match
+    let match = competition.matchsElimination.id(matchId);
+    if (!match) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    if (action === 'trancher') {
+      match.score1 = parseInt(score1);
+      match.score2 = parseInt(score2);
+      match.statut = 'Terminé';
+      match.litige = false;
+      
+      if (!match.litigeDetails) match.litigeDetails = {};
+      match.litigeDetails.statut = 'Tranché';
+      match.litigeDetails.decisionAdmin = decisionAdmin || 'Tranché par l\'administrateur';
+      match.litigeDetails.dateResolution = new Date();
+      match.litigeDetails.resoluPar = req.user.id;
+
+      // Mettre à jour les stats d'équipe
+      await updateTeamStats(competition, match);
+
+      // Recalculer les stats de la compétition
+      const stats = await calculateCompetitionStats(competition);
+      competition.statistiques = stats;
+
+      // Gérer la progression si élimination directe (hors Petite finale)
+      if (competition.type === 'elimination_directe' && match.phase && match.phase !== 'Petite finale') {
+        await handleEliminationProgression(competition, match);
+      }
+    } else if (action === 'rejouer') {
+      match.score1 = null;
+      match.score2 = null;
+      match.statut = 'Programmé';
+      match.litige = false;
+      match.equipe1Prete = false;
+      match.equipe2Prete = false;
+      match.dateDebutPreparation = null;
+      match.dateDebutMatch = null;
+      match.propositionScore = {
+        score1: null,
+        score2: null,
+        proposePar: null,
+        dateSaisie: null
+      };
+      
+      if (!match.litigeDetails) match.litigeDetails = {};
+      match.litigeDetails.statut = 'Tranché';
+      match.litigeDetails.decisionAdmin = decisionAdmin || 'Match réinitialisé pour être rejoué';
+      match.litigeDetails.dateResolution = new Date();
+      match.litigeDetails.resoluPar = req.user.id;
+    } else if (action === 'rejeter') {
+      match.litige = false;
+      if (!match.litigeDetails) match.litigeDetails = {};
+      match.litigeDetails.statut = 'Rejeté';
+      match.litigeDetails.decisionAdmin = decisionAdmin || 'Litige rejeté par l\'administrateur';
+      match.litigeDetails.dateResolution = new Date();
+      match.litigeDetails.resoluPar = req.user.id;
+    } else {
+      return res.status(400).json({ message: 'Action non reconnue. Doit être trancher, rejouer ou rejeter.' });
+    }
+
+    await competition.save();
+    res.json({ success: true, message: 'Litige résolu avec succès !' });
+  } catch (error) {
+    console.error('Erreur résolution litige:', error);
+    res.status(500).json({ message: 'Erreur lors de la résolution du litige' });
+  }
+});
+
 
 // 🔹 6. FONCTIONS UTILITAIRES
 

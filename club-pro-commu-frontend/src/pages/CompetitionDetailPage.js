@@ -263,10 +263,16 @@ export default function CompetitionDetailPage() {
                 Retour
               </Link>
               {(competition.statut === 'En cours' || competition.statut === 'Terminé') && (
-                <Link to={`/competition/${competition._id}/matchs`} className="btn btn-sm btn-primary">
-                  <i className="fas fa-calendar-alt me-1"></i>
-                  Calendrier & Matchs
-                </Link>
+                <>
+                  <Link to={`/competition/${competition._id}/matchs`} className="btn btn-sm btn-outline-info">
+                    <i className="fas fa-calendar-alt me-1"></i>
+                    Calendrier
+                  </Link>
+                  <Link to={`/competition/${competition._id}/mes-matchs`} className="btn btn-sm btn-primary">
+                    <i className="fas fa-futbol me-1"></i>
+                    Matchs
+                  </Link>
+                </>
               )}
 
             </div>
@@ -734,4 +740,4 @@ export default function CompetitionDetailPage() {
       )}
     </div>
   );
-} 
+}

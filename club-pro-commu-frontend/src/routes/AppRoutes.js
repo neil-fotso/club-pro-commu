@@ -13,6 +13,8 @@ import ClubProfilePage from '../pages/ClubProfilePage';
 import CompetitionListPage from '../pages/CompetitionListPage';
 import CompetitionDetailPage from '../pages/CompetitionDetailPage';
 import CompetitionMatchesPage from '../pages/CompetitionMatchesPage';
+import ClubMatchesPage from '../pages/ClubMatchesPage';
+import MatchLobbyPage from '../pages/MatchLobbyPage';
 import CompetitionStatsPage from '../pages/CompetitionStatsPage';
 import PaymentSimulationPage from '../pages/PaymentSimulationPage';
 import PrivacyPolicyPage from '../pages/PrivacyPolicyPage';
@@ -101,6 +103,16 @@ export default function AppRoutes() {
       <Route path="/competition/:id/matchs" element={
         <MainLayout>
           <CompetitionMatchesPage />
+        </MainLayout>
+      } />
+      <Route path="/competition/:id/mes-matchs" element={
+        <MainLayout>
+          <ClubMatchesPage />
+        </MainLayout>
+      } />
+      <Route path="/competition/:id/match/:matchId" element={
+        <MainLayout>
+          <MatchLobbyPage />
         </MainLayout>
       } />
       <Route path="/competition/:id/paiement/:clubId" element={

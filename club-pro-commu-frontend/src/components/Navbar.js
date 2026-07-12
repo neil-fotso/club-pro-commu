@@ -156,7 +156,7 @@ export default function Navbar() {
                       Mes Clubs
                     </Link>
                   </li>
-                  <li>
+                  {/* <li>
                     <Link className="dropdown-item" to="/mes-competitions" onClick={() => handleNavigation('/mes-competitions')}>
                       <i className="fas fa-trophy me-2"></i>
                       Mes Compétitions
@@ -173,7 +173,7 @@ export default function Navbar() {
                       <i className="fas fa-bell me-2"></i>
                       Notifications
                     </Link>
-                  </li>
+                  </li> */}
                   {user.isAdmin && (
                     <>
                       <li><hr className="dropdown-divider" /></li>

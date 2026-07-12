@@ -6,24 +6,69 @@ import { clubAPI } from '../services/api';
 // Styles améliorés pour la page de profil du club
 const clubProfileStyles = `
   .club-profile-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #090714;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(123, 0, 255, 0.15), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.12), transparent 40%),
+      linear-gradient(rgba(255,255,255,0.007) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.007) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
     min-height: 100vh;
-    padding: 2rem 0;
+    padding: 2.5rem 0;
+    color: #f1f0f6;
+    font-family: 'Outfit', 'Inter', sans-serif;
   }
   
   .club-profile-content {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    animation: fadeInUp 0.8s ease-out;
+    background: rgba(18, 14, 33, 0.65);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 0;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(123, 0, 255, 0.05);
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+
+  .club-banner-cover {
+    height: 220px;
+    background: linear-gradient(135deg, #180d32 0%, #06030c 100%);
+    position: relative;
+    overflow: hidden;
+    border-bottom: 2px solid #00f0ff;
+  }
+
+  .club-banner-pattern {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.06;
+    background-image: 
+      linear-gradient(45deg, #00f0ff 25%, transparent 25%), 
+      linear-gradient(-45deg, #00f0ff 25%, transparent 25%), 
+      linear-gradient(45deg, transparent 75%, #00f0ff 75%), 
+      linear-gradient(-45deg, transparent 75%, #00f0ff 75%);
+    background-size: 20px 20px;
+  }
+
+  .club-banner-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    height: 80%;
+    background: radial-gradient(circle, rgba(123, 0, 255, 0.3) 0%, transparent 70%);
+    filter: blur(30px);
+    pointer-events: none;
+  }
+
+  .club-profile-body {
+    padding: 2.5rem;
   }
   
   @keyframes fadeInUp {
     0% {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(40px);
     }
     100% {
       opacity: 1;
@@ -33,139 +78,194 @@ const clubProfileStyles = `
   
   .club-header {
     text-align: center;
-    margin-bottom: 3rem;
-    animation: slideInDown 0.8s ease-out;
+    margin-bottom: 2.5rem;
+    position: relative;
   }
   
-  @keyframes slideInDown {
-    0% {
-      opacity: 0;
-      transform: translateY(-30px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .club-header h1 {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 3rem;
-    font-weight: 700;
+  .club-title-glow {
+    color: #ffffff;
+    font-size: 3.2rem;
+    font-weight: 800;
     margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
   }
   
   .club-avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 130px;
+    height: 130px;
+    border-radius: 24px;
+    background: #151128;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 1.5rem;
-    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    animation: pulse 2s infinite;
+    margin: -80px auto 1.5rem;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 240, 255, 0.25);
+    border: 3px solid #00f0ff;
+    position: relative;
+    z-index: 10;
+    transition: all 0.5s ease;
   }
-  
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.05);
-    }
+
+  .club-avatar::after {
+    content: '';
+    position: absolute;
+    top: -5px; left: -5px; right: -5px; bottom: -5px;
+    border-radius: 28px;
+    border: 1px solid rgba(0, 240, 255, 0.5);
+    opacity: 0;
+    transition: all 0.5s ease;
+    pointer-events: none;
+  }
+
+  .club-avatar:hover {
+    transform: scale(1.05) rotate(2deg);
+    border-color: #ff007f;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 0, 127, 0.4);
+  }
+
+  .club-avatar:hover::after {
+    opacity: 1;
+    transform: scale(1.05);
+    border-color: rgba(255, 0, 127, 0.5);
   }
   
   .club-avatar i {
-    font-size: 3rem;
-    color: white;
+    font-size: 3.5rem;
+    color: #ffffff;
+    filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));
   }
   
   .club-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
     margin: 2rem 0;
   }
   
   .stat-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-radius: 15px;
+    background: rgba(24, 20, 42, 0.7);
+    border-radius: 20px;
     padding: 1.5rem;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, #00f0ff, #7b00ff);
+    opacity: 0.7;
   }
   
   .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-    border-color: #667eea;
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.3);
   }
   
   .stat-card h6 {
-    color: #667eea;
+    color: #a29db8;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .stat-card h6 i {
+    color: #00f0ff;
+    margin-right: 0.5rem;
   }
   
   .badge {
-    border-radius: 20px;
+    border-radius: 12px;
     padding: 0.5rem 1rem;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .badge.bg-success {
+    background: linear-gradient(135deg, #00ff87 0%, #60efff 100%) !important;
+    color: #0c0a16 !important;
+    box-shadow: 0 0 15px rgba(0, 255, 135, 0.3);
+  }
+
+  .badge.bg-info {
+    background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  }
+
+  .badge.bg-secondary {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #d1cfe2 !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .badge.bg-dark {
+    background: #110e20 !important;
+    color: #00f0ff !important;
+    border: 1px solid rgba(0, 240, 255, 0.2);
   }
   
   .action-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff007f 0%, #7b00ff 100%);
     border: none;
     color: white;
-    border-radius: 25px;
-    padding: 0.75rem 2rem;
-    font-weight: 600;
+    border-radius: 30px;
+    padding: 0.85rem 2.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 0 20px rgba(255, 0, 127, 0.3);
   }
   
   .action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 0 30px rgba(255, 0, 127, 0.5);
+    color: white;
   }
   
   .edit-btn {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    padding: 0.5rem 1.5rem;
-    font-weight: 600;
+    background: transparent;
+    border: 2px solid #00f0ff;
+    color: #00f0ff;
+    border-radius: 30px;
+    padding: 0.65rem 2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
   }
   
   .edit-btn:hover {
+    background: #00f0ff;
+    color: #0c0a16;
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
   }
   
   .member-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-radius: 15px;
-    padding: 1rem;
+    background: rgba(24, 20, 42, 0.65);
+    border-radius: 20px;
+    padding: 1.25rem;
     text-align: center;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  }
-  
-  .member-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    border-color: #667eea;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   }
   
   .member-card-clickable {
@@ -181,8 +281,8 @@ const clubProfileStyles = `
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
-    transition: left 0.5s ease;
+    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.15), transparent);
+    transition: left 0.6s ease;
   }
   
   .member-card-clickable:hover::before {
@@ -190,37 +290,54 @@ const clubProfileStyles = `
   }
   
   .member-card-clickable:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.2);
-    border-color: #667eea;
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: 0 15px 35px rgba(123, 0, 255, 0.25);
+    border-color: #7b00ff;
   }
   
   .member-avatar {
-    width: 60px;
-    height: 60px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a153b 0%, #0c0a16 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 0.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    margin: 0 auto 0.75rem;
+    border: 2px solid rgba(0, 240, 255, 0.2);
+    box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .member-card-clickable:hover .member-avatar {
+    border-color: #7b00ff;
+    box-shadow: 0 0 15px rgba(123, 0, 255, 0.5);
   }
   
   .member-avatar i {
-    font-size: 1.5rem;
-    color: white;
+    font-size: 1.75rem;
+    color: #00f0ff;
+    transition: all 0.3s ease;
+  }
+
+  .member-card-clickable:hover .member-avatar i {
+    color: #7b00ff;
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #00f0ff 0%, #7b00ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   
-  /* Modal amélioré */
+  /* Modal de style gaming */
   .custom-modal {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(5, 3, 10, 0.85);
+    backdrop-filter: blur(10px);
     z-index: 1050;
     display: flex;
     align-items: center;
@@ -228,71 +345,88 @@ const clubProfileStyles = `
     animation: fadeIn 0.3s ease-out;
   }
   
-  @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  
   .custom-modal-content {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    background: #120f26;
+    border-radius: 24px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 240, 255, 0.15);
     max-width: 90%;
     max-height: 90%;
     overflow: hidden;
-    animation: slideInUp 0.3s ease-out;
-  }
-  
-  @keyframes slideInUp {
-    0% {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   
   .custom-modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #180e35 0%, #0b0718 100%);
     color: white;
     padding: 1.5rem;
-    border-bottom: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   
   .custom-modal-header h5 {
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
   }
   
   .custom-modal-body {
-    padding: 1.5rem;
+    padding: 2rem;
     max-height: 60vh;
     overflow-y: auto;
+    background: #120f26;
+    color: #d1cfe2;
   }
   
   .custom-modal-footer {
-    padding: 1rem 1.5rem;
-    border-top: 1px solid #dee2e6;
-    background: #f8f9fa;
+    padding: 1.25rem 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: #0a0718;
+  }
+
+  .custom-modal-footer .btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #d1cfe2;
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .custom-modal-footer .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
   }
   
   .table {
-    border-radius: 10px;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    background: rgba(24, 20, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #d1cfe2;
   }
   
   .table thead th {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    font-weight: 600;
+    background: linear-gradient(135deg, #180d32 0%, #06030c 100%);
+    color: #00f0ff;
+    border-bottom: 2px solid rgba(0, 240, 255, 0.2);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    padding: 1.2rem 1rem;
+  }
+
+  .table tbody td {
+    padding: 1.2rem 1rem;
+    border-color: rgba(255, 255, 255, 0.03);
+    vertical-align: middle;
   }
   
   .table tbody tr {
@@ -300,91 +434,112 @@ const clubProfileStyles = `
   }
   
   .table tbody tr:hover {
-    background: rgba(102, 126, 234, 0.05);
-    transform: scale(1.01);
+    background: rgba(123, 0, 255, 0.08) !important;
   }
   
   .btn-group .btn {
-    border-radius: 20px;
+    border-radius: 12px;
     margin: 0 0.25rem;
     transition: all 0.3s ease;
   }
   
-  .btn-group .btn:hover {
-    transform: translateY(-2px);
-  }
-  
   .form-control, .form-select {
-    border: 2px solid transparent;
-    border-radius: 15px;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 0.75rem 1.2rem;
+    font-size: 0.95rem;
     transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    background: #181432;
+    color: #ffffff;
   }
-  
+
   .form-control:focus, .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    transform: translateY(-2px);
-    background: white;
+    border-color: #00f0ff;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+    background: #1c183b;
+    color: #ffffff;
   }
   
   .form-label {
-    font-weight: 600;
-    color: #495057;
+    font-weight: 700;
+    color: #a29db8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
   }
   
   .form-label i {
     margin-right: 0.5rem;
-    color: #667eea;
+    color: #00f0ff;
   }
-  
-  .platform-checkbox {
-    display: flex;
-    align-items: center;
+
+  /* List group items */
+  .list-group-item {
+    background: rgba(24, 20, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    color: #ffffff;
     margin-bottom: 0.5rem;
+    border-radius: 14px !important;
+    transition: all 0.3s ease;
   }
-  
-  .platform-checkbox input[type="checkbox"] {
-    margin-right: 0.5rem;
+
+  .list-group-item:hover {
+    background: rgba(123, 0, 255, 0.1);
+    border-color: rgba(123, 0, 255, 0.2);
+    transform: translateX(4px);
   }
-  
-  .language-input {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
+
+  /* Titres h5 globaux */
+  h5.text-primary {
+    color: #ffffff !important;
+    font-weight: 800;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    padding-bottom: 0.5rem;
+    display: inline-block;
   }
-  
-  .language-input input {
-    flex: 1;
-    margin-right: 0.5rem;
+
+  h5.text-primary::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 60%;
+    height: 3px;
+    background: linear-gradient(90deg, #00f0ff, #ff007f);
+    border-radius: 2px;
   }
-  
-  .language-input button {
-    background: #dc3545;
-    border: none;
-    color: white;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+  h5.text-primary i {
+    color: #00f0ff;
+  }
+
+  .card.bg-light {
+    background: rgba(24, 20, 42, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 20px;
+    color: #d1cfe2;
   }
   
   @media (max-width: 768px) {
-    .club-profile-content {
-      padding: 1rem;
-      margin: 1rem;
+    .club-profile-container {
+      padding: 1.5rem 1rem;
+    }
+
+    .club-profile-body {
+      padding: 1.5rem 1rem;
     }
     
-    .club-header h1 {
-      font-size: 2rem;
+    .club-title-glow {
+      font-size: 2.2rem;
+    }
+    
+    .club-avatar {
+      width: 100px;
+      height: 100px;
+      margin-top: -60px;
     }
     
     .club-stats {
@@ -748,25 +903,32 @@ export default function ClubProfilePage() {
       <style>{clubProfileStyles}</style>
       <div className="container">
         <div className="club-profile-content">
-          {/* Header du club */}
-          <div className="club-header">
-            <div className="club-avatar">
-              <i className="fas fa-shield-alt"></i>
-            </div>
-            <h1>🏆 {club.nom}</h1>
-            <p className="lead text-muted">
-              {club.plateformes?.map(platform => getPlatformIcon(platform) + ' ' + platform).join(' • ')} • {club.pays}
-            </p>
-            {isAdmin && (
-              <button 
-                className="btn edit-btn mt-3"
-                onClick={() => setShowEditModal(true)}
-              >
-                <i className="fas fa-edit me-2"></i>
-                Modifier le club
-              </button>
-            )}
+          {/* Cover Banner */}
+          <div className="club-banner-cover">
+            <div className="club-banner-pattern"></div>
+            <div className="club-banner-glow"></div>
           </div>
+          
+          <div className="club-profile-body">
+            {/* Header du club */}
+            <div className="club-header">
+              <div className="club-avatar">
+                <i className="fas fa-shield-alt"></i>
+              </div>
+              <h1 className="club-title-glow">🏆 {club.nom}</h1>
+              <p className="lead text-muted">
+                {club.plateformes?.map(platform => getPlatformIcon(platform) + ' ' + platform).join(' • ')} • {club.pays}
+              </p>
+              {isAdmin && (
+                <button 
+                  className="btn edit-btn mt-3"
+                  onClick={() => setShowEditModal(true)}
+                >
+                  <i className="fas fa-edit me-2"></i>
+                  Modifier le club
+                </button>
+              )}
+            </div>
 
           {/* Actions principales */}
           <div className="text-center mb-4">
@@ -1268,6 +1430,7 @@ export default function ClubProfilePage() {
           )}
         </div>
       </div>
+    </div>
 
       {/* Modal de gestion des membres */}
       {showMemberModal && (

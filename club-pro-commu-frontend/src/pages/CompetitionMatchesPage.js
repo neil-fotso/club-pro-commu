@@ -703,97 +703,99 @@ const CompetitionMatchesPage = () => {
         )}
         <div className="bracket-match-wrapper">
           {match ? (
-            <div className={`match-card-container ${match.statut.toLowerCase()} ${match.litige ? 'border-warning shadow-lg' : ''}`}>
-              <div className="match-card-header">
-                <span className="match-card-date">
-                  {match.dateMatch ? (
-                    <>
-                      <i className="far fa-calendar-alt me-1"></i>
-                      {new Date(match.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </>
-                  ) : (
-                    'À programmer'
-                  )}
-                </span>
-                <span className={`match-card-status badge ${getMatchStatus(match)}`}>
-                  {getMatchStatusText(match)}
-                </span>
-              </div>
-              
-              {match.litige && (
-                <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
-                  <i className="fas fa-exclamation-triangle me-1"></i>
-                  LITIGE EN COURS
-                </div>
-              )}
-              
-              <div className="match-card-teams">
-                {/* Équipe 1 */}
-                <div className={`match-card-team ${match.statut === 'Terminé' && match.score1 > match.score2 ? 'winner' : ''}`}>
-                  <span className="match-card-team-name" title={match.equipe1?.nom || 'TBD'}>
-                    {match.equipe1?.nom || 'TBD'}
+            <Link to={`/competition/${id}/match/${match._id}`} className="text-decoration-none d-block">
+              <div className={`match-card-container ${match.statut.toLowerCase()} ${match.litige ? 'border-warning shadow-lg' : ''}`} style={{ cursor: 'pointer' }}>
+                <div className="match-card-header">
+                  <span className="match-card-date">
+                    {match.dateMatch ? (
+                      <>
+                        <i className="far fa-calendar-alt me-1"></i>
+                        {new Date(match.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </>
+                    ) : (
+                      'À programmer'
+                    )}
                   </span>
-                  {match.statut === 'Terminé' && (
-                    <span className="match-card-team-score">{match.score1}</span>
-                  )}
+                  <span className={`match-card-status badge ${getMatchStatus(match)}`}>
+                    {getMatchStatusText(match)}
+                  </span>
                 </div>
                 
-                {/* Équipe 2 */}
-                <div className={`match-card-team ${match.statut === 'Terminé' && match.score2 > match.score1 ? 'winner' : ''}`}>
-                  <span className="match-card-team-name" title={match.equipe2?.nom || 'TBD'}>
-                    {match.equipe2?.nom || 'TBD'}
-                  </span>
+                {match.litige && (
+                  <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
+                    <i className="fas fa-exclamation-triangle me-1"></i>
+                    LITIGE EN COURS
+                  </div>
+                )}
+                
+                <div className="match-card-teams">
+                  {/* Équipe 1 */}
+                  <div className={`match-card-team ${match.statut === 'Terminé' && match.score1 > match.score2 ? 'winner' : ''}`}>
+                    <span className="match-card-team-name" title={match.equipe1?.nom || 'TBD'}>
+                      {match.equipe1?.nom || 'TBD'}
+                    </span>
+                    {match.statut === 'Terminé' && (
+                      <span className="match-card-team-score">{match.score1}</span>
+                    )}
+                  </div>
+                  
+                  {/* Équipe 2 */}
+                  <div className={`match-card-team ${match.statut === 'Terminé' && match.score2 > match.score1 ? 'winner' : ''}`}>
+                    <span className="match-card-team-name" title={match.equipe2?.nom || 'TBD'}>
+                      {match.equipe2?.nom || 'TBD'}
+                    </span>
+                    {match.statut === 'Terminé' && (
+                      <span className="match-card-team-score">{match.score2}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions de saisie score / date */}
+                <div className="match-card-actions">
+                  {!match.dateMatch && (user?.isAdmin || 
+                    userClubs.some(club => 
+                      (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
+                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                    )) && (
+                    <button 
+                      className="btn btn-outline-light btn-sm"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDateModal(match); }}
+                      title="Programmer une date"
+                    >
+                      <i className="fas fa-calendar-plus me-1"></i>
+                      Date
+                    </button>
+                  )}
+                  {match.statut === 'Programmé' && canEditMatchScore(match) && (
+                    <button 
+                      className="btn btn-primary btn-sm"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(match); }}
+                    >
+                      <i className="fas fa-edit me-1"></i>
+                      Score
+                    </button>
+                  )}
                   {match.statut === 'Terminé' && (
-                    <span className="match-card-team-score">{match.score2}</span>
+                    <button 
+                      className="btn btn-outline-light btn-sm"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(match); }}
+                    >
+                      <i className="fas fa-eye me-1"></i>
+                      Détails
+                    </button>
+                  )}
+                  {canReportDispute(match) && !match.litige && (
+                    <button 
+                      className="btn btn-outline-warning btn-sm"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLitigeModal(match); }}
+                      title="Signaler un litige"
+                    >
+                      <i className="fas fa-exclamation-triangle"></i>
+                    </button>
                   )}
                 </div>
               </div>
-
-              {/* Actions de saisie score / date */}
-              <div className="match-card-actions">
-                {!match.dateMatch && (user?.isAdmin || 
-                  userClubs.some(club => 
-                    (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
-                    club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                  )) && (
-                  <button 
-                    className="btn btn-outline-light btn-sm"
-                    onClick={() => openDateModal(match)}
-                    title="Programmer une date"
-                  >
-                    <i className="fas fa-calendar-plus me-1"></i>
-                    Date
-                  </button>
-                )}
-                {match.statut === 'Programmé' && canEditMatchScore(match) && (
-                  <button 
-                    className="btn btn-primary btn-sm"
-                    onClick={() => openScoreModal(match)}
-                  >
-                    <i className="fas fa-edit me-1"></i>
-                    Score
-                  </button>
-                )}
-                {match.statut === 'Terminé' && (
-                  <button 
-                    className="btn btn-outline-light btn-sm"
-                    onClick={() => openScoreModal(match)}
-                  >
-                    <i className="fas fa-eye me-1"></i>
-                    Détails
-                  </button>
-                )}
-                {canReportDispute(match) && !match.litige && (
-                  <button 
-                    className="btn btn-outline-warning btn-sm"
-                    onClick={() => openLitigeModal(match)}
-                    title="Signaler un litige"
-                  >
-                    <i className="fas fa-exclamation-triangle"></i>
-                  </button>
-                )}
-              </div>
-            </div>
+            </Link>
           ) : (
             <div className="match-card-placeholder">
               <i className="fas fa-clock me-1"></i>
@@ -1077,60 +1079,7 @@ const CompetitionMatchesPage = () => {
         </div>
       </div>
 
-      {/* Statistiques générales */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="card text-center gaming-stat-card">
-            <div className="card-body">
-              <h5 className="card-title">
-                <i className="fas fa-users text-primary"></i>
-              </h5>
-              <h3 className="text-primary">{competition.equipesInscrites?.length || 0}</h3>
-              <p className="card-text">Équipes inscrites</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card text-center gaming-stat-card">
-            <div className="card-body">
-              <h5 className="card-title">
-                <i className="fas fa-futbol text-success"></i>
-              </h5>
-              <h3 className="text-success">
-                {competition.poules?.reduce((total, poule) => total + (poule.matchs?.length || 0), 0) + 
-                 (competition.matchsElimination?.length || 0)}
-              </h3>
-              <p className="card-text">Matchs programmés</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card text-center gaming-stat-card">
-            <div className="card-body">
-              <h5 className="card-title">
-                <i className="fas fa-trophy text-warning"></i>
-              </h5>
-              <h3 className="text-warning">
-                {competition.poules?.reduce((total, poule) => 
-                  total + (poule.matchs?.filter(m => m.statut === 'Terminé').length || 0), 0) + 
-                 (competition.matchsElimination?.filter(m => m.statut === 'Terminé').length || 0)}
-              </h3>
-              <p className="card-text">Matchs terminés</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card text-center gaming-stat-card">
-            <div className="card-body">
-              <h5 className="card-title">
-                <i className="fas fa-chart-line text-info"></i>
-              </h5>
-              <h3 className="text-info">{competition.statistiques?.totalButs || 0}</h3>
-              <p className="card-text">Buts marqués</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Salons de Match en Direct (Lobbies) */}
       {competition.statut === 'En cours' && (
@@ -1621,86 +1570,88 @@ const CompetitionMatchesPage = () => {
                             <h5 className="mb-0">🥉 Petite Finale (3ème Place)</h5>
                           </div>
                           <div className="card-body p-3">
-                            <div className="match-card-container m-0 w-100">
-                              <div className="match-card-header">
-                                <span className="match-card-date">
-                                  {pFinale.dateMatch ? (
-                                    <>
-                                      <i className="far fa-calendar-alt me-1"></i>
-                                      {new Date(pFinale.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                    </>
-                                  ) : (
-                                    'À programmer'
-                                  )}
-                                </span>
-                                <span className={`match-card-status badge ${getMatchStatus(pFinale)}`}>
-                                  {getMatchStatusText(pFinale)}
-                                </span>
-                              </div>
-                              {pFinale.litige && (
-                                <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
-                                  <i className="fas fa-exclamation-triangle me-1"></i>
-                                  LITIGE EN COURS
-                                </div>
-                              )}
-                              <div className="match-card-teams">
-                                <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score1 > pFinale.score2 ? 'winner' : ''}`}>
-                                  <span className="match-card-team-name" title={pFinale.equipe1?.nom || 'TBD'}>
-                                    {pFinale.equipe1?.nom || 'TBD'}
+                            <Link to={`/competition/${id}/match/${pFinale._id}`} className="text-decoration-none d-block">
+                              <div className="match-card-container m-0 w-100" style={{ cursor: 'pointer' }}>
+                                <div className="match-card-header">
+                                  <span className="match-card-date">
+                                    {pFinale.dateMatch ? (
+                                      <>
+                                        <i className="far fa-calendar-alt me-1"></i>
+                                        {new Date(pFinale.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                      </>
+                                    ) : (
+                                      'À programmer'
+                                    )}
                                   </span>
-                                  {pFinale.statut === 'Terminé' && (
-                                    <span className="match-card-team-score">{pFinale.score1}</span>
-                                  )}
-                                </div>
-                                <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score2 > pFinale.score1 ? 'winner' : ''}`}>
-                                  <span className="match-card-team-name" title={pFinale.equipe2?.nom || 'TBD'}>
-                                    {pFinale.equipe2?.nom || 'TBD'}
+                                  <span className={`match-card-status badge ${getMatchStatus(pFinale)}`}>
+                                    {getMatchStatusText(pFinale)}
                                   </span>
+                                </div>
+                                {pFinale.litige && (
+                                  <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
+                                    <i className="fas fa-exclamation-triangle me-1"></i>
+                                    LITIGE EN COURS
+                                  </div>
+                                )}
+                                <div className="match-card-teams">
+                                  <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score1 > pFinale.score2 ? 'winner' : ''}`}>
+                                    <span className="match-card-team-name" title={pFinale.equipe1?.nom || 'TBD'}>
+                                      {pFinale.equipe1?.nom || 'TBD'}
+                                    </span>
+                                    {pFinale.statut === 'Terminé' && (
+                                      <span className="match-card-team-score">{pFinale.score1}</span>
+                                    )}
+                                  </div>
+                                  <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score2 > pFinale.score1 ? 'winner' : ''}`}>
+                                    <span className="match-card-team-name" title={pFinale.equipe2?.nom || 'TBD'}>
+                                      {pFinale.equipe2?.nom || 'TBD'}
+                                    </span>
+                                    {pFinale.statut === 'Terminé' && (
+                                      <span className="match-card-team-score">{pFinale.score2}</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="match-card-actions">
+                                  {!pFinale.dateMatch && (user?.isAdmin || 
+                                    userClubs.some(club => 
+                                      (compareClubIds(club._id, pFinale.equipe1) || compareClubIds(club._id, pFinale.equipe2)) &&
+                                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
+                                    )) && (
+                                    <button 
+                                      className="btn btn-outline-light btn-sm"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDateModal(pFinale); }}
+                                    >
+                                      <i className="fas fa-calendar-plus me-1"></i> Date
+                                    </button>
+                                  )}
+                                  {pFinale.statut === 'Programmé' && canEditMatchScore(pFinale) && (
+                                    <button 
+                                      className="btn btn-primary btn-sm"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(pFinale); }}
+                                    >
+                                      <i className="fas fa-edit me-1"></i> Score
+                                    </button>
+                                  )}
                                   {pFinale.statut === 'Terminé' && (
-                                    <span className="match-card-team-score">{pFinale.score2}</span>
+                                    <button 
+                                      className="btn btn-outline-light btn-sm"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(pFinale); }}
+                                    >
+                                      <i className="fas fa-eye me-1"></i> Détails
+                                    </button>
+                                  )}
+                                  {canReportDispute(pFinale) && !pFinale.litige && (
+                                    <button 
+                                      className="btn btn-outline-warning btn-sm"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLitigeModal(pFinale); }}
+                                      title="Signaler un litige"
+                                    >
+                                      <i className="fas fa-exclamation-triangle"></i>
+                                    </button>
                                   )}
                                 </div>
                               </div>
-                              <div className="match-card-actions">
-                                {!pFinale.dateMatch && (user?.isAdmin || 
-                                  userClubs.some(club => 
-                                    (compareClubIds(club._id, pFinale.equipe1) || compareClubIds(club._id, pFinale.equipe2)) &&
-                                    club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                                  )) && (
-                                  <button 
-                                    className="btn btn-outline-light btn-sm"
-                                    onClick={() => openDateModal(pFinale)}
-                                  >
-                                    <i className="fas fa-calendar-plus me-1"></i> Date
-                                  </button>
-                                )}
-                                {pFinale.statut === 'Programmé' && canEditMatchScore(pFinale) && (
-                                  <button 
-                                    className="btn btn-primary btn-sm"
-                                    onClick={() => openScoreModal(pFinale)}
-                                  >
-                                    <i className="fas fa-edit me-1"></i> Score
-                                  </button>
-                                )}
-                                {pFinale.statut === 'Terminé' && (
-                                  <button 
-                                    className="btn btn-outline-light btn-sm"
-                                    onClick={() => openScoreModal(pFinale)}
-                                  >
-                                    <i className="fas fa-eye me-1"></i> Détails
-                                  </button>
-                                )}
-                                {canReportDispute(pFinale) && !pFinale.litige && (
-                                  <button 
-                                    className="btn btn-outline-warning btn-sm"
-                                    onClick={() => openLitigeModal(pFinale)}
-                                    title="Signaler un litige"
-                                  >
-                                    <i className="fas fa-exclamation-triangle"></i>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
+                            </Link>
                           </div>
                         </div>
                       </div>
