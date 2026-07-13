@@ -784,7 +784,7 @@ const CompetitionMatchesPage = () => {
                       Détails
                     </button>
                   ) */}
-                  {canReportDispute(match) && !match.litige && (
+                  {/* canReportDispute(match) && !match.litige && (
                     <button 
                       className="btn btn-outline-warning btn-sm"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLitigeModal(match); }}
@@ -792,7 +792,7 @@ const CompetitionMatchesPage = () => {
                     >
                       <i className="fas fa-exclamation-triangle"></i>
                     </button>
-                  )}
+                  ) */}
                 </div>
               </div>
             </Link>
@@ -1640,7 +1640,7 @@ const CompetitionMatchesPage = () => {
                                       <i className="fas fa-eye me-1"></i> Détails
                                     </button>
                                   ) */}
-                                  {canReportDispute(pFinale) && !pFinale.litige && (
+                                  {/* canReportDispute(pFinale) && !pFinale.litige && (
                                     <button 
                                       className="btn btn-outline-warning btn-sm"
                                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLitigeModal(pFinale); }}
@@ -1648,7 +1648,7 @@ const CompetitionMatchesPage = () => {
                                     >
                                       <i className="fas fa-exclamation-triangle"></i>
                                     </button>
-                                  )}
+                                  ) */}
                                 </div>
                               </div>
                             </Link>
