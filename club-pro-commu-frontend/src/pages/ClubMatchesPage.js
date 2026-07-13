@@ -325,7 +325,7 @@ export default function ClubMatchesPage() {
     const score1Winner = match.statut === 'Terminé' && match.score1 > match.score2;
     const score2Winner = match.statut === 'Terminé' && match.score2 > match.score1;
 
-    const isClickable = match.statut === 'Programmé' || match.statut === 'En cours';
+    const isClickable = true; // Tous les matchs sont accessibles (passés et à venir)
 
     const matchCardContent = (
       <div className={`club-match-card ${getStatutClass(match.statut)}`} style={isClickable ? { cursor: 'pointer' } : {}}>
