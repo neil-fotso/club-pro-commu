@@ -149,6 +149,71 @@ router.get('/mes-competitions', auth, async (req, res) => {
   }
 });
 
+// POST /api/competitions/:id/matchs/:matchId/chat/:messageId/signaler - Signaler un message offensant
+router.post('/:id/matchs/:matchId/chat/:messageId/signaler', auth, async (req, res) => {
+  try {
+    const { id: competitionId, matchId, messageId } = req.params;
+    const { raison } = req.body;
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    let match = competition.matchsElimination.id(matchId);
+    if (!match && competition.poules) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    // Vérifier l'autorisation (membre de l'une des deux équipes ou admin)
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+
+    let isAuthorized = estAdminSite || estCreateurCompetition;
+    if (!isAuthorized) {
+      const Club = require('../models/Club');
+      const userClub = await Club.findOne({
+        _id: { $in: [match.equipe1, match.equipe2] },
+        'membres.userId': req.user.id
+      });
+      if (userClub) isAuthorized = true;
+    }
+    if (!isAuthorized) return res.status(403).json({ message: 'Vous ne participez pas à ce match' });
+
+    // Trouver le message
+    const message = match.messages.id(messageId);
+    if (!message) return res.status(404).json({ message: 'Message non trouvé' });
+
+    // Interdit de se signaler soi-même
+    if (message.expediteur.toString() === req.user.id) {
+      return res.status(400).json({ message: 'Vous ne pouvez pas signaler votre propre message' });
+    }
+
+    // Vérifier si déjà signalé par cet utilisateur
+    const dejaSignale = message.signalements && message.signalements.some(
+      s => s.userId && s.userId.toString() === req.user.id
+    );
+    if (dejaSignale) {
+      return res.status(400).json({ message: 'Vous avez déjà signalé ce message' });
+    }
+
+    // Ajouter le signalement
+    if (!message.signalements) message.signalements = [];
+    message.signalements.push({ userId: req.user.id, raison: raison || '', date: new Date() });
+    message.estSignale = true;
+
+    await competition.save();
+    res.json({ success: true, message: 'Message signalé avec succès' });
+  } catch (error) {
+    console.error('Erreur signalement message:', error);
+    res.status(500).json({ message: 'Erreur lors du signalement' });
+  }
+});
+
 // GET /api/competitions/:id/matchs/:matchId/chat - Récupérer les messages du chat de match
 router.get('/:id/matchs/:matchId/chat', auth, async (req, res) => {
   try {
@@ -234,6 +299,22 @@ router.post('/:id/matchs/:matchId/chat', auth, async (req, res) => {
     }
 
     if (!isAuthorized) return res.status(403).json({ message: 'Vous ne participez pas à ce match' });
+
+    // Vérifier le bannissement chat
+    if (user && user.chatBanni) {
+      // Vérifier si le ban temporaire est expiré
+      if (user.chatBanniJusquAu && new Date() > new Date(user.chatBanniJusquAu)) {
+        // Lever le ban automatiquement
+        user.chatBanni = false;
+        user.chatBanniJusquAu = null;
+        await user.save();
+      } else {
+        const msg = user.chatBanniJusquAu
+          ? `Vous êtes banni du chat jusqu'au ${new Date(user.chatBanniJusquAu).toLocaleDateString('fr-FR')}`
+          : 'Vous êtes banni définitivement du chat';
+        return res.status(403).json({ message: msg, code: 'CHAT_BANNED' });
+      }
+    }
 
     const pseudo = user ? user.pseudo : 'Joueur';
     if (!match.messages) match.messages = [];

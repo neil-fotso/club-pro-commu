@@ -37,6 +37,8 @@ import DataRights from '../components/DataRights';
 import APITest from '../components/APITest';
 import AdminPage from '../pages/AdminPage';
 import AdminDashboardPage from '../pages/AdminDashboardPage';
+import AdminSignalementsPage from '../pages/AdminSignalementsPage';
+
 import APITestPage from '../pages/APITestPage';
 import SecretAdminPage from '../pages/SecretAdminPage';
 import CompetitionTestPage from '../pages/CompetitionTestPage';
@@ -216,6 +218,14 @@ export default function AppRoutes() {
                 <AdminDashboardPage />
               </MainLayout>
             } />
+
+            {/* Signalements chat */}
+            <Route path="/admin/signalements" element={
+              <MainLayout>
+                <AdminSignalementsPage />
+              </MainLayout>
+            } />
+
             
             {/* Test API */}
             <Route path="/api-test" element={

@@ -352,7 +352,14 @@ const competitionSchema = new mongoose.Schema({
         expediteur: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         pseudo: { type: String, required: true },
         texte: { type: String, required: true, maxlength: 1000 },
-        dateEnvoi: { type: Date, default: Date.now }
+        dateEnvoi: { type: Date, default: Date.now },
+        estSignale: { type: Boolean, default: false },
+        estSupprime: { type: Boolean, default: false },
+        signalements: [{
+          userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+          raison: { type: String, maxlength: 500 },
+          date: { type: Date, default: Date.now }
+        }]
       }]
     }]
   }],
@@ -465,7 +472,14 @@ const competitionSchema = new mongoose.Schema({
       expediteur: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
       pseudo: { type: String, required: true },
       texte: { type: String, required: true, maxlength: 1000 },
-      dateEnvoi: { type: Date, default: Date.now }
+      dateEnvoi: { type: Date, default: Date.now },
+      estSignale: { type: Boolean, default: false },
+      estSupprime: { type: Boolean, default: false },
+      signalements: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        raison: { type: String, maxlength: 500 },
+        date: { type: Date, default: Date.now }
+      }]
     }]
   }],
 

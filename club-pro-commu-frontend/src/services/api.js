@@ -737,6 +737,50 @@ export const competitionAPI = {
       }
     });
   },
+
+  // Signaler un message offensant
+  signalerMessage: async (competitionId, matchId, messageId, raison, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/chat/${messageId}/signaler`, {
+      method: 'POST',
+      body: { raison },
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  },
+};
+
+// Admin API — Modération Chat
+export const adminAPI = {
+  getSignalements: () => apiCall('/admin/dashboard/signalements'),
+
+  avertirUtilisateur: (userId, raison, competitionId, matchId) =>
+    apiCall('/admin/dashboard/signalements/avertir', {
+      method: 'POST',
+      body: { userId, raison, competitionId, matchId }
+    }),
+
+  bannirUtilisateur: (userId, duree, raison) =>
+    apiCall('/admin/dashboard/signalements/bannir', {
+      method: 'POST',
+      body: { userId, duree: duree || null, raison }
+    }),
+
+  leverBan: (userId) =>
+    apiCall('/admin/dashboard/signalements/lever-ban', {
+      method: 'POST',
+      body: { userId }
+    }),
+
+  ignorerSignalement: (competitionId, matchId, messageId) =>
+    apiCall('/admin/dashboard/signalements/ignorer', {
+      method: 'POST',
+      body: { competitionId, matchId, messageId }
+    }),
+
+  supprimerMessage: (competitionId, matchId, messageId) =>
+    apiCall('/admin/dashboard/signalements/supprimer-message', {
+      method: 'POST',
+      body: { competitionId, matchId, messageId }
+    }),
 };
 
 // Export de la fonction utilitaire apiCall pour tests et usage direct

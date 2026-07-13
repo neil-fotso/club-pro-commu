@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { competitionAPI, clubAPI } from '../services/api';
 
+
 const matchLobbyStyles = `
   .match-lobby-page {
     min-height: 100vh;
@@ -468,6 +469,11 @@ export default function MatchLobbyPage() {
   const [newMsgText, setNewMsgText] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // States pour le signalement de messages
+  const [signalerModal, setSignalerModal] = useState({ open: false, msg: null });
+  const [signalerRaison, setSignalerRaison] = useState('');
+  const [signalerEnCours, setSignalerEnCours] = useState(false);
 
   // Ready status sound triggers
   const prevReady1 = useRef(false);
@@ -1312,7 +1318,7 @@ export default function MatchLobbyPage() {
 
                 return (
                   <div key={index} className={`chat-message ${messageClass}`}>
-                    <div className="message-meta small text-muted mb-1" style={{ fontSize: '0.75rem', alignSelf: estMoi ? 'flex-end' : 'flex-start' }}>
+                    <div className="message-meta small text-muted mb-1" style={{ fontSize: '0.75rem', alignSelf: estMoi ? 'flex-end' : 'flex-start', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {estAdmin && (
                         <span className="badge bg-warning text-dark me-1" style={{ fontSize: '0.6rem', padding: '2px 4px' }}>
                           ADMIN
@@ -1322,10 +1328,27 @@ export default function MatchLobbyPage() {
                       <span className="opacity-50">
                         • {new Date(msg.dateEnvoi).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
+                      {!estMoi && !msg.estSupprime && (
+                        <button
+                          title="Signaler ce message"
+                          className="btn btn-link p-0 ms-auto text-danger opacity-50"
+                          style={{ fontSize: '0.65rem', lineHeight: 1 }}
+                          onClick={() => setSignalerModal({ open: true, msg })}
+                        >
+                          <i className="fas fa-flag"></i>
+                        </button>
+                      )}
                     </div>
-                    <div className="chat-bubble">
-                      {msg.texte}
-                    </div>
+                    {msg.estSupprime ? (
+                      <div className="chat-bubble" style={{ background: 'rgba(255,255,255,0.04)', color: '#666', fontStyle: 'italic', fontSize: '0.82rem' }}>
+                        <i className="fas fa-ban me-1"></i> Ce message a été supprimé par un administrateur
+                      </div>
+                    ) : (
+                      <div className={`chat-bubble${msg.estSignale ? ' border-danger border-opacity-50' : ''}`}>
+                        {msg.texte}
+                        {msg.estSignale && <span className="ms-2 text-danger opacity-50" title="Signalé"><i className="fas fa-flag" style={{ fontSize: '0.65rem' }}></i></span>}
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -1333,32 +1356,102 @@ export default function MatchLobbyPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSendChatMessage} className="d-flex gap-2">
-            <input
-              type="text"
-              className="form-control bg-dark border-secondary text-white"
-              placeholder="Saisissez votre message pour l'adversaire et l'admin..."
-              value={newMsgText}
-              onChange={(e) => setNewMsgText(e.target.value)}
-              maxLength="1000"
-              required
-            />
-            <button 
-              type="submit" 
-              className="btn btn-primary px-4 fw-bold d-flex align-items-center justify-content-center" 
-              disabled={sendingMsg || !newMsgText.trim()}
-              style={{ minWidth: '80px' }}
-            >
-              {sendingMsg ? (
-                <span className="spinner-border spinner-border-sm"></span>
-              ) : (
-                <>
-                  <i className="fas fa-paper-plane me-1"></i>
-                  Envoi
-                </>
-              )}
-            </button>
-          </form>
+          {/* Bannissement chat */}
+          {user?.chatBanni && (
+            <div className="alert alert-danger d-flex align-items-center gap-2 mt-3" style={{ borderRadius: '10px', fontSize: '0.88rem' }}>
+              <i className="fas fa-ban fa-lg"></i>
+              <div>
+                <strong>Accès au chat suspendu.</strong>{' '}
+                {user.chatBanniJusquAu
+                  ? `Votre accès sera rétabli le ${new Date(user.chatBanniJusquAu).toLocaleDateString('fr-FR')}.`
+                  : 'Votre accès a été suspendu définitivement. Contactez un administrateur.'}
+              </div>
+            </div>
+          )}
+
+          {!user?.chatBanni && (
+            <form onSubmit={handleSendChatMessage} className="d-flex gap-2">
+              <input
+                type="text"
+                className="form-control bg-dark border-secondary text-white"
+                placeholder="Saisissez votre message pour l'adversaire et l'admin..."
+                value={newMsgText}
+                onChange={(e) => setNewMsgText(e.target.value)}
+                maxLength="1000"
+                required
+              />
+              <button 
+                type="submit" 
+                className="btn btn-primary px-4 fw-bold d-flex align-items-center justify-content-center" 
+                disabled={sendingMsg || !newMsgText.trim()}
+                style={{ minWidth: '80px' }}
+              >
+                {sendingMsg ? (
+                  <span className="spinner-border spinner-border-sm"></span>
+                ) : (
+                  <>
+                    <i className="fas fa-paper-plane me-1"></i>
+                    Envoi
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Modale de signalement */}
+          {signalerModal.open && (
+            <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.7)', zIndex: 9999 }} onClick={() => setSignalerModal({ open: false, msg: null })}>
+              <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
+                <div className="modal-content" style={{ background: '#1a2035', border: '1px solid rgba(255,80,80,0.3)' }}>
+                  <div className="modal-header border-danger border-opacity-25">
+                    <h5 className="modal-title text-danger"><i className="fas fa-flag me-2"></i>Signaler un message</h5>
+                    <button type="button" className="btn-close btn-close-white" onClick={() => setSignalerModal({ open: false, msg: null })}></button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="alert alert-secondary" style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.88rem', wordBreak: 'break-word' }}>
+                      <strong>{signalerModal.msg?.pseudo} :</strong> {signalerModal.msg?.texte}
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label text-muted small">Raison du signalement (optionnel)</label>
+                      <input
+                        type="text"
+                        className="form-control bg-dark border-secondary text-white"
+                        placeholder="Ex: insultes, contenu offensant..."
+                        value={signalerRaison}
+                        onChange={e => setSignalerRaison(e.target.value)}
+                        maxLength="250"
+                      />
+                    </div>
+                    <p className="text-muted small mb-0">Ce signalement sera examiné par un administrateur qui pourra avertir ou bannir l'auteur.</p>
+                  </div>
+                  <div className="modal-footer border-secondary border-opacity-25">
+                    <button className="btn btn-secondary" onClick={() => setSignalerModal({ open: false, msg: null })}>Annuler</button>
+                    <button
+                      className="btn btn-danger"
+                      disabled={signalerEnCours}
+                      onClick={async () => {
+                        if (!signalerModal.msg) return;
+                        try {
+                          setSignalerEnCours(true);
+                          const token = localStorage.getItem('token');
+                          await competitionAPI.signalerMessage(competitionId, matchId, signalerModal.msg._id, signalerRaison, token);
+                          setSignalerModal({ open: false, msg: null });
+                          setSignalerRaison('');
+                          alert('Message signalé. Un administrateur examinera ce signalement.');
+                        } catch (err) {
+                          alert(err.message || 'Erreur lors du signalement');
+                        } finally {
+                          setSignalerEnCours(false);
+                        }
+                      }}
+                    >
+                      {signalerEnCours ? <span className="spinner-border spinner-border-sm"></span> : <><i className="fas fa-flag me-1"></i> Signaler</>}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* REGLEMENT & INFOS LOBBY */}

@@ -678,4 +678,208 @@ router.get('/dashboard/analytics', adminAuth, async (req, res) => {
   }
 });
 
-module.exports = router; 
+// ============================================================
+// 🔹 MODÉRATION CHAT — Signalements
+// ============================================================
+
+// GET /api/admin/dashboard/signalements - Liste de tous les messages signalés
+router.get('/dashboard/signalements', adminAuth, async (req, res) => {
+  try {
+    const competitions = await Competition.find().lean();
+    const signalements = [];
+
+    for (const comp of competitions) {
+      // Matchs d'élimination directe
+      for (const match of (comp.matchsElimination || [])) {
+        for (const msg of (match.messages || [])) {
+          if (msg.estSignale && !msg.estSupprime) {
+            signalements.push({
+              competitionId: comp._id,
+              competitionNom: comp.nom,
+              matchId: match._id,
+              messageId: msg._id,
+              expediteur: msg.expediteur,
+              pseudo: msg.pseudo,
+              texte: msg.texte,
+              dateEnvoi: msg.dateEnvoi,
+              nbSignalements: (msg.signalements || []).length,
+              signalements: msg.signalements || []
+            });
+          }
+        }
+      }
+      // Matchs de poule
+      for (const poule of (comp.poules || [])) {
+        for (const match of (poule.matchs || [])) {
+          for (const msg of (match.messages || [])) {
+            if (msg.estSignale && !msg.estSupprime) {
+              signalements.push({
+                competitionId: comp._id,
+                competitionNom: comp.nom,
+                matchId: match._id,
+                messageId: msg._id,
+                expediteur: msg.expediteur,
+                pseudo: msg.pseudo,
+                texte: msg.texte,
+                dateEnvoi: msg.dateEnvoi,
+                nbSignalements: (msg.signalements || []).length,
+                signalements: msg.signalements || []
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Trier par nombre de signalements décroissant
+    signalements.sort((a, b) => b.nbSignalements - a.nbSignalements);
+    res.json(signalements);
+  } catch (error) {
+    console.error('Erreur récupération signalements:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/dashboard/signalements/avertir - Émettre un avertissement
+router.post('/dashboard/signalements/avertir', adminAuth, async (req, res) => {
+  try {
+    const { userId, raison, competitionId, matchId } = req.body;
+    if (!userId) return res.status(400).json({ message: 'userId requis' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    if (!user.avertissements) user.avertissements = [];
+    user.avertissements.push({ raison: raison || 'Comportement inapproprié dans le chat', competitionId, matchId });
+    await user.save();
+
+    // Envoyer une notification
+    const Notification = require('../models/Notification');
+    await Notification.create({
+      userId: user._id,
+      type: 'avertissement_chat',
+      message: `⚠️ Avertissement : ${raison || 'Comportement inapproprié dans le chat'}. Tout récidive peut entraîner un bannissement.`,
+      lu: false
+    });
+
+    res.json({ success: true, message: `Avertissement émis à ${user.pseudo}`, nbAvertissements: user.avertissements.length });
+  } catch (error) {
+    console.error('Erreur émission avertissement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/dashboard/signalements/bannir - Bannir un utilisateur du chat
+router.post('/dashboard/signalements/bannir', adminAuth, async (req, res) => {
+  try {
+    const { userId, duree, raison } = req.body; // duree en jours, null = définitif
+    if (!userId) return res.status(400).json({ message: 'userId requis' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    user.chatBanni = true;
+    user.chatBanniJusquAu = duree ? new Date(Date.now() + duree * 24 * 60 * 60 * 1000) : null;
+    await user.save();
+
+    const Notification = require('../models/Notification');
+    const msgBan = duree
+      ? `🔨 Vous avez été banni du chat pour ${duree} jour(s). Raison : ${raison || 'Comportement inapproprié.'}`
+      : `🔨 Vous avez été banni définitivement du chat. Raison : ${raison || 'Comportement inapproprié.'} Contactez un administrateur pour contester.`;
+    await Notification.create({
+      userId: user._id,
+      type: 'bannissement_chat',
+      message: msgBan,
+      lu: false
+    });
+
+    res.json({ success: true, message: `${user.pseudo} banni du chat${duree ? ` pour ${duree} jours` : ' définitivement'}` });
+  } catch (error) {
+    console.error('Erreur bannissement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/dashboard/signalements/ignorer - Ignorer / invalider un signalement
+router.post('/dashboard/signalements/ignorer', adminAuth, async (req, res) => {
+  try {
+    const { competitionId, matchId, messageId } = req.body;
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    let match = competition.matchsElimination.id(matchId);
+    if (!match && competition.poules) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    const message = match.messages.id(messageId);
+    if (!message) return res.status(404).json({ message: 'Message non trouvé' });
+
+    message.estSignale = false;
+    message.signalements = [];
+    await competition.save();
+
+    res.json({ success: true, message: 'Signalement ignoré' });
+  } catch (error) {
+    console.error('Erreur ignorer signalement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/dashboard/signalements/supprimer-message - Supprimer un message offensant
+router.post('/dashboard/signalements/supprimer-message', adminAuth, async (req, res) => {
+  try {
+    const { competitionId, matchId, messageId } = req.body;
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    let match = competition.matchsElimination.id(matchId);
+    if (!match && competition.poules) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    const message = match.messages.id(messageId);
+    if (!message) return res.status(404).json({ message: 'Message non trouvé' });
+
+    message.estSupprime = true;
+    message.estSignale = false; // Retiré de la liste des signalements actifs
+    await competition.save();
+
+    res.json({ success: true, message: 'Message supprimé' });
+  } catch (error) {
+    console.error('Erreur suppression message:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// POST /api/admin/dashboard/signalements/lever-ban - Lever un bannissement
+router.post('/dashboard/signalements/lever-ban', adminAuth, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ message: 'userId requis' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    user.chatBanni = false;
+    user.chatBanniJusquAu = null;
+    await user.save();
+
+    res.json({ success: true, message: `Bannissement de ${user.pseudo} levé` });
+  } catch (error) {
+    console.error('Erreur lever bannissement:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+module.exports = router;

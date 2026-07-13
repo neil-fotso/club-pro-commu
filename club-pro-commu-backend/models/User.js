@@ -66,6 +66,22 @@ const userSchema = new mongoose.Schema({
   },
   consentDate: {
     type: Date
+  },
+
+  // 🔹 Modération chat
+  avertissements: [{
+    date: { type: Date, default: Date.now },
+    raison: { type: String, maxlength: 500 },
+    competitionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Competition' },
+    matchId: { type: mongoose.Schema.Types.ObjectId }
+  }],
+  chatBanni: {
+    type: Boolean,
+    default: false
+  },
+  chatBanniJusquAu: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
