@@ -60,7 +60,7 @@ export default function Navbar() {
   }, [user, loadNotificationCount]);
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark" style={{backgroundColor: '#0c101b', borderBottom: '1px solid var(--border-glass)', position: 'sticky', top: 0, zIndex: 1050}}>
+    <nav className="navbar navbar-expand-lg navbar-dark" style={{backgroundColor: '#0c101b', borderBottom: '1px solid var(--border-glass)', position: 'sticky', top: 0, zIndex: 1050, paddingTop: 'calc(0.5rem + env(safe-area-inset-top))'}}>
       <div className="container">
         <Link className="navbar-brand d-flex align-items-center" to="/">
           <img src={logo} alt="Club Pro Communauté Logo" style={{ width: '36px', height: '36px', marginRight: '8px' }} />
