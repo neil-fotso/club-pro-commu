@@ -469,6 +469,8 @@ export default function MatchLobbyPage() {
   const [newMsgText, setNewMsgText] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
   const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+  const prevMsgCountRef = useRef(0);
 
   // States pour le signalement de messages
   const [signalerModal, setSignalerModal] = useState({ open: false, msg: null });
@@ -598,7 +600,16 @@ export default function MatchLobbyPage() {
   }, [user, match, fetchChat]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Ne scroller que si le nombre de messages a augmenté (nouveau message)
+    if (chatMessages.length > prevMsgCountRef.current) {
+      prevMsgCountRef.current = chatMessages.length;
+      // Scroller dans le conteneur du chat uniquement, pas la page entière
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
+    } else {
+      prevMsgCountRef.current = chatMessages.length;
+    }
   }, [chatMessages]);
 
   const handleSendChatMessage = async (e) => {
@@ -1300,7 +1311,7 @@ export default function MatchLobbyPage() {
             Chat du Match
           </h5>
 
-          <div className="chat-messages-container">
+          <div className="chat-messages-container" ref={chatContainerRef}>
             {chatMessages.length === 0 ? (
               <div className="text-center py-5 text-muted small">
                 <i className="fas fa-comments fa-2x mb-2 opacity-50"></i>
