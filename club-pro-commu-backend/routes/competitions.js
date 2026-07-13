@@ -1456,6 +1456,123 @@ router.post('/:id/matchs/:matchId/resoudre-litige', auth, async (req, res) => {
 });
 
 
+// GET /api/competitions/:id/matchs/:matchId/chat - Récupérer les messages du chat de match
+router.get('/:id/matchs/:matchId/chat', auth, async (req, res) => {
+  try {
+    const { id: competitionId, matchId } = req.params;
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    // Trouver le match
+    let match = competition.matchsElimination.id(matchId);
+    if (!match && competition.poules) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    // Vérifier l'autorisation (membre de l'équipe 1, de l'équipe 2, créateur de la compétition ou admin du site)
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+
+    let isAuthorized = estAdminSite || estCreateurCompetition;
+
+    if (!isAuthorized) {
+      const Club = require('../models/Club');
+      const userClub = await Club.findOne({
+        _id: { $in: [match.equipe1, match.equipe2] },
+        'membres.userId': req.user.id
+      });
+      if (userClub) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ message: 'Vous ne participez pas à ce match' });
+    }
+
+    res.json(match.messages || []);
+  } catch (error) {
+    console.error('Erreur récupération chat de match:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des messages' });
+  }
+});
+
+// POST /api/competitions/:id/matchs/:matchId/chat - Envoyer un message dans le chat de match
+router.post('/:id/matchs/:matchId/chat', auth, async (req, res) => {
+  try {
+    const { id: competitionId, matchId } = req.params;
+    const { texte } = req.body;
+
+    if (!texte || typeof texte !== 'string' || !texte.trim()) {
+      return res.status(400).json({ message: 'Le texte du message ne peut pas être vide' });
+    }
+
+    if (texte.length > 1000) {
+      return res.status(400).json({ message: 'Le message est trop long (max 1000 caractères)' });
+    }
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) return res.status(404).json({ message: 'Compétition non trouvée' });
+
+    // Trouver le match
+    let match = competition.matchsElimination.id(matchId);
+    if (!match && competition.poules) {
+      for (const poule of competition.poules) {
+        match = poule.matchs.id(matchId);
+        if (match) break;
+      }
+    }
+    if (!match) return res.status(404).json({ message: 'Match non trouvé' });
+
+    // Vérifier l'autorisation (membre de l'équipe 1, de l'équipe 2, créateur de la compétition ou admin du site)
+    const User = require('../models/User');
+    const user = await User.findById(req.user.id);
+    const estAdminSite = user && user.isAdmin;
+    const estCreateurCompetition = competition.createurId && competition.createurId.toString() === req.user.id;
+
+    let isAuthorized = estAdminSite || estCreateurCompetition;
+
+    if (!isAuthorized) {
+      const Club = require('../models/Club');
+      const userClub = await Club.findOne({
+        _id: { $in: [match.equipe1, match.equipe2] },
+        'membres.userId': req.user.id
+      });
+      if (userClub) {
+        isAuthorized = true;
+      }
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ message: 'Vous ne participez pas à ce match' });
+    }
+
+    const pseudo = user ? user.pseudo : 'Joueur';
+
+    if (!match.messages) match.messages = [];
+    match.messages.push({
+      expediteur: req.user.id,
+      pseudo: pseudo,
+      texte: texte.trim()
+    });
+
+    await competition.save();
+
+    res.json(match.messages);
+  } catch (error) {
+    console.error('Erreur envoi message chat de match:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'envoi du message' });
+  }
+});
+
+
+
 // 🔹 6. FONCTIONS UTILITAIRES
 
 // Fonction pour mettre à jour les statistiques des équipes

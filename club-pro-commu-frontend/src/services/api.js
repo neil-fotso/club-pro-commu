@@ -717,6 +717,26 @@ export const competitionAPI = {
       },
     });
   },
+
+  // Récupérer le chat du match
+  getMatchChat: async (competitionId, matchId, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/chat`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
+
+  // Envoyer un message dans le chat du match
+  sendMatchChatMessage: async (competitionId, matchId, texte, token) => {
+    return apiCall(`/competitions/${competitionId}/matchs/${matchId}/chat`, {
+      method: 'POST',
+      body: { texte },
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  },
 };
 
 // Export de la fonction utilitaire apiCall pour tests et usage direct

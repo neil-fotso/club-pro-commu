@@ -347,7 +347,13 @@ const competitionSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         default: null
-      }
+      },
+      messages: [{
+        expediteur: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        pseudo: { type: String, required: true },
+        texte: { type: String, required: true, maxlength: 1000 },
+        dateEnvoi: { type: Date, default: Date.now }
+      }]
     }]
   }],
 
@@ -454,7 +460,13 @@ const competitionSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       default: null
-    }
+    },
+    messages: [{
+      expediteur: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      pseudo: { type: String, required: true },
+      texte: { type: String, required: true, maxlength: 1000 },
+      dateEnvoi: { type: Date, default: Date.now }
+    }]
   }],
 
   // 🔹 Résultats finaux

@@ -358,6 +358,79 @@ const matchLobbyStyles = `
       font-size: 1.2rem;
     }
   }
+
+  /* CHAT ROOM STYLES */
+  .chat-messages-container {
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(10, 8, 20, 0.4);
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .chat-messages-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  .chat-messages-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chat-messages-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  .chat-messages-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .chat-message {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+  }
+
+  .chat-message.sent {
+    align-self: flex-end;
+  }
+
+  .chat-message.received {
+    align-self: flex-start;
+  }
+
+  .chat-bubble {
+    padding: 0.6rem 1rem;
+    border-radius: 16px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .chat-message.sent .chat-bubble {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 110, 255, 0.25) 100%);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    color: #ffffff;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 240, 255, 0.1);
+  }
+
+  .chat-message.received .chat-bubble {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #d1cfe2;
+    border-top-left-radius: 4px;
+  }
+
+  .chat-message.admin-msg .chat-bubble,
+  .chat-message.creator-msg .chat-bubble {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 87, 34, 0.15) 100%);
+    border: 1px solid rgba(255, 193, 7, 0.35);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.1);
+  }
 `;
 
 export default function MatchLobbyPage() {
@@ -389,6 +462,12 @@ export default function MatchLobbyPage() {
   const [adminScore1, setAdminScore1] = useState('0');
   const [adminScore2, setAdminScore2] = useState('0');
   const [submittingArbitrage, setSubmittingArbitrage] = useState(false);
+
+  // States pour le chat de match
+  const [chatMessages, setChatMessages] = useState([]);
+  const [newMsgText, setNewMsgText] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const messagesEndRef = useRef(null);
 
   // Ready status sound triggers
   const prevReady1 = useRef(false);
@@ -492,6 +571,46 @@ export default function MatchLobbyPage() {
     const interval = setInterval(fetchData, 10000); // Rafraîchir toutes les 10 secondes
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  const fetchChat = useCallback(async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('token');
+      const messages = await competitionAPI.getMatchChat(competitionId, matchId, token);
+      setChatMessages(messages);
+    } catch (err) {
+      console.error('Erreur récupération chat:', err);
+    }
+  }, [competitionId, matchId, user]);
+
+  useEffect(() => {
+    if (user && match) {
+      fetchChat();
+      const interval = setInterval(fetchChat, 4000); // Rafraîchir le chat toutes les 4 secondes
+      return () => clearInterval(interval);
+    }
+  }, [user, match, fetchChat]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!newMsgText.trim() || !user) return;
+
+    try {
+      setSendingMsg(true);
+      const token = localStorage.getItem('token');
+      const updatedMessages = await competitionAPI.sendMatchChatMessage(competitionId, matchId, newMsgText, token);
+      setChatMessages(updatedMessages);
+      setNewMsgText('');
+    } catch (err) {
+      alert(err.message || 'Erreur lors de l\'envoi du message');
+    } finally {
+      setSendingMsg(false);
+    }
+  };
 
   // Timer logique
   useEffect(() => {
@@ -1166,6 +1285,80 @@ export default function MatchLobbyPage() {
             </div>
           )}
 
+        </div>
+
+        {/* CHAT DU MATCH */}
+        <div className="lobby-card mt-4">
+          <h5 className="text-primary mb-3">
+            <i className="fas fa-comments me-2 text-info"></i>
+            Chat du Match
+          </h5>
+
+          <div className="chat-messages-container">
+            {chatMessages.length === 0 ? (
+              <div className="text-center py-5 text-muted small">
+                <i className="fas fa-comments fa-2x mb-2 opacity-50"></i>
+                <p className="mb-0">Aucun message pour l'instant. Discutez avec l'équipe adverse ou l'admin ici !</p>
+              </div>
+            ) : (
+              chatMessages.map((msg, index) => {
+                const estMoi = msg.expediteur === (user?.id || user?._id);
+                
+                // Détecter si le message provient d'un admin ou du créateur
+                const estAdmin = competition?.createurId === msg.expediteur || msg.pseudo === 'Admin' || msg.pseudo?.toLowerCase().includes('admin');
+                
+                let messageClass = estMoi ? 'sent' : 'received';
+                if (estAdmin) messageClass += ' admin-msg';
+
+                return (
+                  <div key={index} className={`chat-message ${messageClass}`}>
+                    <div className="message-meta small text-muted mb-1" style={{ fontSize: '0.75rem', alignSelf: estMoi ? 'flex-end' : 'flex-start' }}>
+                      {estAdmin && (
+                        <span className="badge bg-warning text-dark me-1" style={{ fontSize: '0.6rem', padding: '2px 4px' }}>
+                          ADMIN
+                        </span>
+                      )}
+                      {msg.pseudo}{' '}
+                      <span className="opacity-50">
+                        • {new Date(msg.dateEnvoi).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <div className="chat-bubble">
+                      {msg.texte}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <form onSubmit={handleSendChatMessage} className="d-flex gap-2">
+            <input
+              type="text"
+              className="form-control bg-dark border-secondary text-white"
+              placeholder="Saisissez votre message pour l'adversaire et l'admin..."
+              value={newMsgText}
+              onChange={(e) => setNewMsgText(e.target.value)}
+              maxLength="1000"
+              required
+            />
+            <button 
+              type="submit" 
+              className="btn btn-primary px-4 fw-bold d-flex align-items-center justify-content-center" 
+              disabled={sendingMsg || !newMsgText.trim()}
+              style={{ minWidth: '80px' }}
+            >
+              {sendingMsg ? (
+                <span className="spinner-border spinner-border-sm"></span>
+              ) : (
+                <>
+                  <i className="fas fa-paper-plane me-1"></i>
+                  Envoi
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
         {/* REGLEMENT & INFOS LOBBY */}
