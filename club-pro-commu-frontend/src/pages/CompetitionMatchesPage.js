@@ -562,6 +562,7 @@ const CompetitionMatchesPage = () => {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const openLitigeModal = (match) => {
     setSelectedMatchForLitige(match);
     setLitigeData({ description: '', preuveVideo: '' });
@@ -972,6 +973,7 @@ const CompetitionMatchesPage = () => {
     return isAdminOfMatchTeam;
   };
 
+  // eslint-disable-next-line no-unused-vars
   const canReportDispute = (match) => {
     if (!user) return false;
     if (user.isAdmin) return true;
