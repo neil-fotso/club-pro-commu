@@ -752,7 +752,7 @@ const CompetitionMatchesPage = () => {
 
                 {/* Actions de saisie score / date */}
                 <div className="match-card-actions">
-                  {!match.dateMatch && (user?.isAdmin || 
+                  {/* {!match.dateMatch && (user?.isAdmin || 
                     userClubs.some(club => 
                       (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
                       club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
@@ -765,7 +765,7 @@ const CompetitionMatchesPage = () => {
                       <i className="fas fa-calendar-plus me-1"></i>
                       Date
                     </button>
-                  )}
+                  )} */}
                   {match.statut === 'Programmé' && canEditMatchScore(match) && (
                     <button 
                       className="btn btn-primary btn-sm"
@@ -775,7 +775,7 @@ const CompetitionMatchesPage = () => {
                       Score
                     </button>
                   )}
-                  {match.statut === 'Terminé' && (
+                  {/* match.statut === 'Terminé' && (
                     <button 
                       className="btn btn-outline-light btn-sm"
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(match); }}
@@ -783,7 +783,7 @@ const CompetitionMatchesPage = () => {
                       <i className="fas fa-eye me-1"></i>
                       Détails
                     </button>
-                  )}
+                  ) */}
                   {canReportDispute(match) && !match.litige && (
                     <button 
                       className="btn btn-outline-warning btn-sm"
@@ -1612,7 +1612,7 @@ const CompetitionMatchesPage = () => {
                                   </div>
                                 </div>
                                 <div className="match-card-actions">
-                                  {!pFinale.dateMatch && (user?.isAdmin || 
+                                  {/* {!pFinale.dateMatch && (user?.isAdmin || 
                                     userClubs.some(club => 
                                       (compareClubIds(club._id, pFinale.equipe1) || compareClubIds(club._id, pFinale.equipe2)) &&
                                       club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
@@ -1623,7 +1623,7 @@ const CompetitionMatchesPage = () => {
                                     >
                                       <i className="fas fa-calendar-plus me-1"></i> Date
                                     </button>
-                                  )}
+                                  )} */}
                                   {pFinale.statut === 'Programmé' && canEditMatchScore(pFinale) && (
                                     <button 
                                       className="btn btn-primary btn-sm"
@@ -1632,14 +1632,14 @@ const CompetitionMatchesPage = () => {
                                       <i className="fas fa-edit me-1"></i> Score
                                     </button>
                                   )}
-                                  {pFinale.statut === 'Terminé' && (
+                                  {/* pFinale.statut === 'Terminé' && (
                                     <button 
                                       className="btn btn-outline-light btn-sm"
                                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(pFinale); }}
                                     >
                                       <i className="fas fa-eye me-1"></i> Détails
                                     </button>
-                                  )}
+                                  ) */}
                                   {canReportDispute(pFinale) && !pFinale.litige && (
                                     <button 
                                       className="btn btn-outline-warning btn-sm"
