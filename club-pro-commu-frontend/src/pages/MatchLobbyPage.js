@@ -764,7 +764,7 @@ export default function MatchLobbyPage() {
       <div className="header-area">
         <Link to={`/competition/${competitionId}/mes-matchs`} className="back-btn">
           <i className="fas fa-arrow-left"></i>
-          <span>Mes Matchs</span>
+          <span className="d-none d-sm-inline">Mes Matchs</span>
         </Link>
         <span className="comp-badge">{competition?.nom || 'Compétition'}</span>
       </div>
