@@ -600,27 +600,37 @@ export default function CompetitionDetailPage() {
               </div>
               <div className="card-body">
                 {competition.matchs.map((match, index) => (
-                  <div key={index} className="border rounded p-3 mb-3" style={{background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)'}}>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div className="flex-grow-1">
-                        <div className="d-flex align-items-center">
-                          <span className="fw-bold text-white font-rajdhani">{match.equipe1.nom}</span>
-                          <span className="mx-3 text-silver">
-                            {match.statut === 'Terminé' ? `${match.score1} - ${match.score2}` : 'vs'}
-                          </span>
-                          <span className="fw-bold text-white font-rajdhani">{match.equipe2.nom}</span>
+                  <Link
+                    key={index}
+                    to={`/competition/${competition._id}/match/${match._id}`}
+                    style={{ textDecoration: 'none', display: 'block' }}
+                  >
+                    <div className="border rounded p-3 mb-3" style={{background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', cursor: 'pointer', transition: 'border-color 0.2s'}}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
+                      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-glass)'}
+                    >
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="flex-grow-1">
+                          <div className="d-flex align-items-center">
+                            <span className="fw-bold text-white font-rajdhani">{match.equipe1.nom}</span>
+                            <span className="mx-3 text-silver">
+                              {match.statut === 'Terminé' ? `${match.score1} - ${match.score2}` : 'vs'}
+                            </span>
+                            <span className="fw-bold text-white font-rajdhani">{match.equipe2.nom}</span>
+                          </div>
+                          <small className="text-muted" style={{fontSize: '0.75rem'}}>
+                            {match.phase} • {match.statut}
+                          </small>
                         </div>
-                        <small className="text-muted" style={{fontSize: '0.75rem'}}>
-                          {match.phase} • {match.statut}
-                        </small>
-                      </div>
-                      <div>
-                        <span className={`badge ${match.statut === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
-                          {match.statut}
-                        </span>
+                        <div className="d-flex align-items-center gap-2">
+                          <span className={`badge ${match.statut === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
+                            {match.statut}
+                          </span>
+                          <i className="fas fa-chevron-right text-muted" style={{fontSize: '0.75rem'}}></i>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
