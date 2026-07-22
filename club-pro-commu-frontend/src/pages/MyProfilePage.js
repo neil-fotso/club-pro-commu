@@ -187,7 +187,21 @@ export default function MyProfilePage() {
     );
   }
 
-  return (
+  return true ? (
+    <div className="container mt-4 text-center">
+      <div className="card shadow-lg border-0 p-5 mt-5">
+        <h2 className="mb-4 text-primary">
+          <i className="fas fa-user-circle me-2"></i>
+          Profil de {player?.pseudo || 'Joueur'}
+        </h2>
+        <div className="alert alert-info py-4 mt-4">
+          <i className="fas fa-tools fa-3x mb-3 text-info"></i>
+          <h4>Page en cours de construction</h4>
+          <p className="mb-0">Les informations détaillées du profil seront bientôt disponibles.</p>
+        </div>
+      </div>
+    </div>
+  ) : (
     <div className="container mt-4">
       <div className="row">
         {/* Colonne principale */}
@@ -424,6 +438,7 @@ export default function MyProfilePage() {
                       Postes & Disponibilité
                     </h5>
                     <ul className="list-unstyled">
+                      {/* 
                       <li className="mb-2">
                         <strong>Poste principal:</strong> 
                         <span className="badge bg-primary ms-2">
@@ -442,12 +457,13 @@ export default function MyProfilePage() {
                           </div>
                         </li>
                       )}
-                      <li className="mb-2">
+                      */}
+                      {/* <li className="mb-2">
                         <strong>Disponibilité:</strong> 
                         <span className={`badge ${getAvailabilityBadge(player.disponibilite)} ms-2`}>
                           {player.disponibilite ? player.disponibilite : 'Non renseigné'}
                         </span>
-                      </li>
+                      </li> */}
                       <li className="mb-2">
                         <strong>Recherche un club:</strong> 
                         {player.rechercheClub !== undefined ? (
@@ -463,7 +479,7 @@ export default function MyProfilePage() {
                     </ul>
                   </div>
                   
-                  <div className="col-12 mt-4">
+                  {/* <div className="col-12 mt-4">
                     <h5 className="text-primary mb-3">
                       <i className="fas fa-comment me-2"></i>
                       Description
@@ -475,7 +491,7 @@ export default function MyProfilePage() {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                   
                   <div className="col-12 mt-4">
                     <h5 className="text-primary mb-3">
@@ -500,6 +516,7 @@ export default function MyProfilePage() {
           </div>
 
           {/* Section Palmarès & Trophées */}
+          {false && (
           <div className="card shadow-lg border-0 mt-4">
             <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'}}>
               <h4 className="mb-0">
@@ -568,9 +585,11 @@ export default function MyProfilePage() {
               )}
             </div>
           </div>
+          )}
         </div>
         
         {/* Sidebar avec statistiques */}
+        {false && (
         <div className="col-lg-4">
           <div className="card shadow-lg border-0">
             <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
@@ -601,6 +620,7 @@ export default function MyProfilePage() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

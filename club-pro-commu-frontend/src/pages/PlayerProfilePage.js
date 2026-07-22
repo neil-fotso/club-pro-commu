@@ -318,7 +318,21 @@ const PlayerProfilePage = () => {
   const isUserAdminOfClub = userClubs.some(club => club.role === 'Admin');
   const isOwnProfile = user && player.userId === user.id;
 
-  return (
+  return true ? (
+    <div className="container mt-4 text-center">
+      <div className="card shadow-lg border-0 p-5 mt-5">
+        <h2 className="mb-4 text-primary">
+          <i className="fas fa-user-circle me-2"></i>
+          Profil de {player?.pseudo || 'Joueur'}
+        </h2>
+        <div className="alert alert-info py-4 mt-4">
+          <i className="fas fa-tools fa-3x mb-3 text-info"></i>
+          <h4>Page en cours de construction</h4>
+          <p className="mb-0">Les informations détaillées du profil seront bientôt disponibles.</p>
+        </div>
+      </div>
+    </div>
+  ) : (
     <div className="profile-container">
       <style>{profileStyles}</style>
       <div className="container">
@@ -332,9 +346,9 @@ const PlayerProfilePage = () => {
                     <div>
                       <h1 className="mb-3 text-white">{player.pseudo}</h1>
                       <div className="d-flex gap-2 mb-3 flex-wrap">
-                        <span className={`badge bg-${getDisponibiliteColor(player.disponibilite)} profile-badge`}>
+                        {/* <span className={`badge bg-${getDisponibiliteColor(player.disponibilite)} profile-badge`}>
                           {player.disponibilite}
-                        </span>
+                        </span> */}
                         <span className="badge bg-primary profile-badge">
                           {player.position}
                         </span>
@@ -376,7 +390,7 @@ const PlayerProfilePage = () => {
             {/* Informations principales */}
             <div className="col-lg-8">
               {/* Bio */}
-              {player.bio && (
+              {/* player.bio && (
                 <div className="card profile-card mb-4">
                   <div className="card-header">
                     <h5 className="mb-0">
@@ -388,7 +402,7 @@ const PlayerProfilePage = () => {
                     <p className="mb-0">{player.bio}</p>
                   </div>
                 </div>
-              )}
+              ) */}
 
               {/* Informations détaillées */}
               <div className="card profile-card mb-4">
@@ -401,6 +415,7 @@ const PlayerProfilePage = () => {
                 <div className="card-body">
                   <div className="row">
                     <div className="col-md-6">
+                      {/* 
                       <div className="mb-3">
                         <strong>Position principale:</strong>
                         <div className="text-muted">{player.postePrincipal || 'Non renseigné'}</div>
@@ -418,6 +433,7 @@ const PlayerProfilePage = () => {
                           </div>
                         </div>
                       )}
+                      */}
                       
                       <div className="mb-3">
                         <strong>Recherche un club:</strong>
@@ -453,7 +469,7 @@ const PlayerProfilePage = () => {
               </div>
 
               {/* Statistiques */}
-              {player.statistiques && (
+              {false && player.statistiques && (
                 <div className="card profile-card mb-4">
                   <div className="card-header">
                     <h5 className="mb-0">
@@ -555,6 +571,7 @@ const PlayerProfilePage = () => {
                 </div>
               )}
               {/* Section Palmarès & Trophées */}
+              {false && (
               <div className="card profile-card mb-4 shadow-sm border-0">
                 <div className="card-header text-white" style={{background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'}}>
                   <h5 className="mb-0">
@@ -625,6 +642,7 @@ const PlayerProfilePage = () => {
                   )}
                 </div>
               </div>
+              )}
             </div>
 
             {/* Sidebar */}

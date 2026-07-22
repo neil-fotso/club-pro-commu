@@ -284,10 +284,10 @@ export default function MyClubsPage() {
                 <h3 className="text-white font-rajdhani text-uppercase mb-2">Aucun club trouvé</h3>
                 <p className="text-muted mb-4">Vous n'êtes membre d'aucun club pour le moment.</p>
                 <div className="d-flex flex-column flex-md-row gap-3 justify-content-center px-4">
-                  <Link to="/clubs" className="btn submit-btn btn-lg">
+                  {/* <Link to="/clubs" className="btn submit-btn btn-lg">
                     <i className="fas fa-search me-2"></i>
                     Rechercher un club
-                  </Link>
+                  </Link> */}
                   <Link to="/create-club" className="btn cancel-btn btn-lg">
                     <i className="fas fa-plus me-2"></i>
                     Créer un club
