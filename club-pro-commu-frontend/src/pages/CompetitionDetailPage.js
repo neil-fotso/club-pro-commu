@@ -691,8 +691,8 @@ export default function CompetitionDetailPage() {
                     <br />
                     Vous devez être le créateur, l'administrateur ou le capitaine d'un club pour pouvoir l'inscrire à une compétition.
                     <div className="mt-3">
-                      <Link to="/clubs" onClick={() => setShowInscriptionModal(false)} className="btn btn-sm btn-warning text-dark fw-bold">
-                        <i className="fas fa-users me-1"></i> Créer ou Rejoindre un Club
+                      <Link to="/creer-club" onClick={() => setShowInscriptionModal(false)} className="btn btn-sm btn-warning text-dark fw-bold">
+                        <i className="fas fa-plus-circle me-1"></i> Créer un club
                       </Link>
                     </div>
                   </div>
