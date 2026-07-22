@@ -352,7 +352,7 @@ export default function CreateClubPage() {
       
       setSuccess(true);
       setTimeout(() => {
-        navigate('/clubs');
+        navigate('/mes-clubs');
       }, 2000);
     } catch (err) {
       console.error('Erreur création club:', err);
