@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { playerAPI } from '../services/api';
 import { getAllCountries, getCountryDisplay } from '../utils/countryUtils';
-import { getAllPositions, getPositionDisplay } from '../utils/positionUtils';
+import { getAllPositions } from '../utils/positionUtils';
 
 // Liste des langues disponibles
 const availableLanguages = [
@@ -147,13 +147,7 @@ export default function MyProfilePage() {
 
 
 
-  const getAvailabilityBadge = (availability) => {
-    const badges = {
-      'Disponible': 'bg-success',
-      'Indisponible': 'bg-danger'
-    };
-    return badges[availability] || 'bg-secondary';
-  };
+
 
   if (!user) {
     return (

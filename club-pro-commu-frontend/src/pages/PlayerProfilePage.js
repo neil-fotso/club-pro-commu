@@ -262,13 +262,7 @@ const PlayerProfilePage = () => {
     }
   };
 
-  const getDisponibiliteColor = (disponibilite) => {
-    const colors = {
-      'Disponible': 'success',
-      'Indisponible': 'danger'
-    };
-    return colors[disponibilite] || 'secondary';
-  };
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
