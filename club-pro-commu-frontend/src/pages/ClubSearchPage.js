@@ -5,812 +5,535 @@ import { clubAPI } from '../services/api';
 import { getAllCountries } from '../utils/countryUtils';
 import Avatar from '../components/Avatar';
 
-// Styles améliorés pour la page de recherche de clubs
+// Styles Gaming pour la page de recherche de clubs
 const clubSearchStyles = `
-  .club-search-container {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
+
+  .cs-container {
+    background: #090714;
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(123, 0, 255, 0.18), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.12), transparent 40%),
+      linear-gradient(rgba(255,255,255,0.006) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.006) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
     min-height: 100vh;
-    padding: 2rem 0;
+    padding: 2.5rem 0;
+    color: #f1f0f6;
+    font-family: 'Outfit', 'Inter', sans-serif;
   }
-  
-  .club-search-content {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    animation: fadeInUp 0.8s ease-out;
-  }
-  
-  @keyframes fadeInUp {
-    0% {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .search-header {
+
+  .cs-hero {
     text-align: center;
-    margin-bottom: 3rem;
-    animation: slideInDown 0.8s ease-out;
+    padding: 2.5rem 0 2rem;
+    animation: cs-fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  
-  @keyframes slideInDown {
-    0% {
-      opacity: 0;
-      transform: translateY(-30px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+
+  .cs-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 240, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 50px;
+    padding: 0.35rem 1.1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #00f0ff;
+    margin-bottom: 1.25rem;
   }
-  
-  .search-header h1 {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  .cs-hero h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, #ffffff 0%, #00f0ff 50%, #7b00ff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-size: 3rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
-  
-  .search-header p {
-    color: #6c757d;
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
+
+  .cs-hero p {
+    color: #a29db8;
+    font-size: 1.05rem;
+    max-width: 500px;
+    margin: 0 auto;
   }
-  
-  .search-filters {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
+
+  .cs-filters {
+    background: rgba(18, 14, 33, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 22px;
+    padding: 1.75rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    animation: cs-fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
   }
-  
-  .search-filters:hover {
-    border-color: #667eea;
-    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.15);
-  }
-  
-  .filter-row {
+
+  .cs-filter-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
   }
-  
-  .filter-group {
-    position: relative;
-  }
-  
-  .filter-group label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
+
+  .cs-filter-group label {
     display: flex;
     align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #a29db8;
+    margin-bottom: 0.45rem;
   }
-  
-  .filter-group label i {
-    margin-right: 0.5rem;
-    color: #667eea;
-  }
-  
-  .form-control, .form-select {
-    border: 2px solid transparent;
+
+  .cs-filter-group label i { color: #00f0ff; }
+
+  .cs-filter-group .form-control,
+  .cs-filter-group .form-select {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    color: #f1f0f6;
+    padding: 0.65rem 1rem;
+    font-size: 0.92rem;
+    transition: all 0.25s ease;
+    outline: none;
   }
-  
-  .form-control:focus, .form-select:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    transform: translateY(-2px);
-    background: white;
+
+  .cs-filter-group .form-control::placeholder { color: rgba(255,255,255,0.25); }
+
+  .cs-filter-group .form-control:focus,
+  .cs-filter-group .form-select:focus {
+    background: rgba(0, 240, 255, 0.06);
+    border-color: rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+    color: #fff;
   }
-  
-  .filter-actions {
+
+  .cs-filter-group .form-select option { background: #120e21; color: #f1f0f6; }
+
+  .cs-advanced-separator {
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin: 1.25rem 0;
+  }
+
+  .cs-filter-actions {
     display: flex;
-    gap: 1rem;
-    justify-content: center;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+  }
+
+  .cs-btn-search {
+    background: linear-gradient(135deg, #7b00ff 0%, #00f0ff 100%);
+    border: none;
+    color: #fff;
+    border-radius: 30px;
+    padding: 0.7rem 2rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(123, 0, 255, 0.35);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .cs-btn-search:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
+    color: #fff;
+  }
+
+  .cs-btn-advanced {
+    background: transparent;
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: #00f0ff;
+    border-radius: 30px;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .cs-btn-advanced:hover {
+    background: rgba(0, 240, 255, 0.08);
+    border-color: #00f0ff;
+  }
+
+  .cs-btn-clear {
+    background: transparent;
+    border: 1px solid rgba(255, 0, 80, 0.4);
+    color: #ff5080;
+    border-radius: 30px;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .cs-btn-clear:hover {
+    background: rgba(255, 0, 80, 0.08);
+    border-color: #ff5080;
+  }
+
+  .cs-results-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+    animation: cs-fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  }
+
+  .cs-results-count {
+    font-size: 0.9rem;
+    color: #a29db8;
+    font-weight: 600;
+  }
+
+  .cs-results-count strong { color: #00f0ff; }
+
+  .cs-sort-group {
+    display: flex;
+    gap: 0.4rem;
     flex-wrap: wrap;
   }
-  
-  .btn-filter {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    padding: 0.75rem 2rem;
+
+  .cs-sort-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #a29db8;
+    border-radius: 10px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
   }
-  
-  .btn-filter:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+
+  .cs-sort-btn:hover { border-color: rgba(0, 240, 255, 0.3); color: #fff; }
+
+  .cs-sort-btn.active {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: rgba(0, 240, 255, 0.5);
+    color: #00f0ff;
   }
-  
-  .btn-clear {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-  }
-  
-  .btn-clear:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-  }
-  
-  .sorting-options {
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
-    padding: 1rem;
+
+  .cs-card {
+    background: rgba(18, 14, 33, 0.65);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 22px;
+    padding: 0;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 35px rgba(0,0,0,0.35);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    position: relative;
+    animation: cs-fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  
-  .sorting-options .btn-group .btn {
-    border-radius: 8px;
-    margin: 0 2px;
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
-    transition: all 0.3s ease;
+
+  .cs-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    background: linear-gradient(90deg, #7b00ff, #00f0ff, #ff007f);
+    opacity: 0;
+    transition: opacity 0.4s ease;
   }
-  
-  .sorting-options .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+
+  .cs-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(0, 240, 255, 0.25);
+    box-shadow: 0 20px 50px rgba(123, 0, 255, 0.2), 0 0 0 1px rgba(0, 240, 255, 0.1);
   }
-  
-  .club-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
+
+  .cs-card:hover::before { opacity: 1; }
+
+  .cs-card-banner {
+    height: 72px;
+    background: linear-gradient(135deg, #180d32 0%, #06030c 100%);
     position: relative;
     overflow: hidden;
   }
-  
-  .club-card::before {
-    content: '';
+
+  .cs-card-banner-pattern {
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.05), transparent);
-    transition: left 0.5s ease;
+    inset: 0;
+    opacity: 0.05;
+    background-image:
+      linear-gradient(45deg, #00f0ff 25%, transparent 25%),
+      linear-gradient(-45deg, #00f0ff 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #00f0ff 75%),
+      linear-gradient(-45deg, transparent 75%, #00f0ff 75%);
+    background-size: 16px 16px;
   }
-  
-  .club-card:hover::before {
-    left: 100%;
-  }
-  
-  .club-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
-    border-color: #667eea;
-  }
-  
-  .club-header {
+
+  .cs-card-body { padding: 0 1.4rem 1.4rem; }
+
+  .cs-card-avatar-wrap {
     display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-top: -32px;
+    margin-bottom: 0.75rem;
   }
-  
-  .club-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  .cs-card-avatar {
+    width: 66px;
+    height: 66px;
+    border-radius: 16px;
+    background: #151128;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1rem;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    border: 3px solid #00f0ff;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.3);
+    flex-shrink: 0;
+    overflow: hidden;
   }
-  
-  .club-avatar i {
-    font-size: 1.5rem;
-    color: white;
+
+  .cs-card-avatar i {
+    font-size: 1.7rem;
+    color: #00f0ff;
+    filter: drop-shadow(0 0 6px rgba(0,240,255,0.5));
   }
-  
-  .club-info h5 {
-    margin: 0;
-    font-weight: 700;
-    color: #495057;
-    font-size: 1.2rem;
-  }
-  
-  .club-info h5 a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.3s ease;
-  }
-  
-  .club-info h5 a:hover {
-    color: #667eea;
-  }
-  
-  .club-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-    margin: 1rem 0;
-  }
-  
-  .stat-item {
-    text-align: center;
-    padding: 0.5rem;
-    background: rgba(102, 126, 234, 0.1);
-    border-radius: 10px;
-    transition: all 0.3s ease;
-  }
-  
-  .stat-item:hover {
-    background: rgba(102, 126, 234, 0.15);
-    transform: translateY(-2px);
-  }
-  
-  .stat-label {
-    font-size: 0.8rem;
-    color: #6c757d;
-    font-weight: 600;
+
+  .cs-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .cs-card-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    line-height: 1.2;
+    flex: 1;
+    padding-bottom: 0.2rem;
   }
-  
-  .stat-value {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #495057;
-    margin-top: 0.25rem;
-  }
-  
-  .club-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 1rem 0;
-  }
-  
-  .badge {
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    font-size: 0.85rem;
-    transition: all 0.3s ease;
-  }
-  
-  .badge:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  .club-actions {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-  }
-  
-  .btn-join {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-  }
-  
-  .btn-join:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
-    color: white;
-    text-decoration: none;
-  }
-  
-  .btn-view {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    border: none;
-    color: white;
-    border-radius: 25px;
-    padding: 0.75rem 2rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-  }
-  
-  .btn-view:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
-    color: white;
-    text-decoration: none;
-  }
-  
-  .loading-container {
-    text-align: center;
-    padding: 3rem;
-  }
-  
-  .spinner {
-    width: 3rem;
-    height: 3rem;
-    border: 4px solid rgba(102, 126, 234, 0.3);
-    border-top: 4px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .error-container {
-    text-align: center;
-    padding: 3rem;
-    color: #dc3545;
-  }
-  
-  .no-results {
-    text-align: center;
-    padding: 3rem;
-    color: #6c757d;
-  }
-  
-  .no-results i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-  }
-  
-  .results-count {
-    text-align: center;
-    margin-bottom: 2rem;
-    color: #6c757d;
-    font-weight: 600;
-  }
-  
 
-  
-  @media (max-width: 768px) {
-    .club-search-content {
-      padding: 1rem;
-      margin: 1rem;
-    }
-    
-    .search-header h1 {
-      font-size: 2rem;
-    }
-    
-    .filter-row {
-      grid-template-columns: 1fr;
-    }
-    
-    .club-actions {
-      flex-direction: column;
-    }
-    
-    .btn-join, .btn-view {
-      justify-content: center;
-    }
+  .cs-card-name a { color: inherit; text-decoration: none; transition: color 0.2s; }
+  .cs-card-name a:hover { color: #00f0ff; }
+
+  .cs-card-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.9rem; }
+
+  .cs-badge {
+    border-radius: 8px;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
-  
-  /* Optimisations mobile avancées */
-  @media (max-width: 768px) {
-    .club-search-container {
-      padding: 0.75rem 0;
-    }
-    
-    .club-search-content {
-      padding: 1.2rem;
-      margin: 0 1.2rem;
-      border-radius: 12px;
-    }
-    
-    .search-header {
-      margin-bottom: 1.5rem;
-    }
-    
-    .search-header h1 {
-      font-size: 1.4rem;
-      margin-bottom: 0.4rem;
-      font-weight: 600;
-    }
-    
-    .search-header p {
-      font-size: 0.85rem;
-      margin-bottom: 1.2rem;
-      color: #6c757d;
-    }
-    
-    .search-filters {
-      padding: 0.8rem;
-      margin-bottom: 1.8rem;
-    }
-    
-    .search-filters .filter-row {
-      gap: 0.6rem;
-      margin-bottom: 0.6rem;
-    }
-    
-    .filter-group label {
-      font-size: 0.8rem;
-      margin-bottom: 0.2rem;
-      font-weight: 500;
-      color: #495057;
-    }
-    
-    .filter-group .form-control,
-    .filter-group .form-select {
-      font-size: 0.85rem;
-      padding: 0.5rem 0.75rem;
-      border-radius: 8px;
-      border: 1px solid #dee2e6;
-    }
-    
-    .filter-group .form-control:focus,
-    .filter-group .form-select:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-    
-    /* Cartes optimisées pour mobile */
-    .club-card {
-      margin-bottom: 1.2rem;
-      border-radius: 12px;
-      min-height: auto;
-    }
-    
-    .club-header {
-      padding: 0.5rem;
-    }
-    
-    .club-avatar {
-      width: 32px;
-      height: 32px;
-    }
-    
-    .club-avatar i {
-      font-size: 0.9rem;
-    }
-    
-    .club-info h5 {
-      font-size: 0.85rem;
-      margin-bottom: 0.25rem;
-    }
-    
-    .club-info .badge {
-      font-size: 0.6rem;
-      padding: 0.15rem 0.35rem;
-    }
-    
-    .club-stats {
-      padding: 0.6rem;
-      gap: 0.4rem;
-    }
-    
-    .stat-item {
-      padding: 0.4rem;
-      margin: 0.2rem;
-    }
-    
-    .stat-label {
-      font-size: 0.65rem;
-    }
-    
-    .stat-value {
-      font-size: 0.8rem;
-    }
-    
-    .club-badges {
-      padding: 0.6rem;
-      gap: 0.4rem;
-    }
-    
-    .club-badges .badge {
-      font-size: 0.6rem;
-      padding: 0.15rem 0.3rem;
-    }
-    
-    .club-actions {
-      padding: 0.6rem;
-      gap: 0.6rem;
-    }
-    
-    .btn-view {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.75rem;
-      border-radius: 18px;
-    }
-    
-    .btn-join {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.75rem;
-      border-radius: 18px;
-    }
-    
-    /* Layout mobile : infos à gauche, boutons à droite */
-    .club-card .mobile-layout {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.6rem;
-      padding: 0.5rem;
-    }
-    
-    .club-card .mobile-info {
-      flex: 1;
-    }
-    
-    .club-card .mobile-stats {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-    
-    .club-card .mobile-stat-item {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    
-    .club-card .mobile-stat-label {
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: #6c757d;
-    }
-    
-    .club-card .mobile-stat-value {
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-    
-    .club-card .mobile-platforms {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.2rem;
-      margin-top: 0.2rem;
-    }
-    
-    .club-card .mobile-platforms .badge {
-      font-size: 0.55rem;
-      padding: 0.1rem 0.25rem;
-    }
-    
-    .club-card .mobile-buttons {
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    
-    .club-card .mobile-description {
-      padding: 0 0.5rem 0.5rem;
-      border-top: 1px solid rgba(0,0,0,0.1);
-      margin-top: 0.35rem;
-    }
-    
-    /* Filtres mobile */
-    .filter-actions {
-      margin-top: 0.8rem;
-      gap: 0.6rem;
-    }
-    
-    .btn-filter, .btn-clear {
-      width: 100%;
-      font-size: 0.8rem;
-      padding: 0.6rem 0.8rem;
-      border-radius: 8px;
-      font-weight: 500;
-    }
-    
-    /* Grille mobile optimisée */
-    .col-lg-6.col-xl-4 {
-      padding: 0 0.6rem;
-    }
-    
-    /* Espacement amélioré */
-    .mb-4 {
-      margin-bottom: 1.2rem !important;
-    }
-    
-    /* Résultats count */
-    .results-count {
-      margin-bottom: 1.2rem;
-      font-size: 0.85rem;
-      color: #6c757d;
-      font-weight: 500;
-    }
-    
-    /* No results */
-    .no-results {
-      padding: 2rem 1rem;
-      text-align: center;
-    }
-    
-    .no-results i {
-      font-size: 3rem;
-      color: #dee2e6;
-      margin-bottom: 1rem;
-    }
-    
-    .no-results h3 {
-      font-size: 1.2rem;
-      color: #495057;
-      margin-bottom: 0.5rem;
-    }
-    
-    .no-results p {
-      font-size: 0.9rem;
-      color: #6c757d;
-    }
+
+  .cs-badge-recrute {
+    background: linear-gradient(135deg, #00ff87, #60efff);
+    color: #0c0a16;
+    box-shadow: 0 0 10px rgba(0,255,135,0.25);
   }
-  
-  /* Optimisations pour très petits écrans */
-  @media (max-width: 480px) {
-    .club-search-content {
-      padding: 1rem;
-      margin: 0 1rem;
-    }
-    
-    .search-header h1 {
-      font-size: 1.2rem;
-    }
-    
-    .search-header p {
-      font-size: 0.8rem;
-    }
-    
-    .search-filters {
-      padding: 0.7rem;
-      margin-bottom: 1.5rem;
-    }
-    
-    .filter-group label {
-      font-size: 0.75rem;
-    }
-    
-    .filter-group .form-control,
-    .filter-group .form-select {
-      font-size: 0.8rem;
-      padding: 0.45rem 0.65rem;
-    }
-    
-    .club-header {
-      padding: 0.45rem;
-    }
-    
-    .club-avatar {
-      width: 30px;
-      height: 30px;
-    }
-    
-    .club-avatar i {
-      font-size: 0.85rem;
-    }
-    
-    .club-info h5 {
-      font-size: 0.8rem;
-    }
-    
-    /* Layout mobile optimisé pour petits écrans */
-    .club-card .mobile-layout {
-      gap: 0.5rem;
-      padding: 0.45rem;
-    }
-    
-    .club-card .mobile-stat-item {
-      gap: 0.15rem;
-    }
-    
-    .club-card .mobile-stat-label {
-      font-size: 0.65rem;
-    }
-    
-    .club-card .mobile-stat-value {
-      font-size: 0.7rem;
-    }
-    
-    .club-card .mobile-platforms {
-      gap: 0.15rem;
-      margin-top: 0.15rem;
-    }
-    
-    .club-card .mobile-platforms .badge {
-      font-size: 0.5rem;
-      padding: 0.08rem 0.2rem;
-    }
-    
-    .club-card .mobile-description {
-      padding: 0 0.45rem 0.45rem;
-      margin-top: 0.25rem;
-    }
-    
-    .btn-view, .btn-join {
-      padding: 0.35rem 0.7rem;
-      font-size: 0.7rem;
-    }
-    
-    /* Grille optimisée */
-    .col-lg-6.col-xl-4 {
-      padding: 0 0.5rem;
-    }
-    
-    .mb-4 {
-      margin-bottom: 1rem !important;
-    }
-    
-    /* Espacement des filtres */
-    .search-filters {
-      padding: 0.8rem;
-      margin-bottom: 1.8rem;
-    }
-    
-    .btn-filter, .btn-clear {
-      font-size: 0.75rem;
-      padding: 0.5rem 0.7rem;
-    }
-    
-    .results-count {
-      font-size: 0.8rem;
-    }
-    
-    /* Pagination mobile */
-    .pagination-container {
-      margin-top: 2rem;
-      padding: 1rem 0;
-    }
-    
-    .pagination {
-      margin-top: 1rem;
-    }
-    
-    .pagination .page-link {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.85rem;
-      margin: 0 0.1rem;
-    }
-    
-    /* Masquer certaines pages sur mobile pour économiser l'espace */
-    @media (max-width: 576px) {
-      .pagination .page-item:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) {
-        display: none;
-      }
-    }
+
+  .cs-badge-closed {
+    background: rgba(255,255,255,0.07);
+    color: #a29db8;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .cs-badge-platform {
+    background: rgba(0, 240, 255, 0.1);
+    color: #00f0ff;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+  }
+
+  .cs-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .cs-stat {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 0.55rem 0.4rem;
+    text-align: center;
+  }
+
+  .cs-stat-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #7b6fa0;
+    margin-bottom: 0.15rem;
+  }
+
+  .cs-stat-value { font-size: 0.88rem; font-weight: 800; color: #fff; }
+  .cs-stat-value.cyan { color: #00f0ff; }
+
+  .cs-card-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin: 0.7rem 0;
+  }
+
+  .cs-card-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+  .cs-btn-view {
+    background: transparent;
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: #00f0ff;
+    border-radius: 20px;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.25s ease;
+    cursor: pointer;
+  }
+
+  .cs-btn-view:hover {
+    background: rgba(0, 240, 255, 0.1);
+    border-color: #00f0ff;
+    color: #00f0ff;
+    transform: translateY(-1px);
+    box-shadow: 0 0 15px rgba(0,240,255,0.2);
+  }
+
+  .cs-btn-join {
+    background: linear-gradient(135deg, #ff007f 0%, #7b00ff 100%);
+    border: none;
+    color: #fff;
+    border-radius: 20px;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(255,0,127,0.25);
+  }
+
+  .cs-btn-join:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 25px rgba(255,0,127,0.4);
+    color: #fff;
+  }
+
+  .cs-btn-join:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .cs-pending-box {
+    background: rgba(255, 200, 0, 0.06);
+    border: 1px solid rgba(255,200,0,0.2);
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+  }
+
+  .cs-pending-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ffc800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .cs-pending-date { font-size: 0.68rem; color: #7b6fa0; margin-bottom: 0.35rem; }
+
+  .cs-btn-cancel {
+    background: transparent;
+    border: 1px solid rgba(255,80,80,0.4);
+    color: #ff5080;
+    border-radius: 8px;
+    padding: 0.22rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .cs-btn-cancel:hover { background: rgba(255,80,80,0.1); border-color: #ff5080; }
+
+  .cs-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem;
+    gap: 1.25rem;
+  }
+
+  .cs-spinner {
+    width: 52px; height: 52px;
+    border: 3px solid rgba(0,240,255,0.15);
+    border-top-color: #00f0ff;
+    border-radius: 50%;
+    animation: cs-spin 0.9s linear infinite;
+  }
+
+  .cs-loading p { color: #7b6fa0; font-size: 0.95rem; }
+
+  .cs-empty { text-align: center; padding: 4rem 2rem; color: #7b6fa0; }
+  .cs-empty i { font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.35; color: #00f0ff; }
+  .cs-empty h3 { font-size: 1.3rem; font-weight: 700; color: #a29db8; margin-bottom: 0.5rem; }
+  .cs-empty p { font-size: 0.9rem; }
+
+  @keyframes cs-fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes cs-spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .cs-hero h1 { font-size: 1.7rem; }
+    .cs-filters { padding: 1.2rem; }
+    .cs-filter-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+    .cs-filter-actions { justify-content: stretch; }
+    .cs-btn-search, .cs-btn-advanced, .cs-btn-clear { width: 100%; justify-content: center; }
+    .cs-results-bar { flex-direction: column; align-items: flex-start; }
   }
 `;
 
@@ -1005,14 +728,12 @@ export default function ClubSearchPage() {
 
   if (loading) {
     return (
-      <div className="club-search-container">
+      <div className="cs-container">
         <style>{clubSearchStyles}</style>
         <div className="container">
-          <div className="club-search-content">
-            <div className="loading-container">
-              <div className="spinner"></div>
-              <p className="mt-3">Recherche de clubs en cours...</p>
-            </div>
+          <div className="cs-loading">
+            <div className="cs-spinner"></div>
+            <p>Recherche de clubs en cours...</p>
           </div>
         </div>
       </div>
@@ -1021,15 +742,13 @@ export default function ClubSearchPage() {
 
   if (error) {
     return (
-      <div className="club-search-container">
+      <div className="cs-container">
         <style>{clubSearchStyles}</style>
         <div className="container">
-          <div className="club-search-content">
-            <div className="error-container">
-              <i className="fas fa-exclamation-triangle fa-3x mb-3"></i>
-              <h3>Erreur</h3>
-              <p>{error}</p>
-            </div>
+          <div className="cs-empty">
+            <i className="fas fa-exclamation-triangle"></i>
+            <h3>Erreur</h3>
+            <p>{error}</p>
           </div>
         </div>
       </div>
@@ -1037,410 +756,257 @@ export default function ClubSearchPage() {
   }
 
   return (
-    <div className="club-search-container">
+    <div className="cs-container">
       <style>{clubSearchStyles}</style>
       <div className="container">
-        <div className="club-search-content">
-          {/* Header */}
-          <div className="search-header">
-            <h1>🏆 Rechercher un Club</h1>
-            <p>Trouvez le club parfait pour votre équipe et commencez à jouer ensemble !</p>
+
+        {/* ── HERO ── */}
+        <div className="cs-hero">
+          <div className="cs-hero-eyebrow">
+            <i className="fas fa-shield-alt"></i>
+            Trouver un Club
           </div>
+          <h1>Rechercher un Club</h1>
+          <p>Rejoignez une équipe, dominez les compétitions. Trouve ton clan.</p>
+        </div>
 
-                     {/* Filtres de recherche */}
-           <div className="search-filters">
-             <div className="filter-row">
-               <div className="filter-group">
-                 <label>
-                   <i className="fas fa-search"></i>
-                   Nom du club
-                 </label>
-                 <input
-                   type="text"
-                   className="form-control"
-                   value={filters.nom}
-                   onChange={(e) => handleFilterChange('nom', e.target.value)}
-                   placeholder="Rechercher un club..."
-                 />
-               </div>
-               
-               <div className="filter-group">
-                 <label>
-                   <i className="fas fa-gamepad"></i>
-                   Plateforme
-                 </label>
-                 <select
-                   className="form-select"
-                   value={filters.plateforme}
-                   onChange={(e) => handleFilterChange('plateforme', e.target.value)}
-                 >
-                   <option value="">Toutes les plateformes</option>
-                   <option value="PS5">🎮 PS5</option>
-                   <option value="Xbox">🎮 Xbox</option>
-                   <option value="PC">💻 PC</option>
-                 </select>
-               </div>
-             </div>
-
-             {/* Filtres avancés */}
-             {showAdvancedFilters && (
-               <div className="advanced-filters" style={{marginTop: '1rem', paddingTop: '1rem', borderTop: '2px solid rgba(102, 126, 234, 0.2)'}}>
-                 <div className="filter-row">
-                   <div className="filter-group">
-                     <label>
-                       <i className="fas fa-flag"></i>
-                       Pays
-                     </label>
-                     <select
-                       className="form-select"
-                       value={filters.pays}
-                       onChange={(e) => handleFilterChange('pays', e.target.value)}
-                     >
-                       <option value="">Tous les pays</option>
-                       {getAllCountries().map(country => (
-                         <option key={country.code} value={country.name}>
-                           {country.flag} {country.name}
-                         </option>
-                       ))}
-                     </select>
-                   </div>
-                   
-                   <div className="filter-group">
-                     <label>
-                       <i className="fas fa-users"></i>
-                       Recrutement
-                     </label>
-                     <select
-                       className="form-select"
-                       value={filters.recrute}
-                       onChange={(e) => handleFilterChange('recrute', e.target.value)}
-                     >
-                       <option value="">Tous les clubs</option>
-                       <option value="true">Recrute</option>
-                       <option value="false">Ne recrute pas</option>
-                     </select>
-                   </div>
-                   
-                   <div className="filter-group">
-                     <label>
-                       <i className="fas fa-language"></i>
-                       Langue
-                     </label>
-                     <select
-                       className="form-select"
-                       value={filters.langue}
-                       onChange={(e) => handleFilterChange('langue', e.target.value)}
-                     >
-                       <option value="">Toutes les langues</option>
-                       <option value="Français">🇫🇷 Français</option>
-                       <option value="Anglais">🇬🇧 Anglais</option>
-                       <option value="Espagnol">🇪🇸 Espagnol</option>
-                       <option value="Allemand">🇩🇪 Allemand</option>
-                       <option value="Italien">🇮🇹 Italien</option>
-                       <option value="Portugais">🇵🇹 Portugais</option>
-                       <option value="Néerlandais">🇳🇱 Néerlandais</option>
-                       <option value="Arabe">🇸🇦 Arabe</option>
-                       <option value="Chinois">🇨🇳 Chinois</option>
-                       <option value="Japonais">🇯🇵 Japonais</option>
-                       <option value="Coréen">🇰🇷 Coréen</option>
-                       <option value="Russe">🇷🇺 Russe</option>
-                     </select>
-                   </div>
-                   
-
-                 </div>
-               </div>
-             )}
-
-             <div className="filter-actions">
-               <button
-                 className="btn btn-filter"
-                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-               >
-                 <i className={`fas fa-${showAdvancedFilters ? 'minus' : 'plus'} me-2`}></i>
-                 {showAdvancedFilters ? 'Masquer' : 'Afficher'} les filtres avancés
-               </button>
-               
-               <button
-                 className="btn btn-clear"
-                 onClick={clearFilters}
-               >
-                 <i className="fas fa-times me-2"></i>
-                 Effacer tous les filtres
-               </button>
-             </div>
-           </div>
-
-                    {/* Options de tri */}
-          <div className="sorting-options mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <h6 className="mb-0">
-                <i className="fas fa-sort me-2"></i>
-                Trier par :
-              </h6>
-              <div className="btn-group" role="group">
-                <button
-                  type="button"
-                  className={`btn btn-sm ${sortBy === 'nom' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => handleSortChange('nom')}
-                >
-                  <i className="fas fa-shield-alt me-1"></i>
-                  Nom
-                  {sortBy === 'nom' && (
-                    <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-sm ${sortBy === 'membres' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => handleSortChange('membres')}
-                >
-                  <i className="fas fa-users me-1"></i>
-                  Membres
-                  {sortBy === 'membres' && (
-                    <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  className={`btn btn-sm ${sortBy === 'dateCreation' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => handleSortChange('dateCreation')}
-                >
-                  <i className="fas fa-calendar me-1"></i>
-                  Date de création
-                  {sortBy === 'dateCreation' && (
-                    <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} ms-1`}></i>
-                  )}
-                </button>
-              </div>
+        {/* ── FILTRES ── */}
+        <div className="cs-filters">
+          <div className="cs-filter-grid">
+            <div className="cs-filter-group">
+              <label><i className="fas fa-search"></i> Nom du club</label>
+              <input
+                type="text"
+                className="form-control"
+                value={filters.nom}
+                onChange={(e) => handleFilterChange('nom', e.target.value)}
+                placeholder="Rechercher un club..."
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
             </div>
-          </div>
-
-          {/* Bouton de recherche */}
-          <div className="row mb-4">
-            <div className="col text-center">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleSearch}
-                disabled={loading}
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  borderRadius: '25px',
-                  padding: '0.75rem 1.5rem',
-                  fontWeight: '600',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
-                  fontSize: '1rem'
-                }}
+            <div className="cs-filter-group">
+              <label><i className="fas fa-gamepad"></i> Plateforme</label>
+              <select
+                className="form-select"
+                value={filters.plateforme}
+                onChange={(e) => handleFilterChange('plateforme', e.target.value)}
               >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Recherche en cours...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-search me-2"></i>
-                    Rechercher
-                  </>
-                )}
+                <option value="">Toutes les plateformes</option>
+                <option value="PS5">🎮 PS5</option>
+                <option value="Xbox">🎮 Xbox</option>
+                <option value="PC">💻 PC</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Filtres avancés */}
+          {showAdvancedFilters && (
+            <>
+              <div className="cs-advanced-separator"></div>
+              <div className="cs-filter-grid">
+                <div className="cs-filter-group">
+                  <label><i className="fas fa-flag"></i> Pays</label>
+                  <select
+                    className="form-select"
+                    value={filters.pays}
+                    onChange={(e) => handleFilterChange('pays', e.target.value)}
+                  >
+                    <option value="">Tous les pays</option>
+                    {getAllCountries().map(country => (
+                      <option key={country.code} value={country.name}>
+                        {country.flag} {country.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cs-filter-group">
+                  <label><i className="fas fa-users"></i> Recrutement</label>
+                  <select
+                    className="form-select"
+                    value={filters.recrute}
+                    onChange={(e) => handleFilterChange('recrute', e.target.value)}
+                  >
+                    <option value="">Tous les clubs</option>
+                    <option value="true">Recrute</option>
+                    <option value="false">Ne recrute pas</option>
+                  </select>
+                </div>
+                <div className="cs-filter-group">
+                  <label><i className="fas fa-language"></i> Langue</label>
+                  <select
+                    className="form-select"
+                    value={filters.langue}
+                    onChange={(e) => handleFilterChange('langue', e.target.value)}
+                  >
+                    <option value="">Toutes les langues</option>
+                    <option value="Français">🇫🇷 Français</option>
+                    <option value="Anglais">🇬🇧 Anglais</option>
+                    <option value="Espagnol">🇪🇸 Espagnol</option>
+                    <option value="Allemand">🇩🇪 Allemand</option>
+                    <option value="Italien">🇮🇹 Italien</option>
+                    <option value="Portugais">🇵🇹 Portugais</option>
+                    <option value="Néerlandais">🇳🇱 Néerlandais</option>
+                    <option value="Arabe">🇸🇦 Arabe</option>
+                    <option value="Chinois">🇨🇳 Chinois</option>
+                    <option value="Japonais">🇯🇵 Japonais</option>
+                    <option value="Coréen">🇰🇷 Coréen</option>
+                    <option value="Russe">🇷🇺 Russe</option>
+                  </select>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="cs-filter-actions">
+            <button className="cs-btn-advanced" onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}>
+              <i className={`fas fa-${showAdvancedFilters ? 'minus' : 'sliders-h'}`}></i>
+              {showAdvancedFilters ? 'Masquer' : 'Filtres avancés'}
+            </button>
+            <button className="cs-btn-clear" onClick={clearFilters}>
+              <i className="fas fa-times"></i>
+              Effacer
+            </button>
+            <button className="cs-btn-search" onClick={handleSearch} disabled={loading}>
+              {loading
+                ? <><span className="spinner-border spinner-border-sm"></span> Recherche...</>
+                : <><i className="fas fa-search"></i> Rechercher</>
+              }
+            </button>
+          </div>
+        </div>
+
+        {/* ── BARRE RÉSULTATS + TRI ── */}
+        <div className="cs-results-bar">
+          <div className="cs-results-count">
+            <strong>{clubs.length}</strong> club{clubs.length !== 1 ? 's' : ''} trouvé{clubs.length !== 1 ? 's' : ''}
+          </div>
+          <div className="cs-sort-group">
+            {[
+              { key: 'nom', icon: 'shield-alt', label: 'Nom' },
+              { key: 'membres', icon: 'users', label: 'Membres' },
+              { key: 'dateCreation', icon: 'calendar', label: 'Date' },
+            ].map(s => (
+              <button
+                key={s.key}
+                className={`cs-sort-btn${sortBy === s.key ? ' active' : ''}`}
+                onClick={() => handleSortChange(s.key)}
+              >
+                <i className={`fas fa-${s.icon}`}></i>
+                {s.label}
+                {sortBy === s.key && <i className={`fas fa-sort-${sortOrder === 'asc' ? 'up' : 'down'}`}></i>}
               </button>
-            </div>
+            ))}
           </div>
+        </div>
 
-          {/* Résultats */}
-          <div className="results-count">
-            {clubs.length} club{clubs.length !== 1 ? 's' : ''} trouvé{clubs.length !== 1 ? 's' : ''}
+        {/* ── CARTES ── */}
+        {clubs.length === 0 ? (
+          <div className="cs-empty">
+            <i className="fas fa-search"></i>
+            <h3>Aucun club trouvé</h3>
+            <p>Essayez de modifier vos critères de recherche</p>
           </div>
+        ) : (
+          <div className="row">
+            {clubs.map((club, idx) => (
+              <div key={club._id} className="col-md-6 col-xl-4">
+                <div className="cs-card" style={{ animationDelay: `${idx * 0.05}s` }}>
+                  {/* Banner */}
+                  <div className="cs-card-banner">
+                    <div className="cs-card-banner-pattern"></div>
+                  </div>
 
-          {clubs.length === 0 ? (
-            <div className="no-results">
-              <i className="fas fa-search"></i>
-              <h3>Aucun club trouvé</h3>
-              <p>Essayez de modifier vos critères de recherche</p>
-            </div>
-          ) : (
-            <div className="row">
-              {clubs.map((club) => (
-                <div key={club._id} className="col-lg-6 col-xl-4">
-                  <div className="club-card">
-                    <div className="club-header">
-                      <Avatar 
-                        src={club.logo}
-                        name={club.nom}
-                        size="md"
-                        type="club"
-                        className="club-avatar"
-                      />
-                      <div className="club-info">
-                        <h5>
-                          <Link to={`/club/${club._id}`}>
-                            {club.nom}
-                          </Link>
-                        </h5>
-                        <div className="club-badges">
-                          <span className={`badge ${getRecruteBadge(club.recrute)}`}>
-                            {club.recrute ? 'Recrute' : 'Fermé'}
-                          </span>
-                        </div>
+                  {/* Body */}
+                  <div className="cs-card-body">
+                    {/* Avatar + Nom */}
+                    <div className="cs-card-avatar-wrap">
+                      <div className="cs-card-avatar">
+                        {club.logo
+                          ? <Avatar src={club.logo} name={club.nom} size="md" type="club" />
+                          : <i className="fas fa-shield-alt"></i>
+                        }
+                      </div>
+                      <div className="cs-card-name">
+                        <Link to={`/club/${club._id}`}>{club.nom}</Link>
                       </div>
                     </div>
 
-                    {/* Stats desktop - supprimées pour éviter la duplication */}
+                    {/* Badges */}
+                    <div className="cs-card-badges">
+                      <span className={`cs-badge ${club.recrute ? 'cs-badge-recrute' : 'cs-badge-closed'}`}>
+                        {club.recrute ? '✦ Recrute' : 'Fermé'}
+                      </span>
+                      {club.plateformes?.map(p => (
+                        <span key={p} className="cs-badge cs-badge-platform">
+                          {getPlatformIcon(p)} {p}
+                        </span>
+                      ))}
+                    </div>
 
-                    {/* Plateformes et description desktop - supprimées pour éviter la duplication */}
-
-                    {/* Layout desktop */}
-                    <div className="d-none d-md-block">
-                      <div className="club-details mb-2">
-                        <div><strong>Membres :</strong> {club.membres?.length || 0}/{club.effectifMax}</div>
-                        <div><strong>Plateformes :</strong> {club.plateformes?.length > 0 ? club.plateformes.join(', ') : 'Non renseigné'}</div>
-                        <div><strong>Langues :</strong> {club.langues?.length > 0 ? club.langues.join(', ') : 'Non renseigné'}</div>
+                    {/* Stats */}
+                    <div className="cs-card-stats">
+                      <div className="cs-stat">
+                        <div className="cs-stat-label">Membres</div>
+                        <div className="cs-stat-value cyan">{club.membres?.length || 0}<span style={{color:'#7b6fa0',fontWeight:400}}>/{club.effectifMax}</span></div>
                       </div>
-                      <div className="club-actions">
-                        <Link 
-                          to={`/club/${club._id}`} 
-                          className="btn-view"
-                        >
-                          <i className="fas fa-eye me-2"></i>
-                          Voir le club
-                        </Link>
-                        
-                        {club.recrute && !userClub && (
-                          <div>
-                            {loadingRequests[club._id] ? (
-                              <button className="btn-join" disabled>
-                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                Vérification...
-                              </button>
-                            ) : userRequests[club._id] ? (
-                              <div className="alert alert-warning mb-0 p-2">
-                                <i className="fas fa-clock me-2"></i>
-                                <strong>Demande en attente</strong>
-                                <br />
-                                <small className="text-muted">
-                                  Envoyée le {new Date(userRequests[club._id].dateDemande).toLocaleDateString()}
-                                </small>
-                                <div className="mt-2">
-                                  <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() => handleCancelRequest(club._id)}
-                                  >
-                                    <i className="fas fa-times me-1"></i>
-                                    Annuler
-                                  </button>
-                                </div>
+                      <div className="cs-stat">
+                        <div className="cs-stat-label">Pays</div>
+                        <div className="cs-stat-value" style={{fontSize:'0.78rem'}}>{club.pays || '—'}</div>
+                      </div>
+                      <div className="cs-stat">
+                        <div className="cs-stat-label">Langue</div>
+                        <div className="cs-stat-value" style={{fontSize:'0.75rem'}}>{club.langues?.[0] || '—'}</div>
+                      </div>
+                    </div>
+
+                    <div className="cs-card-divider"></div>
+
+                    {/* Actions */}
+                    <div className="cs-card-actions">
+                      <Link to={`/club/${club._id}`} className="cs-btn-view">
+                        <i className="fas fa-eye"></i> Voir
+                      </Link>
+
+                      {club.recrute && !userClub && (
+                        <>
+                          {loadingRequests[club._id] ? (
+                            <button className="cs-btn-join" disabled>
+                              <span className="spinner-border spinner-border-sm"></span>
+                            </button>
+                          ) : userRequests[club._id] ? (
+                            <div className="cs-pending-box">
+                              <div className="cs-pending-title">
+                                <i className="fas fa-clock"></i> En attente
                               </div>
-                            ) : (
-                              <button
-                                className="btn-join"
-                                onClick={() => handleJoinRequest(club._id, club.nom)}
-                                disabled={joining}
-                              >
-                                {joining ? (
-                                  <>
-                                    <span className="spinner-border spinner-border-sm me-2"></span>
-                                    Demande en cours...
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="fas fa-user-plus me-2"></i>
-                                    Demander à rejoindre
-                                  </>
-                                )}
+                              <div className="cs-pending-date">
+                                Envoyée le {new Date(userRequests[club._id].dateDemande).toLocaleDateString()}
+                              </div>
+                              <button className="cs-btn-cancel" onClick={() => handleCancelRequest(club._id)}>
+                                <i className="fas fa-times"></i> Annuler
                               </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                            </div>
+                          ) : (
+                            <button
+                              className="cs-btn-join"
+                              onClick={() => handleJoinRequest(club._id, club.nom)}
+                              disabled={joining}
+                            >
+                              {joining
+                                ? <><span className="spinner-border spinner-border-sm"></span> En cours...</>
+                                : <><i className="fas fa-user-plus"></i> Rejoindre</>
+                              }
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
-                    
-                    {/* Layout mobile */}
-                    <div className="d-md-none mobile-layout">
-                      <div className="mobile-info">
-                        <div className="mobile-stats">
-                          <div className="mobile-stat-item">
-                            <span className="mobile-stat-label">Membres:</span>
-                            <span className="mobile-stat-value">{club.membres?.length || 0}/{club.effectifMax}</span>
-                          </div>
-                          <div className="mobile-stat-item">
-                            <span className="mobile-stat-label">Pays:</span>
-                            <span className="mobile-stat-value">{club.pays}</span>
-                          </div>
-                          <div className="mobile-stat-item">
-                            <span className="mobile-stat-label">Langues:</span>
-                            <span className="mobile-stat-value">
-                              {club.langues?.length > 0 ? club.langues.join(', ') : 'Non renseigné'}
-                            </span>
-                          </div>
-                          <div className="mobile-platforms">
-                            {club.plateformes?.map(platform => (
-                              <span key={platform} className="badge bg-dark">
-                                {getPlatformIcon(platform)} {platform}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mobile-buttons">
-                        <Link 
-                          to={`/club/${club._id}`} 
-                          className="btn-view"
-                        >
-                          <i className="fas fa-eye me-1"></i>
-                          Voir
-                        </Link>
-                        
-                        {club.recrute && !userClub && (
-                          <div>
-                            {loadingRequests[club._id] ? (
-                              <button className="btn-join" disabled>
-                                <span className="spinner-border spinner-border-sm me-1"></span>
-                                Vérif...
-                              </button>
-                            ) : userRequests[club._id] ? (
-                              <button
-                                className="btn btn-sm btn-outline-warning"
-                                disabled
-                              >
-                                <i className="fas fa-clock me-1"></i>
-                                En attente
-                              </button>
-                            ) : (
-                              <button
-                                className="btn-join"
-                                onClick={() => handleJoinRequest(club._id, club.nom)}
-                                disabled={joining}
-                              >
-                                {joining ? (
-                                  <>
-                                    <span className="spinner-border spinner-border-sm me-1"></span>
-                                    En cours...
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="fas fa-user-plus me-1"></i>
-                                    Rejoindre
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
-} 
+}
