@@ -283,6 +283,11 @@ const competitionSchema = new mongoose.Schema({
         enum: ['Programmé', 'En cours', 'Terminé', 'Annulé'],
         default: 'Programmé'
       },
+      type: {
+        type: String,
+        enum: ['aller', 'retour', 'simple', null],
+        default: null
+      },
       valideParEquipe1: {
         type: Boolean,
         default: false
@@ -393,6 +398,11 @@ const competitionSchema = new mongoose.Schema({
       type: String,
       enum: ['Programmé', 'En cours', 'Terminé', 'Annulé'],
       default: 'Programmé'
+    },
+    type: {
+      type: String,
+      enum: ['aller', 'retour', 'simple', null],
+      default: null
     },
     phase: {
       type: String,

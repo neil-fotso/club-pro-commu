@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { competitionAPI } from '../services/api';
 
 // Fonction utilitaire pour générer des effets sonores via l'AudioContext du navigateur (zéro dépendance externe)
@@ -226,7 +227,8 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
   else if (timerProgress < 50) progressColor = 'bg-warning';
 
   return (
-    <div className="card border-0 shadow-lg text-white mb-4 bg-dark bg-opacity-75 backdrop-blur overflow-hidden position-relative" style={{ borderRadius: '16px' }}>
+    <Link to={`/competition/${competitionId}/match/${match._id}`} style={{ textDecoration: 'none', display: 'block', cursor: 'pointer' }}>
+      <div className="card border-0 shadow-lg text-white mb-4 bg-dark bg-opacity-75 backdrop-blur overflow-hidden position-relative" style={{ borderRadius: '16px' }}>
       
       {/* Barre de progression du minuteur */}
       {timeLeft && (
@@ -321,7 +323,7 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
         </div>
 
         {/* Section Actions pour les Capitaines et Admins */}
-        <div className="border-top border-secondary border-opacity-25 pt-4 mt-4">
+        <div className="border-top border-secondary border-opacity-25 pt-4 mt-4" onClick={(e) => e.stopPropagation()}>
           
           {/* Phase 1 : Ready Check */}
           {match.statut === 'Programmé' && (
@@ -463,7 +465,7 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
 
           {/* Commandes Admin (Forfait manuel et bypass) */}
           {(isAdmin) && (
-            <div className="mt-4 pt-3 border-top border-secondary border-opacity-10 bg-dark bg-opacity-25 p-3 rounded">
+            <div className="mt-4 pt-3 border-top border-secondary border-opacity-10 bg-dark bg-opacity-25 p-3 rounded" onClick={(e) => e.stopPropagation()}>
               <h6 className="text-warning fw-bold mb-3"><i className="fas fa-shield-alt me-2"></i>Administration du Match</h6>
               <div className="row g-2 align-items-center">
                 <div className="col-md-6 col-12">
@@ -485,6 +487,7 @@ export default function LiveMatchLobby({ match, competitionId, userClubs, userId
         </div>
 
       </div>
-    </div>
+      </div>
+    </Link>
   );
 }

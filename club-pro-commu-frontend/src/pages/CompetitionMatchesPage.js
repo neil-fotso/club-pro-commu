@@ -673,8 +673,8 @@ const CompetitionMatchesPage = () => {
 
   // Fonction de rendu récursif de l'arbre (tas binaire)
   const renderBracketNode = (index, currentDepth = 1, maxDepth = 1) => {
-    // Trouver le match avec le tour égal à index et qui n'est pas la petite finale
-    const match = competition.matchsElimination.find(m => m.tour === index && m.phase !== 'Petite finale');
+    // Trouver les matchs avec le tour égal à index et qui n'est pas la petite finale
+    const matches = competition.matchsElimination.filter(m => m.tour === index && m.phase !== 'Petite finale');
     
     // Vérifier si cette branche contient des matchs réels (en ignorant la petite finale)
     const hasMatchesInBranch = competition.matchsElimination.some(m => {
@@ -703,11 +703,12 @@ const CompetitionMatchesPage = () => {
           </div>
         )}
         <div className="bracket-match-wrapper">
-          {match ? (
-            <Link to={`/competition/${id}/match/${match._id}`} className="text-decoration-none d-block">
+          {matches.map((match, mIdx) => (
+            <Link key={mIdx} to={`/competition/${id}/match/${match._id}`} className="text-decoration-none d-block mb-2">
               <div className={`match-card-container ${match.statut.toLowerCase()} ${match.litige ? 'border-warning shadow-lg' : ''}`} style={{ cursor: 'pointer' }}>
                 <div className="match-card-header">
                   <span className="match-card-date">
+                    {match.type === 'aller' ? '🟢 Aller • ' : match.type === 'retour' ? '🔴 Retour • ' : ''}
                     {match.dateMatch ? (
                       <>
                         <i className="far fa-calendar-alt me-1"></i>
@@ -720,11 +721,12 @@ const CompetitionMatchesPage = () => {
                   <span className={`match-card-status badge ${getMatchStatus(match)}`}>
                     {getMatchStatusText(match)}
                   </span>
+                  {getLitigeBadge(match)}
                 </div>
                 
                 {match.litige && (
                   <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
-                    <i className="fas fa-exclamation-triangle me-1"></i>
+                    <i className="fas fa-exclamation-triangle me-1 animate-pulse"></i>
                     LITIGE EN COURS
                   </div>
                 )}
@@ -753,20 +755,6 @@ const CompetitionMatchesPage = () => {
 
                 {/* Actions de saisie score / date */}
                 <div className="match-card-actions">
-                  {/* {!match.dateMatch && (user?.isAdmin || 
-                    userClubs.some(club => 
-                      (compareClubIds(club._id, match.equipe1) || compareClubIds(club._id, match.equipe2)) &&
-                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                    )) && (
-                    <button 
-                      className="btn btn-outline-light btn-sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDateModal(match); }}
-                      title="Programmer une date"
-                    >
-                      <i className="fas fa-calendar-plus me-1"></i>
-                      Date
-                    </button>
-                  )} */}
                   {match.statut === 'Programmé' && canEditMatchScore(match) && (
                     <button 
                       className="btn btn-primary btn-sm"
@@ -776,28 +764,48 @@ const CompetitionMatchesPage = () => {
                       Score
                     </button>
                   )}
-                  {/* match.statut === 'Terminé' && (
-                    <button 
-                      className="btn btn-outline-light btn-sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(match); }}
-                    >
-                      <i className="fas fa-eye me-1"></i>
-                      Détails
-                    </button>
-                  ) */}
-                  {/* canReportDispute(match) && !match.litige && (
-                    <button 
-                      className="btn btn-outline-warning btn-sm"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLitigeModal(match); }}
-                      title="Signaler un litige"
-                    >
-                      <i className="fas fa-exclamation-triangle"></i>
-                    </button>
-                  ) */}
                 </div>
               </div>
             </Link>
-          ) : (
+          ))}
+
+          {/* Affichage du score cumulé si les deux matchs sont terminés */}
+          {matches.length === 2 && matches[0].statut === 'Terminé' && matches[1].statut === 'Terminé' && (() => {
+            const mAller = matches.find(m => m.type === 'aller') || matches[0];
+            const mRetour = matches.find(m => m.type === 'retour') || matches[1];
+            
+            // Équipe A du match aller
+            const teamA = mAller.equipe1;
+            const teamB = mAller.equipe2;
+            
+            const scoreA_aller = mAller.score1;
+            const scoreB_aller = mAller.score2;
+            
+            let scoreA_retour = 0;
+            let scoreB_retour = 0;
+            const t1Id = mRetour.equipe1?._id || mRetour.equipe1;
+            const tAId = teamA?._id || teamA;
+            if (t1Id?.toString() === tAId?.toString()) {
+              scoreA_retour = mRetour.score1;
+              scoreB_retour = mRetour.score2;
+            } else {
+              scoreA_retour = mRetour.score2;
+              scoreB_retour = mRetour.score1;
+            }
+            
+            const totalA = scoreA_aller + scoreA_retour;
+            const totalB = scoreB_aller + scoreB_retour;
+            
+            return (
+              <div className="text-center small py-1 px-2 rounded font-rajdhani fw-bold text-white bg-black bg-opacity-40 border border-secondary border-opacity-10 mt-1" style={{ fontSize: '0.82rem' }}>
+                <span className="text-muted me-1">CUMUL :</span>
+                <span className="text-info">{teamA?.nom || 'TBD'}</span>
+                <span className="mx-2 text-warning">{totalA} - {totalB}</span>
+                <span className="text-info">{teamB?.nom || 'TBD'}</span>
+              </div>
+            );
+          })()}
+          {matches.length === 0 && (
             <div className="match-card-placeholder">
               <i className="fas fa-clock me-1"></i>
               Match en attente
@@ -908,7 +916,7 @@ const CompetitionMatchesPage = () => {
 
   const getMatchStatus = (match) => {
     if (match.statut === 'Terminé') return 'bg-success';
-    if (match.statut === 'En cours') return 'bg-warning';
+    if (match.statut === 'En cours') return 'bg-warning text-dark';
     if (match.statut === 'Annulé') return 'bg-danger';
     return 'bg-secondary';
   };
@@ -918,6 +926,16 @@ const CompetitionMatchesPage = () => {
     if (match.statut === 'En cours') return 'En cours';
     if (match.statut === 'Annulé') return 'Annulé';
     return 'Programmé';
+  };
+
+  const getLitigeBadge = (match) => {
+    if (match.litige) {
+      return <span className="badge bg-danger text-white ms-1" style={{ fontSize: '0.7rem' }}><i className="fas fa-exclamation-triangle me-1 animate-pulse"></i>Litige</span>;
+    }
+    if (match.litigeDetails && match.litigeDetails.statut && match.litigeDetails.statut !== 'En attente') {
+      return <span className="badge bg-info text-white ms-1" style={{ fontSize: '0.7rem' }}><i className="fas fa-gavel me-1"></i>Arbitré</span>;
+    }
+    return null;
   };
 
 
@@ -1073,7 +1091,7 @@ const CompetitionMatchesPage = () => {
               </h1>
             </div>
             <div className="header-right">
-              <span className={`badge ${getMatchStatusText(competition.statut) === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
+              <span className={`badge ${getMatchStatusText(competition.statut) === 'Terminé' ? 'bg-success' : 'bg-warning text-dark'}`}>
                 {competition.statut}
               </span>
             </div>
@@ -1189,7 +1207,7 @@ const CompetitionMatchesPage = () => {
                                 </thead>
                                 <tbody>
                                   {journee.matchs.map((match, matchIndex) => (
-                                    <tr key={matchIndex}>
+                                    <tr key={matchIndex} style={{cursor:'pointer'}} onClick={() => window.location.href=`/competition/${id}/match/${match._id}`}>
                                       <td>
                                         {match.dateMatch ? 
                                           new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
@@ -1215,6 +1233,7 @@ const CompetitionMatchesPage = () => {
                                         <span className={`badge ${getMatchStatus(match)}`}>
                                           {getMatchStatusText(match)}
                                         </span>
+                                        {getLitigeBadge(match)}
                                       </td>
                                       <td className="text-end">
                                         <div className="btn-group" role="group">
@@ -1261,7 +1280,8 @@ const CompetitionMatchesPage = () => {
                             {/* Version Mobile : Cartes de matchs responsives */}
                             <div className="d-md-none">
                               {journee.matchs.map((match, matchIndex) => (
-                                <div key={matchIndex} className="gaming-mobile-match-card">
+                                <Link key={matchIndex} to={`/competition/${id}/match/${match._id}`} style={{textDecoration:'none',display:'block'}}>
+                                <div className="gaming-mobile-match-card" style={{cursor:'pointer'}}>
                                   <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                     <span className="small text-muted">
                                       <i className="far fa-calendar-alt me-1"></i>
@@ -1273,6 +1293,7 @@ const CompetitionMatchesPage = () => {
                                     <span className={`badge ${getMatchStatus(match)}`}>
                                       {getMatchStatusText(match)}
                                     </span>
+                                    {getLitigeBadge(match)}
                                   </div>
                                   
                                   <div className="d-flex align-items-center justify-content-between my-3">
@@ -1303,7 +1324,7 @@ const CompetitionMatchesPage = () => {
                                       )) && (
                                       <button 
                                         className="btn btn-sm btn-outline-secondary w-100 py-2"
-                                        onClick={() => openDateModal(match)}
+                                        onClick={(e) => { e.preventDefault(); openDateModal(match); }}
                                       >
                                         <i className="fas fa-calendar-plus me-1"></i>
                                         Programmer
@@ -1312,7 +1333,7 @@ const CompetitionMatchesPage = () => {
                                     {match.statut === 'Programmé' && canEditMatchScore(match) && (
                                       <button 
                                         className="btn btn-sm btn-primary w-100 py-2"
-                                        onClick={() => openScoreModal(match)}
+                                        onClick={(e) => { e.preventDefault(); openScoreModal(match); }}
                                       >
                                         <i className="fas fa-edit me-1"></i>
                                         Saisir score
@@ -1321,7 +1342,7 @@ const CompetitionMatchesPage = () => {
                                     {match.statut === 'Terminé' && (
                                       <button 
                                         className="btn btn-sm btn-outline-primary w-100 py-2"
-                                        onClick={() => openScoreModal(match)}
+                                        onClick={(e) => { e.preventDefault(); openScoreModal(match); }}
                                       >
                                         <i className="fas fa-eye me-1"></i>
                                         {canEditMatchScore(match) ? 'Modifier' : 'Détails'}
@@ -1329,6 +1350,7 @@ const CompetitionMatchesPage = () => {
                                     )}
                                   </div>
                                 </div>
+                                </Link>
                               ))}
                             </div>
                           </div>
@@ -1352,7 +1374,7 @@ const CompetitionMatchesPage = () => {
                             </thead>
                             <tbody>
                               {poule.matchs.map((match, matchIndex) => (
-                                <tr key={matchIndex}>
+                                <tr key={matchIndex} style={{cursor:'pointer'}} onClick={() => window.location.href=`/competition/${id}/match/${match._id}`}>
                                   <td>
                                     {match.dateMatch ? 
                                       new Date(match.dateMatch).toLocaleDateString('fr-FR') : 
@@ -1378,6 +1400,7 @@ const CompetitionMatchesPage = () => {
                                     <span className={`badge ${getMatchStatus(match)}`}>
                                       {getMatchStatusText(match)}
                                     </span>
+                                    {getLitigeBadge(match)}
                                   </td>
                                   <td className="text-end">
                                     <div className="btn-group" role="group">
@@ -1424,7 +1447,8 @@ const CompetitionMatchesPage = () => {
                         {/* Version Mobile : Cartes de matchs responsives */}
                         <div className="d-md-none">
                           {poule.matchs.map((match, matchIndex) => (
-                            <div key={matchIndex} className="gaming-mobile-match-card">
+                             <Link key={matchIndex} to={`/competition/${id}/match/${match._id}`} style={{textDecoration:'none',display:'block'}}>
+                             <div className="gaming-mobile-match-card" style={{cursor:'pointer'}}>
                               <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                 <span className="small text-muted">
                                   <i className="far fa-calendar-alt me-1"></i>
@@ -1433,9 +1457,12 @@ const CompetitionMatchesPage = () => {
                                     'À programmer'
                                   }
                                 </span>
-                                <span className={`badge ${getMatchStatus(match)}`}>
-                                  {getMatchStatusText(match)}
-                                </span>
+                                <div className="d-flex gap-1">
+                                  <span className={`badge ${getMatchStatus(match)}`}>
+                                    {getMatchStatusText(match)}
+                                  </span>
+                                  {getLitigeBadge(match)}
+                                </div>
                               </div>
                               
                               <div className="d-flex align-items-center justify-content-between my-3">
@@ -1466,7 +1493,7 @@ const CompetitionMatchesPage = () => {
                                   )) && (
                                   <button 
                                     className="btn btn-sm btn-outline-secondary w-100 py-2"
-                                    onClick={() => openDateModal(match)}
+                                    onClick={(e) => { e.preventDefault(); openDateModal(match); }}
                                   >
                                     <i className="fas fa-calendar-plus me-1"></i>
                                     Programmer
@@ -1475,7 +1502,7 @@ const CompetitionMatchesPage = () => {
                                 {match.statut === 'Programmé' && canEditMatchScore(match) && (
                                   <button 
                                     className="btn btn-sm btn-primary w-100 py-2"
-                                    onClick={() => openScoreModal(match)}
+                                    onClick={(e) => { e.preventDefault(); openScoreModal(match); }}
                                   >
                                     <i className="fas fa-edit me-1"></i>
                                     Saisir score
@@ -1484,14 +1511,15 @@ const CompetitionMatchesPage = () => {
                                 {match.statut === 'Terminé' && (
                                   <button 
                                     className="btn btn-sm btn-outline-primary w-100 py-2"
-                                    onClick={() => openScoreModal(match)}
+                                    onClick={(e) => { e.preventDefault(); openScoreModal(match); }}
                                   >
                                     <i className="fas fa-eye me-1"></i>
                                     {canEditMatchScore(match) ? 'Modifier' : 'Détails'}
                                   </button>
                                 )}
                               </div>
-                            </div>
+                             </div>
+                             </Link>
                           ))}
                         </div>
                       </>
@@ -1560,106 +1588,148 @@ const CompetitionMatchesPage = () => {
                   </div>
                 </div>
 
-                {/* Petite finale si elle existe */}
+                {/* Finale & Petite finale */}
                 {(() => {
+                  const finale = competition.matchsElimination.find(m => m.tour === 0 && m.phase !== 'Petite finale');
                   const pFinale = competition.matchsElimination.find(m => m.phase === 'Petite finale');
-                  if (!pFinale) return null;
+                  if (!finale && !pFinale) return null;
                   return (
-                    <div className="row justify-content-center mt-5">
-                      <div className="col-md-6 col-lg-4">
-                        <div className="card border-0 shadow-sm" style={{ background: 'rgba(30, 27, 46, 0.85)', backdropFilter: 'blur(10px)' }}>
-                          <div className="card-header text-center border-0 text-white" style={{ background: 'linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)' }}>
-                            <h5 className="mb-0">🥉 Petite Finale (3ème Place)</h5>
-                          </div>
-                          <div className="card-body p-3">
-                            <Link to={`/competition/${id}/match/${pFinale._id}`} className="text-decoration-none d-block">
-                              <div className="match-card-container m-0 w-100" style={{ cursor: 'pointer' }}>
-                                <div className="match-card-header">
-                                  <span className="match-card-date">
-                                    {pFinale.dateMatch ? (
-                                      <>
-                                        <i className="far fa-calendar-alt me-1"></i>
-                                        {new Date(pFinale.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                                      </>
-                                    ) : (
-                                      'À programmer'
-                                    )}
-                                  </span>
-                                  <span className={`match-card-status badge ${getMatchStatus(pFinale)}`}>
-                                    {getMatchStatusText(pFinale)}
-                                  </span>
-                                </div>
-                                {pFinale.litige && (
-                                  <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
-                                    <i className="fas fa-exclamation-triangle me-1"></i>
-                                    LITIGE EN COURS
-                                  </div>
-                                )}
-                                <div className="match-card-teams">
-                                  <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score1 > pFinale.score2 ? 'winner' : ''}`}>
-                                    <span className="match-card-team-name" title={pFinale.equipe1?.nom || 'TBD'}>
-                                      {pFinale.equipe1?.nom || 'TBD'}
+                    <div className="row justify-content-center mt-5 g-4">
+                      {finale && (
+                        <div className="col-md-6 col-lg-4">
+                          <div className="card border-0 shadow-sm" style={{ background: 'rgba(30, 27, 46, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 193, 7, 0.2)' }}>
+                            <div className="card-header text-center border-0 text-white" style={{ background: 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)' }}>
+                              <h5 className="mb-0 text-dark fw-bold">🏆 La Grande Finale</h5>
+                            </div>
+                            <div className="card-body p-3">
+                              <Link to={`/competition/${id}/match/${finale._id}`} className="text-decoration-none d-block">
+                                <div className="match-card-container m-0 w-100" style={{ cursor: 'pointer' }}>
+                                  <div className="match-card-header">
+                                    <span className="match-card-date">
+                                      {finale.dateMatch ? (
+                                        <>
+                                          <i className="far fa-calendar-alt me-1"></i>
+                                          {new Date(finale.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                        </>
+                                      ) : (
+                                        'À programmer'
+                                      )}
                                     </span>
-                                    {pFinale.statut === 'Terminé' && (
-                                      <span className="match-card-team-score">{pFinale.score1}</span>
-                                    )}
-                                  </div>
-                                  <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score2 > pFinale.score1 ? 'winner' : ''}`}>
-                                    <span className="match-card-team-name" title={pFinale.equipe2?.nom || 'TBD'}>
-                                      {pFinale.equipe2?.nom || 'TBD'}
+                                    <span className={`match-card-status badge ${getMatchStatus(finale)}`}>
+                                      {getMatchStatusText(finale)}
                                     </span>
-                                    {pFinale.statut === 'Terminé' && (
-                                      <span className="match-card-team-score">{pFinale.score2}</span>
-                                    )}
+                                    {getLitigeBadge(finale)}
                                   </div>
-                                </div>
-                                <div className="match-card-actions">
-                                  {/* {!pFinale.dateMatch && (user?.isAdmin || 
-                                    userClubs.some(club => 
-                                      (compareClubIds(club._id, pFinale.equipe1) || compareClubIds(club._id, pFinale.equipe2)) &&
-                                      club.membres.some(m => compareUserIds(m.userId, user) && m.role === 'Admin')
-                                    )) && (
-                                    <button 
-                                      className="btn btn-outline-light btn-sm"
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDateModal(pFinale); }}
-                                    >
-                                      <i className="fas fa-calendar-plus me-1"></i> Date
-                                    </button>
-                                  )} */}
-                                  {pFinale.statut === 'Programmé' && canEditMatchScore(pFinale) && (
-                                    <button 
-                                      className="btn btn-primary btn-sm"
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(pFinale); }}
-                                    >
-                                      <i className="fas fa-edit me-1"></i> Score
-                                    </button>
+                                  {finale.litige && (
+                                    <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
+                                      <i className="fas fa-exclamation-triangle me-1 animate-pulse"></i>
+                                      LITIGE EN COURS
+                                    </div>
                                   )}
-                                  {/* pFinale.statut === 'Terminé' && (
-                                    <button 
-                                      className="btn btn-outline-light btn-sm"
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(pFinale); }}
-                                    >
-                                      <i className="fas fa-eye me-1"></i> Détails
-                                    </button>
-                                  ) */}
-                                  {/* canReportDispute(pFinale) && !pFinale.litige && (
-                                    <button 
-                                      className="btn btn-outline-warning btn-sm"
-                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLitigeModal(pFinale); }}
-                                      title="Signaler un litige"
-                                    >
-                                      <i className="fas fa-exclamation-triangle"></i>
-                                    </button>
-                                  ) */}
+                                  <div className="match-card-teams">
+                                    <div className={`match-card-team ${finale.statut === 'Terminé' && finale.score1 > finale.score2 ? 'winner' : ''}`}>
+                                      <span className="match-card-team-name" title={finale.equipe1?.nom || 'TBD'}>
+                                        {finale.equipe1?.nom || 'TBD'}
+                                      </span>
+                                      {finale.statut === 'Terminé' && (
+                                        <span className="match-card-team-score">{finale.score1}</span>
+                                      )}
+                                    </div>
+                                    <div className={`match-card-team ${finale.statut === 'Terminé' && finale.score2 > finale.score1 ? 'winner' : ''}`}>
+                                      <span className="match-card-team-name" title={finale.equipe2?.nom || 'TBD'}>
+                                        {finale.equipe2?.nom || 'TBD'}
+                                      </span>
+                                      {finale.statut === 'Terminé' && (
+                                        <span className="match-card-team-score">{finale.score2}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="match-card-actions">
+                                    {finale.statut === 'Programmé' && canEditMatchScore(finale) && (
+                                      <button 
+                                        className="btn btn-primary btn-sm"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(finale); }}
+                                      >
+                                        <i className="fas fa-edit me-1"></i> Score
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            </Link>
+                              </Link>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
+
+                      {pFinale && (
+                        <div className="col-md-6 col-lg-4">
+                          <div className="card border-0 shadow-sm" style={{ background: 'rgba(30, 27, 46, 0.85)', backdropFilter: 'blur(10px)' }}>
+                            <div className="card-header text-center border-0 text-white" style={{ background: 'linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)' }}>
+                              <h5 className="mb-0">🥉 Petite Finale (3ème Place)</h5>
+                            </div>
+                            <div className="card-body p-3">
+                              <Link to={`/competition/${id}/match/${pFinale._id}`} className="text-decoration-none d-block">
+                                <div className="match-card-container m-0 w-100" style={{ cursor: 'pointer' }}>
+                                  <div className="match-card-header">
+                                    <span className="match-card-date">
+                                      {pFinale.dateMatch ? (
+                                        <>
+                                          <i className="far fa-calendar-alt me-1"></i>
+                                          {new Date(pFinale.dateMatch).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                        </>
+                                      ) : (
+                                        'À programmer'
+                                      )}
+                                    </span>
+                                    <span className={`match-card-status badge ${getMatchStatus(pFinale)}`}>
+                                      {getMatchStatusText(pFinale)}
+                                    </span>
+                                    {getLitigeBadge(pFinale)}
+                                  </div>
+                                  {pFinale.litige && (
+                                    <div className="bg-warning text-dark text-center py-1 px-2 small font-weight-bold" style={{ fontSize: '0.85em' }}>
+                                      <i className="fas fa-exclamation-triangle me-1 animate-pulse"></i>
+                                      LITIGE EN COURS
+                                    </div>
+                                  )}
+                                  <div className="match-card-teams">
+                                    <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score1 > pFinale.score2 ? 'winner' : ''}`}>
+                                      <span className="match-card-team-name" title={pFinale.equipe1?.nom || 'TBD'}>
+                                        {pFinale.equipe1?.nom || 'TBD'}
+                                      </span>
+                                      {pFinale.statut === 'Terminé' && (
+                                        <span className="match-card-team-score">{pFinale.score1}</span>
+                                      )}
+                                    </div>
+                                    <div className={`match-card-team ${pFinale.statut === 'Terminé' && pFinale.score2 > pFinale.score1 ? 'winner' : ''}`}>
+                                      <span className="match-card-team-name" title={pFinale.equipe2?.nom || 'TBD'}>
+                                        {pFinale.equipe2?.nom || 'TBD'}
+                                      </span>
+                                      {pFinale.statut === 'Terminé' && (
+                                        <span className="match-card-team-score">{pFinale.score2}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="match-card-actions">
+                                    {pFinale.statut === 'Programmé' && canEditMatchScore(pFinale) && (
+                                      <button 
+                                        className="btn btn-primary btn-sm"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openScoreModal(pFinale); }}
+                                      >
+                                        <i className="fas fa-edit me-1"></i> Score
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
+
               </>
             )}
                 
@@ -1817,7 +1887,7 @@ const CompetitionMatchesPage = () => {
                       </div>
                     )}
                     {scoreData.cartonsJaunes.map((joueur, index) => (
-                      <div key={index} className="badge bg-warning me-2 mb-2">
+                      <div key={index} className="badge bg-warning text-dark me-2 mb-2">
                         {joueur}
                       </div>
                     ))}

@@ -432,7 +432,36 @@ const matchLobbyStyles = `
     color: #ffffff;
     box-shadow: 0 4px 12px rgba(255, 193, 7, 0.1);
   }
+
+  .alert-warning {
+    background: rgba(245, 158, 11, 0.05) !important;
+    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    color: #ffb020 !important;
+    border-left: 4px solid #ffb020 !important;
+    border-radius: 12px !important;
+  }
+  .alert-warning p, .alert-warning span, .alert-warning div {
+    color: #e2e8f0 !important;
+  }
+  .alert-warning strong {
+    color: #ffffff !important;
+  }
+
+  .alert-danger {
+    background: rgba(239, 68, 68, 0.05) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    color: #ff4d6d !important;
+    border-left: 4px solid #ff4d6d !important;
+    border-radius: 12px !important;
+  }
+  .alert-danger p, .alert-danger span, .alert-danger div {
+    color: #e2e8f0 !important;
+  }
+  .alert-danger strong {
+    color: #ffffff !important;
+  }
 `;
+
 
 export default function MatchLobbyPage() {
   const { id: competitionId, matchId } = useParams();
@@ -883,6 +912,21 @@ export default function MatchLobbyPage() {
   const team1 = typeof match.equipe1 === 'object' ? match.equipe1 : { nom: 'Équipe A', logo: '' };
   const team2 = typeof match.equipe2 === 'object' ? match.equipe2 : { nom: 'Équipe B', logo: '' };
 
+  const getEquipeSignataire = () => {
+    if (!match?.litigeDetails?.clubId) return null;
+    const clubId = match.litigeDetails.clubId._id || match.litigeDetails.clubId;
+    const t1Id = team1._id || match.equipe1?._id || match.equipe1;
+    const t2Id = team2._id || match.equipe2?._id || match.equipe2;
+
+    if (clubId.toString() === t1Id?.toString()) {
+      return team1.nom;
+    }
+    if (clubId.toString() === t2Id?.toString()) {
+      return team2.nom;
+    }
+    return null;
+  };
+
   const finalScore1 = match.score1 ?? (match.propositionScore?.proposePar ? match.propositionScore.score1 : '-');
   const finalScore2 = match.score2 ?? (match.propositionScore?.proposePar ? match.propositionScore.score2 : '-');
 
@@ -1001,6 +1045,30 @@ export default function MatchLobbyPage() {
             <span>Tableau de gestion du match</span>
           </div>
 
+          {/* Rapport de Résolution du Litige */}
+          {match.litigeDetails && match.litigeDetails.statut && match.litigeDetails.statut !== 'En attente' && (
+            <div className="alert alert-info mb-4 p-3 rounded-lg border-0 bg-info bg-opacity-10 text-white" style={{ borderLeft: '4px solid #0dcaf0', borderRadius: '12px' }}>
+              <h6 className="fw-bold mb-2 text-info">
+                <i className="fas fa-gavel me-2"></i>
+                Décision de l'Arbitrage
+              </h6>
+              <div className="small">
+                <div className="mb-1">
+                  <strong>Statut :</strong> <span className="badge bg-success text-white ms-1" style={{ fontSize: '0.75rem' }}>Litige Résolu ({match.litigeDetails.statut})</span>
+                </div>
+                {match.litigeDetails.dateResolution && (
+                  <div className="mb-1 text-muted" style={{ fontSize: '0.75rem' }}>
+                    Résolu le {new Date(match.litigeDetails.dateResolution).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
+                <div className="mt-2 p-2 rounded bg-black bg-opacity-25 border border-secondary border-opacity-10">
+                  <strong>Décision / Rapport :</strong>
+                  <p className="mb-0 mt-1 text-silver" style={{ whiteSpace: 'pre-wrap' }}>{match.litigeDetails.decisionAdmin || 'Aucun rapport écrit fourni par l\'arbitre.'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 1. Ready check button */}
           {match.statut === 'Programmé' && (
             <div className="text-center py-4">
@@ -1067,7 +1135,7 @@ export default function MatchLobbyPage() {
                   ) : isCaptain ? (
                     // Capitaine destinataire doit confirmer
                     <form onSubmit={handleScoreSubmit} className="mx-auto" style={{ maxWidth: '400px' }}>
-                      <div className="alert alert-warning border-0 bg-warning bg-opacity-10 py-3 mb-4 text-warning">
+                      <div className="alert alert-warning py-3 mb-4">
                         <h6 className="fw-bold mb-1"><i className="fas fa-exclamation-circle me-2"></i>Validation requise</h6>
                         <p className="small mb-0">L'adversaire propose le score de <strong>{match.propositionScore.score1} - {match.propositionScore.score2}</strong>.</p>
                       </div>
@@ -1100,13 +1168,14 @@ export default function MatchLobbyPage() {
 
           {/* 3. Litige details et formulaires */}
           {match.litige && (
-            <div className="bg-danger bg-opacity-5 border border-danger border-opacity-20 p-4 rounded-xl">
+            <div className="alert alert-danger p-4 rounded-xl">
               <h5 className="text-danger fw-bold mb-2">
                 <i className="fas fa-exclamation-triangle me-2"></i>
                 Litige en cours d'examen
               </h5>
               
               <div className="mb-4 text-muted small bg-dark bg-opacity-40 p-3 rounded-lg border border-secondary border-opacity-10">
+                <div className="mb-2"><strong>Signalé par :</strong> <span className="text-warning fw-bold">{getEquipeSignataire() || 'Une équipe'}</span></div>
                 <div className="mb-2"><strong>Motif signalé :</strong> {match.litigeDetails?.description || 'Désaccord sur le score.'}</div>
                 {match.litigeDetails?.preuveVideo && (
                   <div>
@@ -1212,7 +1281,7 @@ export default function MatchLobbyPage() {
 
           {/* 4. ADMIN ARBITRATION PANEL */}
           {isAdmin && match.litige && (
-            <div className="mt-4 pt-4 border-top border-warning border-opacity-20 bg-warning bg-opacity-5 p-3 rounded-lg border border-warning border-opacity-10">
+            <div className="alert alert-warning mt-4 p-3 rounded-lg">
               <h5 className="text-warning fw-bold mb-3">
                 <i className="fas fa-gavel me-2"></i>
                 Arbitrage Administratif

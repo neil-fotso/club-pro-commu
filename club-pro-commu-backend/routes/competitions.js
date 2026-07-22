@@ -859,27 +859,30 @@ router.put('/:id/lancer', auth, async (req, res) => {
       const matchs = [];
       const nombreEquipes = equipesConfirmees.length;
       
-      // Générer tous les matchs aller-retour
+      // Générer les matchs (aller simple ou aller-retour)
       for (let i = 0; i < nombreEquipes; i++) {
         for (let j = i + 1; j < nombreEquipes; j++) {
-          // Match aller
+          // Match aller / unique
           matchs.push({
             equipe1: equipesConfirmees[i].clubId,
             equipe2: equipesConfirmees[j].clubId,
             statut: 'Programmé',
-            type: 'aller'
+            type: competition.modeMatch === 'aller_retour' ? 'aller' : 'simple'
           });
-          // Match retour
-          matchs.push({
-            equipe1: equipesConfirmees[j].clubId,
-            equipe2: equipesConfirmees[i].clubId,
-            statut: 'Programmé',
-            type: 'retour'
-          });
+          
+          // Match retour (seulement si aller_retour est sélectionné)
+          if (competition.modeMatch === 'aller_retour') {
+            matchs.push({
+              equipe1: equipesConfirmees[j].clubId,
+              equipe2: equipesConfirmees[i].clubId,
+              statut: 'Programmé',
+              type: 'retour'
+            });
+          }
         }
       }
       
-      // Planifier les journées intelligemment
+      // Planifier les journées les journées intelligemment
       const matchsPlanifies = planifierJourneesChampionnat(matchs, nombreEquipes);
       
       // Ajouter les matchs planifiés à la poule
@@ -900,14 +903,25 @@ router.put('/:id/lancer', auth, async (req, res) => {
           matchs: []
         };
         
-        // Générer les matchs de la poule
+        // Générer les matchs de la poule (aller simple ou aller-retour)
         for (let j = 0; j < poule.equipes.length; j++) {
           for (let k = j + 1; k < poule.equipes.length; k++) {
+            // Match aller / unique
             poule.matchs.push({
               equipe1: poule.equipes[j],
               equipe2: poule.equipes[k],
-              statut: 'Programmé'
+              statut: 'Programmé',
+              type: competition.modeMatch === 'aller_retour' ? 'aller' : 'simple'
             });
+            // Match retour (seulement si aller_retour est sélectionné)
+            if (competition.modeMatch === 'aller_retour') {
+              poule.matchs.push({
+                equipe1: poule.equipes[k],
+                equipe2: poule.equipes[j],
+                statut: 'Programmé',
+                type: 'retour'
+              });
+            }
           }
         }
         
@@ -1626,6 +1640,26 @@ router.post('/:id/matchs/:matchId/resoudre-litige', auth, async (req, res) => {
       return res.status(400).json({ message: 'Action non reconnue. Doit être trancher, rejouer ou rejeter.' });
     }
 
+    // ⚖️ Envoyer le rapport d'arbitrage automatique dans le lobby de match
+    let texteDecision = `⚖️ [ARBITRAGE DE L'ADMIN] :\n`;
+    if (action === 'trancher') {
+      texteDecision += `• Décision : Litige Tranché\n`;
+      texteDecision += `• Score validé par l'arbitre : ${score1} - ${score2}\n`;
+    } else if (action === 'rejouer') {
+      texteDecision += `• Décision : Match réinitialisé pour être rejoué\n`;
+    } else if (action === 'rejeter') {
+      texteDecision += `• Décision : Litige rejeté par l'arbitre\n`;
+    }
+    texteDecision += `• Motif : "${decisionAdmin || 'Non spécifié'}"`;
+
+    if (!match.messages) match.messages = [];
+    match.messages.push({
+      expediteur: req.user.id,
+      pseudo: `Arbitrage [${user.pseudo || 'Admin'}]`,
+      texte: texteDecision,
+      dateEnvoi: new Date()
+    });
+
     await competition.save();
     res.json({ success: true, message: 'Litige résolu avec succès !' });
   } catch (error) {
@@ -1807,33 +1841,85 @@ function generateEliminationBracket(competition, equipesConfirmees) {
       
       const phase = getPhaseName(p, M);
       
-      competition.matchsElimination.push({
-        equipe1: heap[c1],
-        equipe2: heap[c2],
-        score1: null,
-        score2: null,
-        dateMatch: null,
-        statut: 'Programmé',
-        phase: phase,
-        tour: p,
-        valideParEquipe1: false,
-        valideParEquipe2: false,
-        equipe1Prete: false,
-        equipe2Prete: false,
-        // Les matchs du 1er tour ont leurs équipes connues dès le départ => chrono Ready Check lance
-        dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
-        dateDebutMatch: null,
-        propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
-        captureEcran: null,
-        stats: {
-          buteurs: [],
-          passeurs: [],
-          cartonsJaunes: [],
-          cartonsRouges: []
-        },
-        litige: false,
-        arbitre: null
-      });
+      if (competition.modeMatch === 'aller_retour' && phase !== 'Finale' && phase !== 'Petite finale') {
+        // Match Aller
+        competition.matchsElimination.push({
+          equipe1: heap[c1],
+          equipe2: heap[c2],
+          score1: null,
+          score2: null,
+          dateMatch: null,
+          statut: 'Programmé',
+          phase: phase,
+          tour: p,
+          type: 'aller',
+          valideParEquipe1: false,
+          valideParEquipe2: false,
+          equipe1Prete: false,
+          equipe2Prete: false,
+          // Les matchs du 1er tour ont leurs équipes connues dès le départ => chrono Ready Check lance
+          dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+          dateDebutMatch: null,
+          propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
+          captureEcran: null,
+          stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+          litige: false,
+          arbitre: null
+        });
+
+        // Match Retour (l'équipe 2 reçoit à domicile)
+        competition.matchsElimination.push({
+          equipe1: heap[c2],
+          equipe2: heap[c1],
+          score1: null,
+          score2: null,
+          dateMatch: null,
+          statut: 'Programmé',
+          phase: phase,
+          tour: p,
+          type: 'retour',
+          valideParEquipe1: false,
+          valideParEquipe2: false,
+          equipe1Prete: false,
+          equipe2Prete: false,
+          dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+          dateDebutMatch: null,
+          propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
+          captureEcran: null,
+          stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+          litige: false,
+          arbitre: null
+        });
+      } else {
+        // Aller simple ou Finale / Petite finale
+        competition.matchsElimination.push({
+          equipe1: heap[c1],
+          equipe2: heap[c2],
+          score1: null,
+          score2: null,
+          dateMatch: null,
+          statut: 'Programmé',
+          phase: phase,
+          tour: p,
+          type: 'simple',
+          valideParEquipe1: false,
+          valideParEquipe2: false,
+          equipe1Prete: false,
+          equipe2Prete: false,
+          dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+          dateDebutMatch: null,
+          propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
+          captureEcran: null,
+          stats: {
+            buteurs: [],
+            passeurs: [],
+            cartonsJaunes: [],
+            cartonsRouges: []
+          },
+          litige: false,
+          arbitre: null
+        });
+      }
       
       heap[p] = null; // Gagnant déterminé plus tard
     } else if (active1) {
@@ -1923,34 +2009,118 @@ async function handleEliminationProgression(competition, completedMatch) {
     const currentHeapIndex = completedMatch.tour;
     const parentHeapIndex = Math.floor((currentHeapIndex - 1) / 2);
     
+    let isConfrontationTerminee = true;
+    let winner = null;
+    let loser = null;
+
+    if (competition.modeMatch === 'aller_retour' && completedMatch.phase !== 'Finale' && completedMatch.phase !== 'Petite finale') {
+      // Trouver l'autre match de la confrontation (aller ou retour)
+      const autreType = completedMatch.type === 'aller' ? 'retour' : 'aller';
+      const autreMatch = competition.matchsElimination.find(m => 
+        m.tour === completedMatch.tour && m.type === autreType
+      );
+
+      if (autreMatch && autreMatch.statut === 'Terminé') {
+        // Les deux matchs sont terminés -> calculer les cumuls
+        const clubA = completedMatch.equipe1;
+        const clubB = completedMatch.equipe2;
+
+        const scoreA_completed = completedMatch.score1;
+        const scoreB_completed = completedMatch.score2;
+
+        let scoreA_autre = 0;
+        let scoreB_autre = 0;
+        if (autreMatch.equipe1.toString() === clubA.toString()) {
+          scoreA_autre = autreMatch.score1;
+          scoreB_autre = autreMatch.score2;
+        } else {
+          scoreA_autre = autreMatch.score2;
+          scoreB_autre = autreMatch.score1;
+        }
+
+        const totalScoreA = scoreA_completed + scoreA_autre;
+        const totalScoreB = scoreB_completed + scoreB_autre;
+
+        console.log(`   [Aller-Retour] Cumul des scores pour tour ${completedMatch.tour} :`);
+        console.log(`   - Équipe A (${clubA}) : ${scoreA_completed} + ${scoreA_autre} = ${totalScoreA}`);
+        console.log(`   - Équipe B (${clubB}) : ${scoreB_completed} + ${scoreB_autre} = ${totalScoreB}`);
+
+        if (totalScoreA > totalScoreB) {
+          winner = clubA;
+          loser = clubB;
+        } else if (totalScoreB > totalScoreA) {
+          winner = clubB;
+          loser = clubA;
+        } else {
+          // Égalité -> départager par le match retour
+          const matchRetour = completedMatch.type === 'retour' ? completedMatch : autreMatch;
+          if (matchRetour.score1 > matchRetour.score2) {
+            winner = matchRetour.equipe1;
+            loser = matchRetour.equipe2;
+          } else {
+            winner = matchRetour.equipe2;
+            loser = matchRetour.equipe1;
+          }
+          console.log(`   - Égalité cumulée ! Le match retour départage : Vainqueur = ${winner}`);
+        }
+      } else {
+        // L'autre match n'est pas encore terminé, on ne fait pas progresser les équipes
+        isConfrontationTerminee = false;
+        console.log(`   ⏳ Match ${completedMatch.type} terminé. En attente du match ${autreType} pour la progression.`);
+      }
+    } else {
+      // Aller simple ou Finale / Petite finale
+      winner = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe1 : completedMatch.equipe2;
+      loser = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe2 : completedMatch.equipe1;
+    }
+
+    if (!isConfrontationTerminee) {
+      return; // On s'arrête là, le second match déclenchera la progression
+    }
+
     console.log(`   → Progression vers le match parent d'index: ${parentHeapIndex}`);
     
-    // Chercher le match de la phase suivante par son index de heap (stocké dans tour)
-    let nextMatch = competition.matchsElimination.find(match => 
+    // Chercher les matchs de la phase suivante par leur index de heap (stocké dans tour)
+    // Il peut y en avoir un ou deux selon que la phase suivante est aller-retour ou simple (finale)
+    let nextMatches = competition.matchsElimination.filter(match => 
       match.tour === parentHeapIndex
     );
     
-    if (nextMatch) {
-      // Placer l'équipe gagnante dans le match suivant
+    if (nextMatches.length > 0) {
       const isLeftChild = (currentHeapIndex % 2 !== 0);
-      if (isLeftChild) {
-        nextMatch.equipe1 = winner;
-        console.log(`   ✅ ${winner} placé en equipe1 du match parent (index ${parentHeapIndex})`);
-      } else {
-        nextMatch.equipe2 = winner;
-        console.log(`   ✅ ${winner} placé en equipe2 du match parent (index ${parentHeapIndex})`);
-      }
+      
+      nextMatches.forEach(nextMatch => {
+        if (nextMatch.type === 'retour') {
+          // Inverser equipe1 et equipe2 pour le match retour
+          if (isLeftChild) {
+            nextMatch.equipe2 = winner;
+            console.log(`   ✅ ${winner} placé en equipe2 (Away) du match retour parent (index ${parentHeapIndex})`);
+          } else {
+            nextMatch.equipe1 = winner;
+            console.log(`   ✅ ${winner} placé en equipe1 (Home) du match retour parent (index ${parentHeapIndex})`);
+          }
+        } else {
+          // Match aller ou simple
+          if (isLeftChild) {
+            nextMatch.equipe1 = winner;
+            console.log(`   ✅ ${winner} placé en equipe1 du match aller/simple parent (index ${parentHeapIndex})`);
+          } else {
+            nextMatch.equipe2 = winner;
+            console.log(`   ✅ ${winner} placé en equipe2 du match aller/simple parent (index ${parentHeapIndex})`);
+          }
+        }
 
-      // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer !
-      if (nextMatch.equipe1 && nextMatch.equipe2) {
-        nextMatch.dateDebutPreparation = new Date();
-        nextMatch.equipe1Prete = false;
-        nextMatch.equipe2Prete = false;
-        // Calculer la dateLimiteDebut : maintenant + delai configurable (défaut 10 min)
-        const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
-        nextMatch.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
-        console.log(`   ⏰ Salon de match parent prêt. Chrono de préparation de 10 min lancé. Limite: ${nextMatch.dateLimiteDebut}`);
-      }
+        // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer !
+        if (nextMatch.equipe1 && nextMatch.equipe2) {
+          nextMatch.dateDebutPreparation = new Date();
+          nextMatch.equipe1Prete = false;
+          nextMatch.equipe2Prete = false;
+          // Calculer la dateLimiteDebut : maintenant + delai configurable (défaut 10 min)
+          const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+          nextMatch.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+          console.log(`   ⏰ Salon de match parent prêt (type: ${nextMatch.type || 'simple'}). Chrono de préparation lancé. Limite: ${nextMatch.dateLimiteDebut}`);
+        }
+      });
     } else {
       console.log(`   ⚠️ Match parent (index ${parentHeapIndex}) introuvable !`);
     }
@@ -1967,29 +2137,31 @@ async function handleEliminationProgression(competition, completedMatch) {
     
     // Gérer la petite finale (3ème place)
     if (completedMatch.phase === 'Demi') {
-      let petiteFinale = competition.matchsElimination.find(match => 
+      let petiteFinales = competition.matchsElimination.filter(match => 
         match.tour === -2 // index spécial pour la petite finale
       );
       
-      if (petiteFinale && loser) {
+      if (petiteFinales.length > 0 && loser) {
         const isLeftChild = (currentHeapIndex % 2 !== 0);
-        if (isLeftChild) {
-          petiteFinale.equipe1 = loser;
-          console.log(`   ✅ ${loser} placé en petite finale (equipe1)`);
-        } else {
-          petiteFinale.equipe2 = loser;
-          console.log(`   ✅ ${loser} placé en petite finale (equipe2)`);
-        }
+        petiteFinales.forEach(petiteFinale => {
+          if (isLeftChild) {
+            petiteFinale.equipe1 = loser;
+            console.log(`   ✅ ${loser} placé en petite finale (equipe1)`);
+          } else {
+            petiteFinale.equipe2 = loser;
+            console.log(`   ✅ ${loser} placé en petite finale (equipe2)`);
+          }
 
-        // Si les deux équipes de la petite finale sont maintenant connues, lancer le ready check timer !
-        if (petiteFinale.equipe1 && petiteFinale.equipe2) {
-          petiteFinale.dateDebutPreparation = new Date();
-          petiteFinale.equipe1Prete = false;
-          petiteFinale.equipe2Prete = false;
-          const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
-          petiteFinale.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
-          console.log(`   ⏰ Salon de petite finale prêt. Chrono de préparation de 10 min lancé.`);
-        }
+          // Si les deux équipes de la petite finale sont maintenant connues, lancer le ready check timer !
+          if (petiteFinale.equipe1 && petiteFinale.equipe2) {
+            petiteFinale.dateDebutPreparation = new Date();
+            petiteFinale.equipe1Prete = false;
+            petiteFinale.equipe2Prete = false;
+            const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+            petiteFinale.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+            console.log(`   ⏰ Salon de petite finale prêt. Chrono de préparation de 10 min lancé.`);
+          }
+        });
       }
     }
     

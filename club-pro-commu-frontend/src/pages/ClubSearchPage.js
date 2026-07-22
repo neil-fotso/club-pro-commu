@@ -722,9 +722,7 @@ export default function ClubSearchPage() {
     }
   };
 
-  const getRecruteBadge = (recrute) => {
-    return recrute ? 'badge bg-success' : 'badge bg-secondary';
-  };
+
 
   if (loading) {
     return (

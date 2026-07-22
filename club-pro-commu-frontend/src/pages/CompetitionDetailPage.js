@@ -168,7 +168,7 @@ export default function CompetitionDetailPage() {
     const badges = {
       'Ouvert': 'bg-success',
       'Fermé': 'bg-secondary',
-      'En cours': 'bg-warning',
+      'En cours': 'bg-warning text-dark',
       'Terminé': 'bg-info'
     };
     return badges[statut] || 'bg-secondary';
@@ -179,7 +179,7 @@ export default function CompetitionDetailPage() {
   };
 
   const getVisibiliteBadge = (visibilite) => {
-    return visibilite === 'publique' ? 'bg-success' : 'bg-warning';
+    return visibilite === 'publique' ? 'bg-success' : 'bg-warning text-dark';
   };
 
   if (loading) {
@@ -250,6 +250,31 @@ export default function CompetitionDetailPage() {
     return competition.equipesInscrites?.find(e => compareClubIds(clubInscrit._id, e.clubId));
   };
   const equipeDetails = getEquipeInscriteDetails();
+
+  const getMatchsEnLitige = () => {
+    const list = [];
+    // 1. Chercher dans les poules
+    if (competition?.poules) {
+      competition.poules.forEach(p => {
+        if (p.matchs) {
+          p.matchs.forEach(m => {
+            if (m.litige) {
+              list.push({ ...m, pouleNom: p.nom });
+            }
+          });
+        }
+      });
+    }
+    // 2. Chercher dans matchsElimination
+    if (competition?.matchsElimination) {
+      competition.matchsElimination.forEach(m => {
+        if (m.litige) {
+          list.push(m);
+        }
+      });
+    }
+    return list;
+  };
 
   return (
     <div className="container py-4 px-4 px-md-5 animate-fade-in">
@@ -349,6 +374,50 @@ export default function CompetitionDetailPage() {
           <Link to={`/competition/${competition._id}/paiement/${clubInscrit._id}`} className="btn btn-warning text-dark fw-bold btn-sm ms-3">
             <i className="fas fa-credit-card me-1"></i> Réglér les frais ({competition.montantInscription}€)
           </Link>
+        </div>
+      )}
+
+      {/* Alerte Litiges pour l'administrateur */}
+      {user && (isCreator || user.isAdmin) && getMatchsEnLitige().length > 0 && (
+        <div className="alert alert-danger mb-4 p-4 rounded-xl">
+          <h5 className="text-danger fw-bold mb-2">
+            <i className="fas fa-gavel me-2 animate-pulse"></i>
+            ⚠️ Matchs en litige en cours ({getMatchsEnLitige().length})
+          </h5>
+          <p className="small text-muted mb-3">
+            Des litiges ont été signalés sur les matchs suivants. En tant qu'administrateur, vous devez les résoudre. Cliquez sur un match pour ouvrir son salon d'arbitrage.
+          </p>
+          <div className="row g-3">
+            {getMatchsEnLitige().map((match, idx) => (
+              <div key={idx} className="col-12 col-md-6">
+                <Link to={`/competition/${id}/match/${match._id}`} className="text-decoration-none d-block">
+                  <div 
+                    className="border rounded p-3 bg-dark bg-opacity-20 transition-all cursor-pointer" 
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)'}
+                  >
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <span className="badge bg-danger text-white small">LITIGE</span>
+                      <span className="small text-muted">{match.phase || match.pouleNom || 'Match'}</span>
+                    </div>
+                    <div className="d-flex align-items-center justify-content-between text-white font-rajdhani fw-bold">
+                      <span>{match.equipe1?.nom || 'TBD'}</span>
+                      <span className="text-warning px-2">
+                        {match.propositionScore?.proposePar ? `${match.propositionScore.score1} - ${match.propositionScore.score2}` : 'VS'}
+                      </span>
+                      <span>{match.equipe2?.nom || 'TBD'}</span>
+                    </div>
+                    {match.litigeDetails?.description && (
+                      <div className="text-muted small mt-2 text-truncate" style={{ fontSize: '0.78rem' }}>
+                        <strong>Motif :</strong> {match.litigeDetails.description}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -510,13 +579,13 @@ export default function CompetitionDetailPage() {
                           <div className="d-flex align-items-center gap-2">
                             <span className={`badge ${
                               equipe.statut === 'Confirmé' || equipe.statut === 'Gagnant' ? 'bg-success' :
-                              equipe.statut === 'Inscrit' ? 'bg-secondary' : 'bg-warning'
+                              equipe.statut === 'Inscrit' ? 'bg-secondary' : 'bg-warning text-dark'
                             }`}>
                               {equipe.statut}
                             </span>
                             {!competition.inscriptionGratuite && (
                               <span className={`badge ${
-                                equipe.statutPaiement === 'Payé' ? 'bg-success' : 'bg-warning'
+                                equipe.statutPaiement === 'Payé' ? 'bg-success' : 'bg-warning text-dark'
                               }`}>
                                 {equipe.statutPaiement === 'Payé' ? 'Payé' : 'En attente'}
                               </span>
@@ -623,7 +692,7 @@ export default function CompetitionDetailPage() {
                           </small>
                         </div>
                         <div className="d-flex align-items-center gap-2">
-                          <span className={`badge ${match.statut === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
+                          <span className={`badge ${match.statut === 'Terminé' ? 'bg-success' : 'bg-warning text-dark'}`}>
                             {match.statut}
                           </span>
                           <i className="fas fa-chevron-right text-muted" style={{fontSize: '0.75rem'}}></i>

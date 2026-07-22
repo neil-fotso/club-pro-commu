@@ -36,7 +36,7 @@ const CompetitionStatsPage = () => {
   }, [fetchData]);
 
   const getPositionBadge = (position) => {
-    if (position === 1) return 'bg-warning'; // Or
+    if (position === 1) return 'bg-warning text-dark'; // Or
     if (position === 2) return 'bg-secondary'; // Argent
     if (position === 3) return 'bg-danger'; // Bronze
     return 'bg-light';
@@ -100,7 +100,7 @@ const CompetitionStatsPage = () => {
               </h1>
             </div>
             <div>
-              <span className={`badge ${competition.statut === 'Terminé' ? 'bg-success' : 'bg-warning'}`}>
+              <span className={`badge ${competition.statut === 'Terminé' ? 'bg-success' : 'bg-warning text-dark'}`}>
                 {competition.statut}
               </span>
             </div>
