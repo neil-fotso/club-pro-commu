@@ -1966,9 +1966,9 @@ async function handleEliminationProgression(competition, completedMatch) {
     console.log('🏆 Gestion progression élimination directe...');
     
     // Déterminer l'équipe gagnante
-    const winner = completedMatch.score1 > completedMatch.score2 ? 
+    let winner = completedMatch.score1 > completedMatch.score2 ? 
       completedMatch.equipe1 : completedMatch.equipe2;
-    const loser = completedMatch.score1 > completedMatch.score2 ? 
+    let loser = completedMatch.score1 > completedMatch.score2 ? 
       completedMatch.equipe2 : completedMatch.equipe1;
     
     console.log(`   Gagnant: ${winner}, Phase: ${completedMatch.phase}`);
@@ -2010,8 +2010,8 @@ async function handleEliminationProgression(competition, completedMatch) {
     const parentHeapIndex = Math.floor((currentHeapIndex - 1) / 2);
     
     let isConfrontationTerminee = true;
-    let winner = null;
-    let loser = null;
+    winner = null;
+    loser = null;
 
     if (competition.modeMatch === 'aller_retour' && completedMatch.phase !== 'Finale' && completedMatch.phase !== 'Petite finale') {
       // Trouver l'autre match de la confrontation (aller ou retour)
