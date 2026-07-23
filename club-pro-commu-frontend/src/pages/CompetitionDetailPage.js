@@ -276,6 +276,41 @@ export default function CompetitionDetailPage() {
     return list;
   };
 
+  const getActiveMatch = () => {
+    if (!competition || !userClubs || userClubs.length === 0) return null;
+    const userClubIds = userClubs.map(c => c._id.toString());
+    
+    const matches = [];
+    if (competition.poules) {
+      competition.poules.forEach(p => {
+        if (p.matchs) matches.push(...p.matchs);
+      });
+    }
+    if (competition.matchsElimination) {
+      matches.push(...competition.matchsElimination);
+    }
+    
+    const activeMatch = matches.find(m => {
+      if (m.statut !== 'En cours') return false;
+      const t1Id = (m.equipe1?._id || m.equipe1)?.toString();
+      const t2Id = (m.equipe2?._id || m.equipe2)?.toString();
+      return userClubIds.includes(t1Id) || userClubIds.includes(t2Id);
+    });
+    
+    if (activeMatch) {
+      const getClubDetails = (cId) => {
+        const eq = competition.equipesInscrites?.find(e => (e.clubId?._id || e.clubId || '').toString() === cId);
+        return eq?.clubId || { nom: 'Club', logo: null };
+      };
+      return {
+        ...activeMatch,
+        equipe1Details: getClubDetails((activeMatch.equipe1?._id || activeMatch.equipe1)?.toString()),
+        equipe2Details: getClubDetails((activeMatch.equipe2?._id || activeMatch.equipe2)?.toString())
+      };
+    }
+    return null;
+  };
+
   return (
     <div className="container py-4 px-4 px-md-5 animate-fade-in">
       {/* Header en style Gaming */}
@@ -378,6 +413,27 @@ export default function CompetitionDetailPage() {
           </Link>
         </div>
       )}
+
+      {/* Alerte Match en Cours pour les membres du club */}
+      {(() => {
+        const activeMatch = getActiveMatch();
+        if (!activeMatch) return null;
+        return (
+          <div className="alert alert-info border-0 bg-info bg-opacity-10 d-flex justify-content-between align-items-center mb-4 text-white" style={{ borderRadius: '12px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+            <div className="d-flex align-items-center gap-2">
+              <span className="spinner-grow spinner-grow-sm text-info" role="status"></span>
+              <div>
+                <strong>Match en cours !</strong> Votre club joue actuellement dans la phase <strong>{activeMatch.phase}</strong> :{' '}
+                <span className="text-info font-rajdhani fw-bold">{activeMatch.equipe1Details?.nom}</span> vs{' '}
+                <span className="text-info font-rajdhani fw-bold">{activeMatch.equipe2Details?.nom}</span>.
+              </div>
+            </div>
+            <Link to={`/competition/${competition._id}/match/${activeMatch._id}`} className="btn btn-info text-dark fw-bold btn-sm ms-3 text-uppercase font-rajdhani" style={{ letterSpacing: '0.5px' }}>
+              <i className="fas fa-play me-1"></i> Rejoindre le match
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* Alerte Litiges pour l'administrateur */}
       {user && (isCreator || user.isAdmin) && getMatchsEnLitige().length > 0 && (
