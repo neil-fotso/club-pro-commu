@@ -1342,25 +1342,45 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
           match.valideParEquipe2 = true;
           match.stats = stats || {};
           if (captureEcran) match.captureEcran = captureEcran;
-        } else {
           // ❌ Scores divergents → Litige automatique
           match.litige = true;
+          const raisonLitige = `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${numScore1}-${numScore2}.`;
           match.litigeDetails = {
             signalePar: req.user.id,
             clubId: estAdminEquipe1 ? match.equipe1 : match.equipe2,
-            description: `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${numScore1}-${numScore2}.`,
+            description: raisonLitige,
             preuveVideo: captureEcran || null,
             dateSignalement: new Date(),
             statut: 'En attente'
           };
           match.statut = 'En cours'; // Bloqué, en attente de l'admin
+
+          // Envoyer des notifications aux capitaines des deux clubs
+          try {
+            const club1 = await Club.findById(match.equipe1);
+            const club2 = await Club.findById(match.equipe2);
+            const usersToNotify = [];
+            if (club1) club1.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+            if (club2) club2.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+            const uniqUsers = [...new Set(usersToNotify)];
+            for (const uId of uniqUsers) {
+              await Notification.create({
+                userId: uId,
+                type: 'litige',
+                titre: 'Litige automatique sur un match',
+                message: `Un litige a été automatiquement créé pour le match opposant ${club1?.nom || 'Équipe 1'} et ${club2?.nom || 'Équipe 2'}. Raison : ${raisonLitige}`
+              });
+            }
+          } catch (notifErr) {
+            console.error('Erreur lors de la création des notifications de litige:', notifErr);
+          }
+
           await competition.save();
           return res.json({
             message: `⚠️ Les scores ne correspondent pas (${prop.score1}-${prop.score2} vs ${numScore1}-${numScore2}). Le match est en litige. L'administrateur va trancher.`,
             statut: 'litige',
             litigeDetails: match.litigeDetails
           });
-        }
       }
     }
 
@@ -1448,14 +1468,35 @@ router.post('/:id/matchs/:matchId/litige', auth, async (req, res) => {
 
     // Mettre à jour le statut de litige
     match.litige = true;
+    const raisonLitige = description || 'Litige signalé';
     match.litigeDetails = {
       signalePar: req.user.id,
       clubId: clubSignataireId,
-      description: description || 'Litige signalé',
+      description: raisonLitige,
       preuveVideo: preuveVideo || '',
       dateSignalement: new Date(),
       statut: 'En attente'
     };
+
+    // Envoyer des notifications aux capitaines des deux clubs
+    try {
+      const club1 = await Club.findById(match.equipe1);
+      const club2 = await Club.findById(match.equipe2);
+      const usersToNotify = [];
+      if (club1) club1.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+      if (club2) club2.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+      const uniqUsers = [...new Set(usersToNotify)];
+      for (const uId of uniqUsers) {
+        await Notification.create({
+          userId: uId,
+          type: 'litige',
+          titre: 'Litige signalé sur un match',
+          message: `Un litige a été manuellement signalé pour le match opposant ${club1?.nom || 'Équipe 1'} et ${club2?.nom || 'Équipe 2'}. Raison : ${raisonLitige}`
+        });
+      }
+    } catch (notifErr) {
+      console.error('Erreur lors de la création des notifications de litige:', notifErr);
+    }
 
     await competition.save();
 
