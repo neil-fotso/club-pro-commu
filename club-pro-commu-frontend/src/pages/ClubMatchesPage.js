@@ -375,6 +375,15 @@ export default function ClubMatchesPage() {
             })}
           </div>
         )}
+
+        {match.statut === 'En cours' && (
+          <div className="mt-2 pt-2 border-top border-secondary border-opacity-10">
+            <span className="btn btn-sm btn-primary w-100 py-2 text-uppercase font-rajdhani fw-bold" style={{ letterSpacing: '1px', background: 'linear-gradient(135deg, #00f0ff 0%, #7000ff 100%)', border: 'none', borderRadius: '6px', fontSize: '0.85rem', color: 'white' }}>
+              <i className="fas fa-play me-2"></i>
+              Jouer le match
+            </span>
+          </div>
+        )}
       </div>
     );
 
