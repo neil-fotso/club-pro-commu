@@ -934,16 +934,16 @@ router.put('/:id/lancer', auth, async (req, res) => {
     const DELAI_LANCEMENT = (competition.delaiLancementMatch || 10) * 60 * 1000;
     const dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT);
 
-    // Appliquer dateLimiteDebut à tous les matchs qui ont déjà leurs deux équipes connues
+    // Appliquer dateLimiteDebut à tous les matchs qui ont déjà leurs deux équipes connues (sauf retour)
     competition.matchsElimination.forEach(match => {
-      if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut) {
+      if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut && match.type !== 'retour') {
         match.dateLimiteDebut = dateLimiteDebut;
       }
     });
     if (competition.poules) {
       competition.poules.forEach(poule => {
         poule.matchs.forEach(match => {
-          if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut) {
+          if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut && match.type !== 'retour') {
             match.dateLimiteDebut = dateLimiteDebut;
           }
         });
@@ -1167,6 +1167,32 @@ router.post('/:id/matchs/:matchId/pret', auth, async (req, res) => {
     }
     if (!match.equipe1 || !match.equipe2) {
       return res.status(400).json({ message: 'Les deux équipes ne sont pas encore connues' });
+    }
+
+    // Si c'est un match retour, vérifier que le match aller est terminé
+    if (match.type === 'retour') {
+      let matchAller = null;
+      if (competition.matchsElimination.id(matchId)) {
+        // Élimination directe
+        matchAller = competition.matchsElimination.find(m => m.tour === match.tour && m.type === 'aller');
+      } else {
+        // Poules / Championnat
+        for (const poule of competition.poules) {
+          const m = poule.matchs.id(matchId);
+          if (m) {
+            matchAller = poule.matchs.find(other => 
+              other.type === 'aller' &&
+              other.equipe1.toString() === match.equipe2.toString() &&
+              other.equipe2.toString() === match.equipe1.toString()
+            );
+            break;
+          }
+        }
+      }
+
+      if (matchAller && matchAller.statut !== 'Terminé') {
+        return res.status(400).json({ message: "Le match retour ne peut pas être lancé tant que le match aller n'est pas terminé." });
+      }
     }
 
     // Déterminer quelle équipe est le capitaine
@@ -1882,7 +1908,7 @@ function generateEliminationBracket(competition, equipesConfirmees) {
           valideParEquipe2: false,
           equipe1Prete: false,
           equipe2Prete: false,
-          dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+          dateDebutPreparation: null,
           dateDebutMatch: null,
           propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
           captureEcran: null,
@@ -2067,6 +2093,16 @@ async function handleEliminationProgression(competition, completedMatch) {
         // L'autre match n'est pas encore terminé, on ne fait pas progresser les équipes
         isConfrontationTerminee = false;
         console.log(`   ⏳ Match ${completedMatch.type} terminé. En attente du match ${autreType} pour la progression.`);
+        
+        // Si c'est le match aller qui vient de se terminer, on débloque le match retour
+        if (completedMatch.type === 'aller' && autreMatch) {
+          autreMatch.dateDebutPreparation = new Date();
+          autreMatch.equipe1Prete = false;
+          autreMatch.equipe2Prete = false;
+          const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+          autreMatch.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+          console.log(`   ⏰ Match retour débloqué automatiquement suite à la fin de l'aller. Limite: ${autreMatch.dateLimiteDebut}`);
+        }
       }
     } else {
       // Aller simple ou Finale / Petite finale
@@ -2110,8 +2146,8 @@ async function handleEliminationProgression(competition, completedMatch) {
           }
         }
 
-        // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer !
-        if (nextMatch.equipe1 && nextMatch.equipe2) {
+        // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer (sauf pour le retour)
+        if (nextMatch.equipe1 && nextMatch.equipe2 && nextMatch.type !== 'retour') {
           nextMatch.dateDebutPreparation = new Date();
           nextMatch.equipe1Prete = false;
           nextMatch.equipe2Prete = false;
