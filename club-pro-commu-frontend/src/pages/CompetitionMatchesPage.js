@@ -1616,7 +1616,7 @@ const CompetitionMatchesPage = () => {
                         <div className="col-md-6 col-lg-4">
                           <div className="card border-0 shadow-sm" style={{ background: 'rgba(30, 27, 46, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 193, 7, 0.2)' }}>
                             <div className="card-header text-center border-0 text-white" style={{ background: 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)' }}>
-                              <h5 className="mb-0 text-dark fw-bold">🏆 La Grande Finale</h5>
+                              <h5 className="mb-0 text-white fw-bold">🏆 La Grande Finale</h5>
                             </div>
                             <div className="card-body p-3">
                               <Link to={`/competition/${id}/match/${finale._id}`} className="text-decoration-none d-block">
