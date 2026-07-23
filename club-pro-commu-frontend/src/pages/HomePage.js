@@ -85,11 +85,11 @@ const HomePage = () => {
         if (!myClubs || myClubs.length === 0) return;
         const myClubIds = myClubs.map(c => c._id.toString());
         
-        // 2. Charger les compétitions en cours
-        const response = await competitionAPI.getCompetitions({ statut: 'En cours', limit: 50 });
+        // 2. Charger toutes les compétitions récentes (en cours, fermées, etc.)
+        const response = await competitionAPI.getCompetitions({ limit: 100 });
         const comps = response.competitions || [];
         
-        // 3. Filtrer les matchs en cours
+        // 3. Filtrer les matchs en cours ou en préparation
         const matches = [];
         comps.forEach(comp => {
           const compMatches = [];
@@ -103,7 +103,8 @@ const HomePage = () => {
           }
           
           compMatches.forEach(m => {
-            if (m.statut === 'En cours') {
+            const isMatchActiveOrPreparing = m.statut === 'En cours' || (m.statut === 'Programmé' && m.dateDebutPreparation);
+            if (isMatchActiveOrPreparing) {
               const t1Id = (m.equipe1?._id || m.equipe1)?.toString();
               const t2Id = (m.equipe2?._id || m.equipe2)?.toString();
               
@@ -123,7 +124,8 @@ const HomePage = () => {
                   equipe1: getClubDetails(t1Id),
                   equipe2: getClubDetails(t2Id),
                   phase: m.phase || 'Match de poule',
-                  type: m.type
+                  type: m.type,
+                  statut: m.statut
                 });
               }
             }
@@ -192,16 +194,16 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Matchs en Cours */}
+      {/* Matchs en Cours / En Préparation */}
       {activeMatches.length > 0 && (
         <div className="container py-4 mt-3 animate-fade-in">
           <div className="row justify-content-center">
             <div className="col-lg-8">
-              <div className="card border-0 mb-4 shadow-sm" style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '15px' }}>
+              <div className="card border-0 mb-4 shadow-sm" style={{ background: 'rgba(255, 193, 7, 0.03)', border: '1px solid rgba(255, 193, 7, 0.15)', borderRadius: '15px' }}>
                 <div className="card-header border-0 bg-transparent pt-3 pb-0">
-                  <h5 className="text-danger fw-bold mb-0 d-flex align-items-center gap-2" style={{ fontFamily: 'Rajdhani', letterSpacing: '1px' }}>
-                    <span className="spinner-grow spinner-grow-sm text-danger" role="status"></span>
-                    🎮 MATCH EN COURS
+                  <h5 className="text-warning fw-bold mb-0 d-flex align-items-center gap-2" style={{ fontFamily: 'Rajdhani', letterSpacing: '1px' }}>
+                    <span className="spinner-grow spinner-grow-sm text-warning" role="status"></span>
+                    🎮 MATCHS ACTIFS (EN COURS / PRÉPARATION)
                   </h5>
                 </div>
                 <div className="card-body">
@@ -209,7 +211,14 @@ const HomePage = () => {
                     <Link key={idx} to={`/competition/${m.competitionId}/match/${m.matchId}`} className="text-decoration-none d-block mb-3 p-3 rounded-lg gaming-hover-card" style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
                       <div className="d-flex justify-content-between align-items-center mb-2">
                         <span className="text-muted small text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>{m.competitionNom} · {m.phase}</span>
-                        {m.type === 'but_en_or' && <span className="badge bg-warning text-dark font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>BUT EN OR</span>}
+                        <div className="d-flex gap-1 align-items-center">
+                          {m.type === 'but_en_or' && <span className="badge bg-warning text-dark font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>BUT EN OR</span>}
+                          {m.statut === 'Programmé' ? (
+                            <span className="badge bg-warning text-dark font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>PRÉPARATION</span>
+                          ) : (
+                            <span className="badge bg-danger text-white font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>EN COURS</span>
+                          )}
+                        </div>
                       </div>
                       <div className="d-flex justify-content-between align-items-center">
                         <div className="d-flex align-items-center gap-2 flex-1">
