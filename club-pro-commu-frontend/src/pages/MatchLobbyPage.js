@@ -1048,6 +1048,18 @@ export default function MatchLobbyPage() {
             <span>Tableau de gestion du match</span>
           </div>
 
+          {match.statut === 'En cours' && (
+            <div className="alert alert-info border-0 p-3 mb-4 text-white text-start shadow-sm" style={{ background: 'rgba(0, 240, 255, 0.05)', border: '1px solid rgba(0, 240, 255, 0.2)', borderRadius: '12px' }}>
+              <h6 className="fw-bold mb-2 text-info d-flex align-items-center gap-2" style={{ fontFamily: 'Rajdhani', letterSpacing: '0.5px' }}>
+                <i className="fas fa-gamepad"></i>
+                🎮 INVITATION EN JEU
+              </h6>
+              <p className="small mb-0 text-silver">
+                L'équipe à domicile (<strong>{team1.nom}</strong>) doit inviter l'équipe à l'extérieur (<strong>{team2.nom}</strong>). C'est elle qui lance la demande de match amical en jeu sur EA Sports FC Clubs Pro.
+              </p>
+            </div>
+          )}
+
           {/* Rapport de Résolution du Litige */}
           {match.litigeDetails && match.litigeDetails.statut && match.litigeDetails.statut !== 'En attente' && (
             <div className="alert alert-info mb-4 p-3 rounded-lg border-0 bg-info bg-opacity-10 text-white" style={{ borderLeft: '4px solid #0dcaf0', borderRadius: '12px' }}>
