@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import tournamentFlowchart from '../assets/tournament_flowchart.png';
+import lobbyReadyCheck from '../assets/lobby_ready_check.png';
+import scoreValidation from '../assets/score_validation.png';
 
 const gamingRulesStyles = `
   .rules-page-container {
@@ -169,10 +172,120 @@ const gamingRulesStyles = `
 `;
 
 export default function RulesPage() {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('tuto');
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'tuto':
+        return (
+          <div className="card gaming-rules-card border-0">
+            <h3 className="text-primary gaming-rules-header mb-4">
+              <i className="fas fa-map-signs text-gradient me-2"></i>
+              Guide Complet du Déroulement d'un Tournoi
+            </h3>
+            
+            <p className="text-silver mb-5" style={{ fontSize: '1.05rem' }}>
+              Bienvenue sur le guide officiel de Club Pro Communauté. Découvrez ci-dessous les 5 grandes étapes du déroulement de nos tournois, de l'inscription jusqu'aux phases finales.
+            </p>
+
+            {/* Vue d'ensemble */}
+            <div className="text-center mb-5">
+              <h5 className="gaming-rules-header text-info mb-3">Vue d'ensemble du processus</h5>
+              <img src={tournamentFlowchart} alt="Tournament Flowchart" className="img-fluid rounded border border-secondary border-opacity-20 shadow-lg" style={{ maxWidth: '100%', maxHeight: '500px', objectFit: 'contain' }} />
+            </div>
+
+            {/* Étapes détaillées */}
+            <div className="timeline mt-5">
+              {/* Étape 1 */}
+              <div className="timeline-item mb-5 pb-3">
+                <h5 className="gaming-rules-header text-white mb-3">
+                  <span className="badge bg-primary me-2 font-rajdhani">Étape 1</span>
+                  Inscription et Lancement
+                </h5>
+                <p className="text-white-50 small">
+                  Le gérant ou l'administrateur de la compétition lance la période d'inscriptions. Les capitaines de clubs s'inscrivent et règlent les frais de participation (si applicables). Une fois les inscriptions closes, l'administrateur génère les poules ou l'arbre final d'élimination directe.
+                </p>
+              </div>
+
+              {/* Étape 2 */}
+              <div className="timeline-item mb-5 pb-3">
+                <h5 className="gaming-rules-header text-white mb-3">
+                  <span className="badge bg-primary me-2 font-rajdhani">Étape 2</span>
+                  La Préparation du Match (Ready Check)
+                </h5>
+                <div className="row g-4 align-items-center">
+                  <div className="col-md-7">
+                    <p className="text-white-50 small">
+                      Dès que les deux équipes d'une rencontre sont désignées, le match entre dans la phase de <strong>Ready Check</strong> (phase de préparation).
+                    </p>
+                    <ul className="text-white-50 small">
+                      <li className="mb-2">Les capitaines reçoivent une notification et disposent d'un délai fixe de <strong>10 minutes</strong> pour check-in.</li>
+                      <li className="mb-2">Ils doivent se rendre sur la page <em>"Mes Matchs"</em> ou la page de la compétition, cliquer sur <strong>"Rejoindre la préparation"</strong>, puis cliquer sur le bouton bleu <strong>"Je suis prêt"</strong> dans le Lobby.</li>
+                      <li className="mb-2"><strong className="text-warning">Attention :</strong> Si une équipe ne valide pas sa présence avant la fin du décompte de 10 minutes, elle est déclarée forfait d'office.</li>
+                    </ul>
+                  </div>
+                  <div className="col-md-5">
+                    <img src={lobbyReadyCheck} alt="Lobby Ready Check" className="img-fluid rounded border border-secondary border-opacity-20 shadow-sm" style={{ objectFit: 'cover' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Étape 3 */}
+              <div className="timeline-item mb-5 pb-3">
+                <h5 className="gaming-rules-header text-white mb-3">
+                  <span className="badge bg-primary me-2 font-rajdhani">Étape 3</span>
+                  Déroulement et Lancement des Matchs
+                </h5>
+                <p className="text-white-50 small">
+                  Une fois que les deux équipes ont confirmé leur préparation, le match passe au statut <strong>"En cours"</strong>. Les joueurs ont alors 20 minutes pour s'affronter en jeu sur EA Sports FC Clubs Pro.
+                </p>
+                <div className="alert gaming-alert-info small mt-3">
+                  <i className="fas fa-exclamation-circle text-gradient me-2"></i>
+                  <strong>Spécificité Aller-Retour :</strong> Pour préserver le réalisme et le bon séquençage, les deux manches ne se lancent pas simultanément. Le match retour est verrouillé et ne débute que lorsque le match aller est déclaré terminé et validé.
+                </div>
+              </div>
+
+              {/* Étape 4 */}
+              <div className="timeline-item mb-5 pb-3">
+                <h5 className="gaming-rules-header text-white mb-3">
+                  <span className="badge bg-primary me-2 font-rajdhani">Étape 4</span>
+                  Saisie des Scores et Gestion des Litiges
+                </h5>
+                <div className="row g-4 align-items-center">
+                  <div className="col-md-7">
+                    <p className="text-white-50 small">
+                      À la fin de la rencontre, les capitaines doivent renseigner le score final et charger une capture d'écran faisant foi du résultat.
+                    </p>
+                    <ul className="text-white-50 small">
+                      <li className="mb-2"><strong>Validation automatique :</strong> Si les deux capitaines déclarent le même score, le match est validé instantanément et la progression (ou le match retour) se lance.</li>
+                      <li className="mb-2"><strong className="text-danger">Litige automatique :</strong> Si les scores soumis ne correspondent pas exactement, le match est automatiquement bloqué en litige. Une notification est envoyée et les administrateurs devront trancher sur la base de la capture ou d'une preuve vidéo.</li>
+                    </ul>
+                  </div>
+                  <div className="col-md-5">
+                    <img src={scoreValidation} alt="Score Validation & Litiges" className="img-fluid rounded border border-secondary border-opacity-20 shadow-sm" style={{ objectFit: 'cover' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Étape 5 */}
+              <div className="timeline-item">
+                <h5 className="gaming-rules-header text-white mb-3">
+                  <span className="badge bg-primary me-2 font-rajdhani">Étape 5</span>
+                  Égalités et But en Or (Décisif)
+                </h5>
+                <p className="text-white-50 small">
+                  En cas d'égalité sur le cumul des scores d'une confrontation en aller-retour (ex: 2-1 puis 1-2, cumul 3-3), la règle du <strong>But en Or</strong> s'applique :
+                </p>
+                <ul className="text-white-50 small">
+                  <li className="mb-2">Un troisième match décisif nommé <strong>"but en or"</strong> est automatiquement créé dans le bracket.</li>
+                  <li className="mb-2">Les équipes s'affrontent lors d'une nouvelle partie. <strong>La première équipe à marquer un but remporte la confrontation.</strong></li>
+                  <li className="mb-2">Si le match se termine sur un score nul (0-0), la qualification se joue directement sur la séance de tirs au but, sans prolongations.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'general':
         return (
           <div className="card gaming-rules-card border-0">
@@ -437,6 +550,15 @@ export default function RulesPage() {
         {/* Navigation Tabs */}
         <div className="d-flex justify-content-center mb-5">
           <ul className="nav gaming-nav-pills p-2 shadow-sm d-inline-flex">
+            <li className="nav-item">
+              <button
+                className={`nav-link rounded-pill px-4 py-2 ${activeTab === 'tuto' ? 'active' : 'bg-transparent'}`}
+                onClick={() => setActiveTab('tuto')}
+              >
+                <i className="fas fa-book-open me-2"></i>
+                Guide Déroulement
+              </button>
+            </li>
             <li className="nav-item">
               <button
                 className={`nav-link rounded-pill px-4 py-2 ${activeTab === 'general' ? 'active' : 'bg-transparent'}`}
