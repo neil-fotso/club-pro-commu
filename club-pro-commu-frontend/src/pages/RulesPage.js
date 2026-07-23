@@ -351,22 +351,7 @@ export default function RulesPage() {
             </div>
 
             <div className="row g-4 mt-2">
-              <div className="col-md-6">
-                <div className="gaming-obsidian-box">
-                  <h5 className="gaming-rules-header text-white mb-3">
-                    <i className="fas fa-clock text-gradient me-2"></i>
-                    Timing de la Demande
-                  </h5>
-                  <p className="text-white-50 small">
-                    Toute demande de vérification de taille doit être formulée <strong className="text-white">impérativement à la MI-TEMPS</strong> du match. Les demandes en seconde période ou après le match concernant les tailles seront catégoriquement refusées.
-                  </p>
-                  <div className="p-3 gaming-inner-card mt-3 text-white-50 small">
-                    <strong className="text-white">Conseil :</strong> Indiquez clairement votre passage à la mi-temps par un message explicite sur le chat/Discord pour servir de preuve horodatée.
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-md-6">
+              <div className="col-12">
                 <div className="gaming-obsidian-box">
                   <h5 className="gaming-rules-header text-white mb-3">
                     <i className="fas fa-video text-gradient me-2"></i>
@@ -378,18 +363,6 @@ export default function RulesPage() {
                     <li className="mb-2">Toute demande doit s'accompagner d'une notification officielle du gérant adverse.</li>
                     <li className="mb-2"><strong className="text-white">Interdiction de modifier un message :</strong> Modifier un message a posteriori pour y ajouter une demande de taille est considéré comme de la triche et peut mener à l'exclusion.</li>
                   </ul>
-                </div>
-              </div>
-
-              <div className="col-12">
-                <div className="gaming-obsidian-box">
-                  <h5 className="gaming-rules-header text-white mb-3">
-                    <i className="fas fa-balance-scale text-gradient me-2"></i>
-                    Principe de Réciprocité
-                  </h5>
-                  <p className="mb-0 text-white-50 small">
-                    Si vous formulez une demande de tailles mais que l'adversaire ne demande pas en retour les vôtres à la mi-temps, vous n'êtes pas tenu de lui fournir. La règle repose sur un principe simple : <strong className="text-white">demande explicite = droit réciproque</strong>. Les demandes formulées après coup car l'adversaire a perdu ne seront pas prises en compte.
-                  </p>
                 </div>
               </div>
             </div>
