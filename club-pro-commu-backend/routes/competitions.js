@@ -1342,6 +1342,7 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
           match.valideParEquipe2 = true;
           match.stats = stats || {};
           if (captureEcran) match.captureEcran = captureEcran;
+        } else {
           // ❌ Scores divergents → Litige automatique
           match.litige = true;
           const raisonLitige = `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${numScore1}-${numScore2}.`;
@@ -1381,6 +1382,7 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
             statut: 'litige',
             litigeDetails: match.litigeDetails
           });
+        }
       }
     }
 
