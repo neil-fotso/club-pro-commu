@@ -2034,13 +2034,19 @@ async function handleEliminationProgression(competition, completedMatch) {
   try {
     console.log('🏆 Gestion progression élimination directe...');
     
-    // Déterminer l'équipe gagnante
-    let winner = completedMatch.score1 > completedMatch.score2 ? 
-      completedMatch.equipe1 : completedMatch.equipe2;
-    let loser = completedMatch.score1 > completedMatch.score2 ? 
-      completedMatch.equipe2 : completedMatch.equipe1;
-    
-    console.log(`   Gagnant: ${winner}, Phase: ${completedMatch.phase}`);
+    let winner = null;
+    let loser = null;
+    let isConfrontationTerminee = true;
+
+    if (completedMatch.type === 'but_en_or') {
+      winner = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe1 : completedMatch.equipe2;
+      loser = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe2 : completedMatch.equipe1;
+      console.log(`   Gagnant match décisif (But en Or): ${winner}`);
+    } else {
+      winner = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe1 : completedMatch.equipe2;
+      loser = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe2 : completedMatch.equipe1;
+      console.log(`   Gagnant manche actuelle: ${winner}, Phase: ${completedMatch.phase}`);
+    }
     
     if (completedMatch.phase === 'Finale') {
       competition.gagnant = winner;
@@ -2078,11 +2084,11 @@ async function handleEliminationProgression(competition, completedMatch) {
     const currentHeapIndex = completedMatch.tour;
     const parentHeapIndex = Math.floor((currentHeapIndex - 1) / 2);
     
-    let isConfrontationTerminee = true;
+    isConfrontationTerminee = true;
     winner = null;
     loser = null;
 
-    if (competition.modeMatch === 'aller_retour' && completedMatch.phase !== 'Finale' && completedMatch.phase !== 'Petite finale') {
+    if (completedMatch.type !== 'but_en_or' && competition.modeMatch === 'aller_retour' && completedMatch.phase !== 'Finale' && completedMatch.phase !== 'Petite finale') {
       // Trouver l'autre match de la confrontation (aller ou retour)
       const autreType = completedMatch.type === 'aller' ? 'retour' : 'aller';
       const autreMatch = competition.matchsElimination.find(m => 
@@ -2121,16 +2127,42 @@ async function handleEliminationProgression(competition, completedMatch) {
           winner = clubB;
           loser = clubA;
         } else {
-          // Égalité -> départager par le match retour
-          const matchRetour = completedMatch.type === 'retour' ? completedMatch : autreMatch;
-          if (matchRetour.score1 > matchRetour.score2) {
-            winner = matchRetour.equipe1;
-            loser = matchRetour.equipe2;
+          // Égalité cumulée ! Créer un match "but en or"
+          isConfrontationTerminee = false;
+          
+          // Vérifier si le match "but en or" existe déjà
+          const matchButEnOr = competition.matchsElimination.find(m => 
+            m.tour === completedMatch.tour && m.type === 'but_en_or'
+          );
+          
+          if (!matchButEnOr) {
+            console.log(`   - Égalité cumulée (${totalScoreA}-${totalScoreB}). Génération du match "but en or"...`);
+            const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+            const dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+            
+            competition.matchsElimination.push({
+              equipe1: clubA,
+              equipe2: clubB,
+              score1: null,
+              score2: null,
+              dateMatch: null,
+              statut: 'Programmé',
+              phase: completedMatch.phase,
+              tour: completedMatch.tour,
+              type: 'but_en_or',
+              valideParEquipe1: false,
+              valideParEquipe2: false,
+              equipe1Prete: false,
+              equipe2Prete: false,
+              dateDebutPreparation: new Date(), // Lancer immédiatement le ready check
+              dateLimiteDebut: dateLimiteDebut,
+              stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+              litige: false,
+              arbitre: null
+            });
           } else {
-            winner = matchRetour.equipe2;
-            loser = matchRetour.equipe1;
+            console.log(`   - Le match "but en or" existe déjà.`);
           }
-          console.log(`   - Égalité cumulée ! Le match retour départage : Vainqueur = ${winner}`);
         }
       } else {
         // L'autre match n'est pas encore terminé, on ne fait pas progresser les équipes

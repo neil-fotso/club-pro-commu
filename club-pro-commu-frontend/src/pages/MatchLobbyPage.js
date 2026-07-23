@@ -953,7 +953,10 @@ export default function MatchLobbyPage() {
         
         {/* Phase Label */}
         <div className="text-center">
-          <div className="phase-title">{match.phase || 'Tour principal'}</div>
+          <div className="phase-title">
+            {match.phase || 'Tour principal'}
+            {match.type === 'but_en_or' && <span className="text-warning ms-2">⚽ BUT EN OR</span>}
+          </div>
           <span className={`badge ${match.statut === 'Terminé' ? 'bg-success' : match.statut === 'En cours' ? 'bg-info text-white' : 'bg-secondary'} px-3 py-2 fw-semibold`}>
             {match.statut}
           </span>
@@ -1102,6 +1105,12 @@ export default function MatchLobbyPage() {
                 isCaptain ? (
                   <form onSubmit={handleScoreSubmit} className="mx-auto" style={{ maxWidth: '400px' }}>
                     <h5 className="text-center text-white mb-3 fw-bold">Renseigner le score</h5>
+                    {match.type === 'but_en_or' && (
+                      <div className="alert alert-warning py-2 px-3 small rounded-lg mb-3 text-start" style={{ background: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.25)', color: '#ffe082' }}>
+                        <i className="fas fa-info-circle me-2 text-warning"></i>
+                        <strong>But en Or :</strong> La première équipe à marquer gagne. En cas de match nul (0-0), renseignez le score final comprenant la séance de tirs au but.
+                      </div>
+                    )}
                     <div className="row g-3 mb-3">
                       <div className="col">
                         <label className="form-label text-muted small">{team1.nom}</label>

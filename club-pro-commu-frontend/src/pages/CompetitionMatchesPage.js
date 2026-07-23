@@ -708,7 +708,7 @@ const CompetitionMatchesPage = () => {
               <div className={`match-card-container ${match.statut.toLowerCase()} ${match.litige ? 'border-warning shadow-lg' : ''}`} style={{ cursor: 'pointer' }}>
                 <div className="match-card-header">
                   <span className="match-card-date">
-                    {match.type === 'aller' ? '🟢 Aller • ' : match.type === 'retour' ? '🔴 Retour • ' : ''}
+                    {match.type === 'aller' ? '🟢 Aller • ' : match.type === 'retour' ? '🔴 Retour • ' : match.type === 'but_en_or' ? '🏆 But en or • ' : ''}
                     {match.dateMatch ? (
                       <>
                         <i className="far fa-calendar-alt me-1"></i>
@@ -770,7 +770,7 @@ const CompetitionMatchesPage = () => {
           ))}
 
           {/* Affichage du score cumulé si les deux matchs sont terminés */}
-          {matches.length === 2 && matches[0].statut === 'Terminé' && matches[1].statut === 'Terminé' && (() => {
+          {matches.length >= 2 && matches[0].statut === 'Terminé' && matches[1].statut === 'Terminé' && (() => {
             const mAller = matches.find(m => m.type === 'aller') || matches[0];
             const mRetour = matches.find(m => m.type === 'retour') || matches[1];
             
@@ -796,12 +796,29 @@ const CompetitionMatchesPage = () => {
             const totalA = scoreA_aller + scoreA_retour;
             const totalB = scoreB_aller + scoreB_retour;
             
+            const mButEnOr = matches.find(m => m.type === 'but_en_or');
+            const winnerButEnOr = mButEnOr && mButEnOr.statut === 'Terminé'
+              ? (mButEnOr.score1 > mButEnOr.score2 ? mButEnOr.equipe1 : mButEnOr.equipe2)
+              : null;
+            
             return (
               <div className="text-center small py-1 px-2 rounded font-rajdhani fw-bold text-white bg-black bg-opacity-40 border border-secondary border-opacity-10 mt-1" style={{ fontSize: '0.82rem' }}>
-                <span className="text-muted me-1">CUMUL :</span>
-                <span className="text-info">{teamA?.nom || 'TBD'}</span>
-                <span className="mx-2 text-warning">{totalA} - {totalB}</span>
-                <span className="text-info">{teamB?.nom || 'TBD'}</span>
+                <div>
+                  <span className="text-muted me-1">CUMUL :</span>
+                  <span className="text-info">{teamA?.nom || 'TBD'}</span>
+                  <span className="mx-2 text-warning">{totalA} - {totalB}</span>
+                  <span className="text-info">{teamB?.nom || 'TBD'}</span>
+                </div>
+                {mButEnOr && (
+                  <div className="mt-1 text-warning border-top border-secondary border-opacity-10 pt-1" style={{ fontSize: '0.78rem' }}>
+                    <i className="fas fa-trophy me-1 text-warning"></i>
+                    BUT EN OR : {mButEnOr.statut === 'Terminé' ? (
+                      <span>Vainqueur : {winnerButEnOr?.nom || 'TBD'} ({mButEnOr.score1} - {mButEnOr.score2})</span>
+                    ) : (
+                      <span className="text-muted">Match en cours...</span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })()}
