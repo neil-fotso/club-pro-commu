@@ -193,12 +193,12 @@ export default function RulesPage() {
                 <div className="gaming-obsidian-box">
                   <h5 className="gaming-rules-header text-white mb-3">
                     <i className="fas fa-user-friends text-gradient me-2"></i>
-                    Taille de l'Effectif
+                    Règles d'Effectif
                   </h5>
                   <ul className="list-group list-group-flush bg-transparent">
                     <li className="list-group-item bg-transparent px-0 border-0 text-white-50">
-                      <i className="fas fa-check-circle text-success me-2"></i>
-                      <strong className="text-white">6 joueurs minimum</strong> obligatoires par équipe en match.
+                      <i className="fas fa-times-circle text-danger me-2"></i>
+                      Présence d'un joueur <strong className="text-white">"Tout" (ANY) interdite</strong>.
                     </li>
                     <li className="list-group-item bg-transparent px-0 border-0 text-white-50">
                       <i className="fas fa-info-circle text-info me-2"></i>
