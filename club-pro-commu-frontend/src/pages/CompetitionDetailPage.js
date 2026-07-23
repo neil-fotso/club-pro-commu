@@ -166,12 +166,12 @@ export default function CompetitionDetailPage() {
 
   const getStatutBadge = (statut) => {
     const badges = {
-      'Ouvert': 'bg-success',
-      'Fermé': 'bg-secondary',
-      'En cours': 'bg-warning text-dark',
-      'Terminé': 'bg-info'
+      'Ouvert': 'bg-warning text-dark',
+      'Fermé': 'bg-secondary text-white',
+      'En cours': 'bg-primary text-white',
+      'Terminé': 'bg-success text-white'
     };
-    return badges[statut] || 'bg-secondary';
+    return badges[statut] || 'bg-secondary text-white';
   };
 
   const getTypeBadge = (type) => {
@@ -304,9 +304,11 @@ export default function CompetitionDetailPage() {
             
             <h1 className="gaming-title mb-2" style={{fontSize: '2rem'}}>{competition.nom}</h1>
             <div className="d-flex gap-2 flex-wrap">
-              <span className={`badge ${getTypeBadge(competition.type)}`}>
-                {competition.type === 'championnat' ? 'Championnat' : 'Coupe'}
-              </span>
+              {competition.type === 'championnat' && (
+                <span className={`badge ${getTypeBadge(competition.type)}`}>
+                  Championnat
+                </span>
+              )}
               <span className={`badge ${getStatutBadge(competition.statut)}`}>
                 {competition.statut}
               </span>

@@ -291,9 +291,9 @@ export default function ClubMatchesPage() {
 
   const getStatutColor = (statut) => {
     if (statut === 'Terminé') return '#28a745';
-    if (statut === 'En cours') return '#ffc107';
+    if (statut === 'En cours') return '#0d6efd';
     if (statut === 'Annulé') return '#dc3545';
-    return '#00f0ff';
+    return '#6c757d';
   };
 
   const getStatutIcon = (statut) => {

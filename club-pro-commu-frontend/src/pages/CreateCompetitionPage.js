@@ -16,7 +16,7 @@ const CreateCompetitionPage = () => {
   }, [user, navigate]);
 
   const [formData, setFormData] = useState({
-    nom: 'la street club pro compétition',
+    nom: '',
     type: 'elimination_directe',
     modeMatch: 'simple',
     description: '',
@@ -152,14 +152,14 @@ const CreateCompetitionPage = () => {
                     </h4>
                   </div>
                   
-                  {/* Nom masqué car nom unique par défaut
+                  {/* Nom de la compétition */}
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Nom de la compétition *</strong>
                     </label>
                     <input
                       type="text"
-                      className="form-control"
+                      className="form-control bg-dark border-secondary text-white"
                       name="nom"
                       value={formData.nom}
                       onChange={handleInputChange}
@@ -168,7 +168,6 @@ const CreateCompetitionPage = () => {
                       placeholder="Ex: Coupe de France 2024"
                     />
                   </div>
-                  */}
 
                   {/* Sélecteur de type masqué car format unique (élimination directe) par défaut
                   <div className="col-md-6 mb-3">

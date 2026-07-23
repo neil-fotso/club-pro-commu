@@ -235,14 +235,17 @@ export default function CompetitionListPage() {
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <div className="d-flex gap-2">
                       <span className={`badge ${
-                        competition.statut === 'Ouvert' ? 'bg-success' :
-                        competition.statut === 'En cours' ? 'bg-primary' : 'bg-secondary'
+                        competition.statut === 'Terminé' ? 'bg-success text-white' :
+                        competition.statut === 'En cours' ? 'bg-primary text-white' :
+                        competition.statut === 'Ouvert' ? 'bg-warning text-dark' : 'bg-secondary text-white'
                       }`}>
                         {competition.statut}
                       </span>
-                      <span className="badge bg-secondary text-uppercase" style={{fontSize: '0.7rem'}}>
-                        {competition.type === 'championnat' ? 'Championnat' : 'Coupe'}
-                      </span>
+                      {competition.type === 'championnat' && (
+                        <span className="badge bg-secondary text-uppercase" style={{fontSize: '0.7rem'}}>
+                          Championnat
+                        </span>
+                      )}
                     </div>
                     <div className="p-2 rounded bg-dark-navbar text-primary d-flex align-items-center justify-content-center" style={{width: '36px', height: '36px', border: '1px solid var(--border-glass)'}}>
                       <i className={`${getTypeIcon(competition.type)} text-gradient`} style={{fontSize: '1rem'}}></i>

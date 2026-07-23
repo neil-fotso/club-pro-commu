@@ -915,10 +915,10 @@ const CompetitionMatchesPage = () => {
   };
 
   const getMatchStatus = (match) => {
-    if (match.statut === 'Terminé') return 'bg-success';
-    if (match.statut === 'En cours') return 'bg-warning text-dark';
-    if (match.statut === 'Annulé') return 'bg-danger';
-    return 'bg-secondary';
+    if (match.statut === 'Terminé') return 'bg-success text-white';
+    if (match.statut === 'En cours') return 'bg-primary text-white';
+    if (match.statut === 'Annulé') return 'bg-danger text-white';
+    return 'bg-secondary text-white';
   };
 
   const getMatchStatusText = (match) => {

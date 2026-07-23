@@ -45,12 +45,12 @@ export default function MesCompetitionsPage() {
 
   const getStatutBadge = (statut) => {
     const badges = {
-      'Ouvert': 'success',
-      'Fermé': 'secondary',
-      'En cours': 'warning',
-      'Terminé': 'info'
+      'Ouvert': 'warning text-dark',
+      'Fermé': 'secondary text-white',
+      'En cours': 'primary text-white',
+      'Terminé': 'success text-white'
     };
-    return badges[statut] || 'secondary';
+    return badges[statut] || 'secondary text-white';
   };
 
   const getTypeIcon = (type) => {
