@@ -360,8 +360,7 @@ export default function RulesPage() {
                   <ul className="mb-0 ps-3 text-white-50 small">
                     <li className="mb-2">Le clip vidéo doit être parfaitement <strong className="text-white">lisible</strong> (non flou).</li>
                     <li className="mb-2">Les <strong className="text-white">deux noms d'équipes</strong> doivent être clairement visibles.</li>
-                    <li className="mb-2">Toute demande doit s'accompagner d'une notification officielle du gérant adverse.</li>
-                    <li className="mb-2"><strong className="text-white">Interdiction de modifier un message :</strong> Modifier un message a posteriori pour y ajouter une demande de taille est considéré comme de la triche et peut mener à l'exclusion.</li>
+                    <li className="mb-2"><strong className="text-white">Description précise :</strong> Veillez à bien décrire le litige lorsqu'il est signalé.</li>
                   </ul>
                 </div>
               </div>
