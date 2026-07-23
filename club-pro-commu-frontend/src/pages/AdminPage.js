@@ -169,6 +169,7 @@ export default function AdminPage() {
                     <thead>
                       <tr>
                         <th>Nom</th>
+                        <th>Créateur</th>
                         <th>Pays</th>
                         <th>Membres</th>
                         <th>Statut</th>
@@ -179,6 +180,7 @@ export default function AdminPage() {
                       {clubs.map(club => (
                         <tr key={club._id}>
                           <td>{club.nom}</td>
+                          <td>{club.createurId?.pseudo || 'Inconnu'}</td>
                           <td>{club.pays}</td>
                           <td>{club.membres?.length || 0}/{club.effectifMax}</td>
                           <td>
