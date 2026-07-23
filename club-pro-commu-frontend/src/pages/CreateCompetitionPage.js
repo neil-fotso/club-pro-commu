@@ -121,6 +121,15 @@ const CreateCompetitionPage = () => {
     return descriptions[mode] || '';
   };
 
+  const getTypeDescription = (type) => {
+    const descriptions = {
+      elimination_directe: 'Tournoi avec arbre direct (byes gérés si nécessaire)',
+      poule_elimination: 'Phase de poules (4 équipes max) puis arbre final pour les qualifiés',
+      championnat: 'Championnat linéaire classique sous forme de poule unique'
+    };
+    return descriptions[type] || '';
+  };
+
   return (
     <div className="container py-4 px-4 px-md-5 animate-fade-in">
       <div className="row justify-content-center">
@@ -169,13 +178,13 @@ const CreateCompetitionPage = () => {
                     />
                   </div>
 
-                  {/* Sélecteur de type masqué car format unique (élimination directe) par défaut
+                  {/* Sélecteur de type */}
                   <div className="col-md-6 mb-3">
                     <label className="form-label">
                       <strong>Type de compétition *</strong>
                     </label>
                     <select
-                      className="form-select"
+                      className="form-select bg-dark border-secondary text-white"
                       name="type"
                       value={formData.type}
                       onChange={handleInputChange}
@@ -189,7 +198,6 @@ const CreateCompetitionPage = () => {
                       {getTypeDescription(formData.type)}
                     </small>
                   </div>
-                  */}
 
                   <div className="col-md-6 mb-3">
                     <label className="form-label">

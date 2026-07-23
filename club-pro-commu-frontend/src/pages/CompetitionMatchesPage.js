@@ -387,12 +387,28 @@ const CompetitionMatchesPage = () => {
   const [litigeUploadMode, setLitigeUploadMode] = useState('link'); // 'link' ou 'file'
   const [litigeFile, setLitigeFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [classement, setClassement] = useState(null);
+  const [activeTab, setActiveTab] = useState('classement');
 
   const fetchCompetition = useCallback(async () => {
     try {
       setLoading(true);
       const data = await competitionAPI.getCompetition(id);
       setCompetition(data);
+      
+      if (data.type === 'championnat' || data.type === 'poule_elimination') {
+        try {
+          const classData = await competitionAPI.getClassement(id);
+          setClassement(classData);
+        } catch (err) {
+          console.error('Erreur récupération classement:', err);
+        }
+      }
+      
+      // Définir l'onglet par défaut selon le type
+      if (data.type === 'elimination_directe') {
+        setActiveTab('arbre');
+      }
     } catch (error) {
       console.error('Erreur récupération compétition:', error);
       setError('Erreur lors du chargement de la compétition');
@@ -1099,7 +1115,200 @@ const CompetitionMatchesPage = () => {
         </div>
       </div>
 
+      {/* Onglets pour Championnat ou Poules */}
+      {(competition.type === 'championnat' || competition.type === 'poule_elimination') && (
+        <div className="row mb-4">
+          <div className="col-12">
+            <ul className="nav nav-tabs border-secondary">
+              <li className="nav-item">
+                <button 
+                  className={`nav-link text-uppercase font-rajdhani fw-bold ${activeTab === 'classement' ? 'active text-primary bg-dark border-secondary border-bottom-0' : 'text-silver bg-transparent border-0'}`}
+                  onClick={() => setActiveTab('classement')}
+                  style={{ borderRadius: '8px 8px 0 0' }}
+                >
+                  <i className="fas fa-list-ol me-2"></i>
+                  {competition.type === 'championnat' ? 'Classement' : 'Classements des Poules'}
+                </button>
+              </li>
+              <li className="nav-item">
+                <button 
+                  className={`nav-link text-uppercase font-rajdhani fw-bold ${activeTab === 'matchs' ? 'active text-primary bg-dark border-secondary border-bottom-0' : 'text-silver bg-transparent border-0'}`}
+                  onClick={() => setActiveTab('matchs')}
+                  style={{ borderRadius: '8px 8px 0 0' }}
+                >
+                  <i className="fas fa-calendar-alt me-2"></i>
+                  {competition.type === 'championnat' ? 'Calendrier' : 'Matchs des Poules'}
+                </button>
+              </li>
+              {competition.type === 'poule_elimination' && (
+                <li className="nav-item">
+                  <button 
+                    className={`nav-link text-uppercase font-rajdhani fw-bold ${activeTab === 'arbre' ? 'active text-primary bg-dark border-secondary border-bottom-0' : 'text-silver bg-transparent border-0'}`}
+                    onClick={() => setActiveTab('arbre')}
+                    style={{ borderRadius: '8px 8px 0 0' }}
+                  >
+                    <i className="fas fa-sitemap me-2"></i>
+                    Phase Finale
+                  </button>
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
 
+      {/* CLASSEMENTS (Championnat ou Poules) */}
+      {activeTab === 'classement' && (competition.type === 'championnat' || competition.type === 'poule_elimination') && (
+        <div className="row g-4 mb-4">
+          {competition.type === 'poule_elimination' && classement && classement.poules ? (
+            classement.poules.map((poule, pIdx) => (
+              <div key={pIdx} className="col-lg-6 col-12">
+                <div className="card gaming-matches-card h-100">
+                  <div className="card-header border-0 bg-transparent p-0 mb-3">
+                    <h4 className="text-primary font-rajdhani fw-bold mb-0">
+                      <i className="fas fa-users me-2"></i>
+                      {poule.pouleNom}
+                    </h4>
+                  </div>
+                  <div className="card-body p-0">
+                    <div className="table-responsive">
+                      <table className="table gaming-table mb-0">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '60px' }}>Pos</th>
+                            <th>Club</th>
+                            <th className="text-center">MJ</th>
+                            <th className="text-center text-success">V</th>
+                            <th className="text-center text-warning">N</th>
+                            <th className="text-center text-danger">D</th>
+                            <th className="text-center d-none d-sm-table-cell">BP</th>
+                            <th className="text-center d-none d-sm-table-cell">BC</th>
+                            <th className="text-center">Diff</th>
+                            <th className="text-center text-primary">Pts</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {poule.classement.map((eq, idx) => {
+                            const pos = idx + 1;
+                            const isQualified = pos <= 2; // qualifier top 2
+                            return (
+                              <tr key={idx} style={{ background: isQualified ? 'rgba(40, 167, 69, 0.03)' : '' }}>
+                                <td>
+                                  <span className={`badge ${pos === 1 ? 'bg-warning text-dark' : pos === 2 ? 'bg-secondary text-white' : 'bg-dark text-silver'} font-rajdhani fw-bold`}>
+                                    {pos}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="d-flex align-items-center">
+                                    {eq.logo ? (
+                                      <img src={eq.logo} alt="" className="me-2 rounded-circle" style={{ width: '24px', height: '24px', objectFit: 'cover' }} />
+                                    ) : (
+                                      <div className="me-2 rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style={{ width: '24px', height: '24px', fontSize: '0.7rem' }}>
+                                        {eq.nom ? eq.nom.substring(0, 2).toUpperCase() : 'FC'}
+                                      </div>
+                                    )}
+                                    <span className="text-white text-truncate" style={{ maxWidth: '140px' }} title={eq.nom}>{eq.nom}</span>
+                                  </div>
+                                </td>
+                                <td className="text-center font-rajdhani text-white-50">{eq.matchsJoues}</td>
+                                <td className="text-center font-rajdhani text-success">{eq.victoires}</td>
+                                <td className="text-center font-rajdhani text-warning">{eq.nuls}</td>
+                                <td className="text-center font-rajdhani text-danger">{eq.defaites}</td>
+                                <td className="text-center font-rajdhani text-white-50 d-none d-sm-table-cell">{eq.butsPour}</td>
+                                <td className="text-center font-rajdhani text-white-50 d-none d-sm-table-cell">{eq.butsContre}</td>
+                                <td className={`text-center font-rajdhani ${eq.differenceButs > 0 ? 'text-success' : eq.differenceButs < 0 ? 'text-danger' : 'text-white-50'}`}>
+                                  {eq.differenceButs > 0 ? `+${eq.differenceButs}` : eq.differenceButs}
+                                </td>
+                                <td className="text-center">
+                                  <strong className="text-primary font-rajdhani" style={{ fontSize: '1.05rem' }}>{eq.points}</strong>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            /* CLASSEMENT CHAMPIONNAT */
+            <div className="col-12">
+              <div className="card gaming-matches-card">
+                <div className="card-header border-0 bg-transparent p-0 mb-3">
+                  <h4 className="text-primary font-rajdhani fw-bold mb-0">
+                    <i className="fas fa-trophy me-2"></i>
+                    Classement Général
+                  </h4>
+                </div>
+                <div className="card-body p-0">
+                  {classement && Array.isArray(classement) && classement.length > 0 ? (
+                    <div className="table-responsive">
+                      <table className="table gaming-table mb-0">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '70px' }}>Position</th>
+                            <th>Équipe</th>
+                            <th className="text-center">MJ</th>
+                            <th className="text-center text-success">V</th>
+                            <th className="text-center text-warning">N</th>
+                            <th className="text-center text-danger">D</th>
+                            <th className="text-center">BP</th>
+                            <th className="text-center">BC</th>
+                            <th className="text-center">Diff</th>
+                            <th className="text-center text-primary">Pts</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {classement.map((eq, idx) => {
+                            const pos = idx + 1;
+                            return (
+                              <tr key={idx}>
+                                <td>
+                                  <span className={`badge ${pos === 1 ? 'bg-warning text-dark' : pos === 2 ? 'bg-secondary text-white' : pos === 3 ? 'bg-danger text-white' : 'bg-dark text-silver'} font-rajdhani fw-bold`}>
+                                    {pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="d-flex align-items-center">
+                                    {eq.clubId?.logo ? (
+                                      <img src={eq.clubId.logo} alt="" className="me-3 rounded-circle" style={{ width: '28px', height: '28px', objectFit: 'cover' }} />
+                                    ) : (
+                                      <div className="me-3 rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style={{ width: '28px', height: '28px' }}>
+                                        {eq.clubId?.nom ? eq.clubId.nom.substring(0, 2).toUpperCase() : 'FC'}
+                                      </div>
+                                    )}
+                                    <strong className="text-white">{eq.clubId?.nom}</strong>
+                                  </div>
+                                </td>
+                                <td className="text-center font-rajdhani text-white-50">{eq.matchsJoues}</td>
+                                <td className="text-center font-rajdhani text-success">{eq.victoires}</td>
+                                <td className="text-center font-rajdhani text-warning">{eq.nuls}</td>
+                                <td className="text-center font-rajdhani text-danger">{eq.defaites}</td>
+                                <td className="text-center font-rajdhani text-white-50">{eq.butsPour}</td>
+                                <td className="text-center font-rajdhani text-white-50">{eq.butsContre}</td>
+                                <td className={`text-center font-rajdhani ${eq.differenceButs > 0 ? 'text-success' : eq.differenceButs < 0 ? 'text-danger' : 'text-white-50'}`}>
+                                  {eq.differenceButs > 0 ? `+${eq.differenceButs}` : eq.differenceButs}
+                                </td>
+                                <td className="text-center">
+                                  <strong className="text-primary font-rajdhani" style={{ fontSize: '1.1rem' }}>{eq.points}</strong>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-muted p-3 mb-0">Aucun classement disponible pour le moment.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Salons de Match en Direct (Lobbies) */}
       {competition.statut === 'En cours' && (
@@ -1165,7 +1374,7 @@ const CompetitionMatchesPage = () => {
       )}
 
       {/* Matchs (Poules ou Championnat) */}
-      {competition.poules && competition.poules.length > 0 && (
+      {activeTab === 'matchs' && competition.poules && competition.poules.length > 0 && (
         <div className="row mb-4">
           <div className="col-12">
             <h3>
@@ -1535,7 +1744,7 @@ const CompetitionMatchesPage = () => {
       )}
 
       {/* Bracket d'élimination directe */}
-      {competition.type === 'elimination_directe' && (
+      {(competition.type === 'elimination_directe' || (competition.type === 'poule_elimination' && activeTab === 'arbre')) && (
         <div className="row mb-4">
           <div className="col-12">
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1543,7 +1752,7 @@ const CompetitionMatchesPage = () => {
                 <i className="fas fa-sitemap me-2"></i>
                 Bracket d'élimination directe
               </h3>
-              {competition.matchsElimination.length === 0 && user && (
+              {competition.type === 'elimination_directe' && competition.matchsElimination.length === 0 && user && (
                 competition.createurId === user._id || user.isAdmin
               ) && (
                 <button
@@ -1569,11 +1778,17 @@ const CompetitionMatchesPage = () => {
             {competition.matchsElimination.length === 0 ? (
               <div className="alert alert-info">
                 <i className="fas fa-info-circle me-2"></i>
-                Le bracket d'élimination n'a pas encore été généré. 
-                {competition.equipesInscrites?.length >= 2 ? 
-                  ' Cliquez sur "Générer le bracket" pour commencer.' :
-                  ' Au moins 2 équipes doivent être inscrites.'
-                }
+                {competition.type === 'poule_elimination' ? (
+                  "Le bracket de la phase finale sera généré automatiquement dès que tous les matchs de la phase de poules seront terminés."
+                ) : (
+                  <>
+                    Le bracket d'élimination n'a pas encore été généré. 
+                    {competition.equipesInscrites?.length >= 2 ? 
+                      ' Cliquez sur "Générer le bracket" pour commencer.' :
+                      ' Au moins 2 équipes doivent être inscrites.'
+                    }
+                  </>
+                )}
               </div>
             ) : (
               // Visualiseur d'arbre récursif moderne

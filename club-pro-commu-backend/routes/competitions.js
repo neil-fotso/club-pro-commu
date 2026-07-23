@@ -893,13 +893,35 @@ router.put('/:id/lancer', auth, async (req, res) => {
       // Générer les matchs d'élimination directe avec byes (tas binaire)
       generateEliminationBracket(competition, equipesConfirmees);
     } else if (competition.type === 'poule_elimination') {
-      // Générer les poules puis les matchs d'élimination
-      const equipesParPoule = Math.ceil(equipesConfirmees.length / competition.nombreEquipesParPoule);
+      // Répartition dynamique et équilibrée avec max 4 équipes par poule
+      const N = equipesConfirmees.length;
+      const G = Math.ceil(N / 4);
+      const baseSize = Math.floor(N / G);
+      const remainder = N % G;
       
-      for (let i = 0; i < competition.nombreEquipesParPoule; i++) {
+      const equipesShuffled = [...equipesConfirmees].sort(() => Math.random() - 0.5);
+      
+      let currentIndex = 0;
+      competition.poules = [];
+      
+      for (let i = 0; i < G; i++) {
+        const size = i < remainder ? baseSize + 1 : baseSize;
+        const pouleEquipes = equipesShuffled.slice(currentIndex, currentIndex + size);
+        currentIndex += size;
+        
+        const pouleNom = `Poule ${String.fromCharCode(65 + i)}`;
+        
+        // Assigner le nom de la poule à chaque équipe dans equipesInscrites
+        pouleEquipes.forEach(eq => {
+          const matchedEquipe = competition.equipesInscrites.find(e => e.clubId.toString() === eq.clubId.toString());
+          if (matchedEquipe) {
+            matchedEquipe.poule = pouleNom;
+          }
+        });
+        
         const poule = {
-          nom: `Poule ${String.fromCharCode(65 + i)}`,
-          equipes: equipesConfirmees.slice(i * equipesParPoule, (i + 1) * equipesParPoule).map(e => e.clubId),
+          nom: pouleNom,
+          equipes: pouleEquipes.map(e => e.clubId),
           matchs: []
         };
         
@@ -911,7 +933,12 @@ router.put('/:id/lancer', auth, async (req, res) => {
               equipe1: poule.equipes[j],
               equipe2: poule.equipes[k],
               statut: 'Programmé',
-              type: competition.modeMatch === 'aller_retour' ? 'aller' : 'simple'
+              type: competition.modeMatch === 'aller_retour' ? 'aller' : 'simple',
+              valideParEquipe1: false,
+              valideParEquipe2: false,
+              stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+              litige: false,
+              arbitre: null
             });
             // Match retour (seulement si aller_retour est sélectionné)
             if (competition.modeMatch === 'aller_retour') {
@@ -919,7 +946,12 @@ router.put('/:id/lancer', auth, async (req, res) => {
                 equipe1: poule.equipes[k],
                 equipe2: poule.equipes[j],
                 statut: 'Programmé',
-                type: 'retour'
+                type: 'retour',
+                valideParEquipe1: false,
+                valideParEquipe2: false,
+                stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+                litige: false,
+                arbitre: null
               });
             }
           }
@@ -1109,8 +1141,8 @@ async function checkMatchTimers(competition) {
           console.log(`⏰ Forfait Équipe 2 (non prête) - match ${match._id}`);
         }
         modified = true;
-        if (match.statut === 'Terminé' && competition.type === 'elimination_directe' && match.phase) {
-          await handleEliminationProgression(competition, match);
+        if (match.statut === 'Terminé') {
+          await afterMatchTerminated(competition, match);
         }
       }
     }
@@ -1136,8 +1168,8 @@ async function checkMatchTimers(competition) {
           console.log(`⏰ Score validé par défaut (${prop.proposePar}) - match ${match._id}`);
         }
         modified = true;
-        if (match.statut === 'Terminé' && competition.type === 'elimination_directe' && match.phase) {
-          await handleEliminationProgression(competition, match);
+        if (match.statut === 'Terminé') {
+          await afterMatchTerminated(competition, match);
         }
       }
     }
@@ -1338,17 +1370,12 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
       }
     }
 
-    // Mettre à jour les statistiques des équipes (pour tous les types de compétitions)
-    await updateTeamStats(competition, match);
+    // Gérer la validation, les statistiques d'équipe et la progression/transition
+    await afterMatchTerminated(competition, match);
     
     // Recalculer les statistiques individuelles
     const individualStats = await calculateCompetitionStats(competition);
     competition.statistiques = individualStats;
-    
-    // Gérer la progression en élimination directe
-    if (competition.type === 'elimination_directe' && match.phase) {
-      await handleEliminationProgression(competition, match);
-    }
 
     await competition.save();
 
@@ -1541,12 +1568,8 @@ router.post('/:id/matchs/:matchId/forfait', auth, async (req, res) => {
     match.valideParEquipe1 = true;
     match.valideParEquipe2 = true;
 
-    // Progression en élimination directe
-    if (competition.type === 'elimination_directe' && match.phase) {
-      await handleEliminationProgression(competition, match);
-    }
-
-    await updateTeamStats(competition, match);
+    // Gérer la validation, les statistiques d'équipe et la progression/transition
+    await afterMatchTerminated(competition, match);
     await competition.save();
 
     res.json({ success: true, message: `Forfait déclaré : ${equipeEnForfait === 'double' ? 'les deux équipes' : equipeEnForfait} forfait.` });
@@ -1597,17 +1620,12 @@ router.post('/:id/matchs/:matchId/resoudre-litige', auth, async (req, res) => {
       match.litigeDetails.dateResolution = new Date();
       match.litigeDetails.resoluPar = req.user.id;
 
-      // Mettre à jour les stats d'équipe
-      await updateTeamStats(competition, match);
+      // Gérer la validation, les statistiques d'équipe et la progression/transition
+      await afterMatchTerminated(competition, match);
 
       // Recalculer les stats de la compétition
       const stats = await calculateCompetitionStats(competition);
       competition.statistiques = stats;
-
-      // Gérer la progression si élimination directe (hors Petite finale)
-      if (competition.type === 'elimination_directe' && match.phase && match.phase !== 'Petite finale') {
-        await handleEliminationProgression(competition, match);
-      }
     } else if (action === 'rejouer') {
       match.score1 = null;
       match.score2 = null;
@@ -2300,10 +2318,24 @@ async function calculateCompetitionStats(competition) {
 router.get('/:id/classement', async (req, res) => {
   try {
     const competition = await Competition.findById(req.params.id)
-      .populate('equipesInscrites.clubId', 'nom logo');
+      .populate('equipesInscrites.clubId', 'nom logo')
+      .populate('poules.equipes', 'nom logo')
+      .populate('poules.matchs.equipe1', 'nom logo')
+      .populate('poules.matchs.equipe2', 'nom logo');
 
     if (!competition) {
       return res.status(404).json({ message: 'Compétition non trouvée' });
+    }
+
+    if (competition.type === 'poule_elimination') {
+      const poulesClassement = competition.poules.map(poule => {
+        const standings = calculerClassementPoule(poule, competition);
+        return {
+          pouleNom: poule.nom,
+          classement: standings
+        };
+      });
+      return res.json({ type: 'poule_elimination', poules: poulesClassement });
     }
 
     // Trier par points, différence de buts, buts pour
@@ -2413,6 +2445,361 @@ router.post('/:id/recalculer-statistiques', async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+// Helper pour calculer le classement d'une poule selon les critères de la FIFA
+function calculerClassementPoule(poule, competition) {
+  // Initialiser les stats pour chaque équipe de la poule
+  const standings = poule.equipes.map(eq => {
+    const club = eq.clubId || eq; // peut être peuplé ou ID
+    const clubIdStr = (club._id || club).toString();
+    
+    return {
+      clubId: club,
+      nom: club.nom || 'Équipe inconnue',
+      logo: club.logo || null,
+      matchsJoues: 0,
+      victoires: 0,
+      nuls: 0,
+      defaites: 0,
+      butsPour: 0,
+      butsContre: 0,
+      differenceButs: 0,
+      points: 0,
+      pouleNom: poule.nom
+    };
+  });
+
+  // Parcourir tous les matchs de la poule qui sont terminés
+  const matchsTermines = (poule.matchs || []).filter(m => m.statut === 'Terminé');
+  
+  matchsTermines.forEach(match => {
+    const team1Id = (match.equipe1._id || match.equipe1).toString();
+    const team2Id = (match.equipe2._id || match.equipe2).toString();
+    
+    const t1 = standings.find(s => (s.clubId._id || s.clubId).toString() === team1Id);
+    const t2 = standings.find(s => (s.clubId._id || s.clubId).toString() === team2Id);
+    
+    if (t1 && t2) {
+      t1.matchsJoues += 1;
+      t2.matchsJoues += 1;
+      
+      t1.butsPour += match.score1;
+      t1.butsContre += match.score2;
+      t2.butsPour += match.score2;
+      t2.butsContre += match.score1;
+      
+      if (match.score1 > match.score2) {
+        t1.victoires += 1;
+        t1.points += 3;
+        t2.defaites += 1;
+      } else if (match.score1 < match.score2) {
+        t2.victoires += 1;
+        t2.points += 3;
+        t1.defaites += 1;
+      } else {
+        t1.nuls += 1;
+        t1.points += 1;
+        t2.nuls += 1;
+        t2.points += 1;
+      }
+      
+      t1.differenceButs = t1.butsPour - t1.butsContre;
+      t2.differenceButs = t2.butsPour - t2.butsContre;
+    }
+  });
+
+  // Trier les équipes selon les critères Coupe du Monde de la FIFA dans l'ordre exact :
+  standings.sort((a, b) => {
+    // 1. Points
+    if (b.points !== a.points) {
+      return b.points - a.points;
+    }
+    // 2. Différence de buts générale
+    if (b.differenceButs !== a.differenceButs) {
+      return b.differenceButs - a.differenceButs;
+    }
+    // 3. Buts marqués
+    if (b.butsPour !== a.butsPour) {
+      return b.butsPour - a.butsPour;
+    }
+    
+    // 4. Confrontation directe
+    const matchDirect = poule.matchs.find(m => 
+      m.statut === 'Terminé' && (
+        ((m.equipe1._id || m.equipe1).toString() === (a.clubId._id || a.clubId).toString() && (m.equipe2._id || m.equipe2).toString() === (b.clubId._id || b.clubId).toString()) ||
+        ((m.equipe1._id || m.equipe1).toString() === (b.clubId._id || b.clubId).toString() && (m.equipe2._id || m.equipe2).toString() === (a.clubId._id || a.clubId).toString())
+      )
+    );
+    
+    if (matchDirect) {
+      const isA1 = (matchDirect.equipe1._id || matchDirect.equipe1).toString() === (a.clubId._id || a.clubId).toString();
+      const scoreA = isA1 ? matchDirect.score1 : matchDirect.score2;
+      const scoreB = isA1 ? matchDirect.score2 : matchDirect.score1;
+      
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+    }
+    
+    // 5. Par défaut : nom de l'équipe
+    return a.nom.localeCompare(b.nom);
+  });
+
+  return standings;
+}
+
+// Fonction de transition automatique Poules -> Élimination directe
+async function transitionPoulesToElimination(competition) {
+  try {
+    console.log('🏆 Début de la transition Poules -> Élimination directe...');
+    
+    const best1stTeams = [];
+    const secondTeams = [];
+    
+    for (const poule of competition.poules) {
+      const standings = calculerClassementPoule(poule, competition);
+      if (standings.length > 0) {
+        best1stTeams.push(standings[0]);
+      }
+      if (standings.length > 1) {
+        secondTeams.push(standings[1]);
+      }
+    }
+    
+    // Trier les 1ers par performance
+    best1stTeams.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
+      return b.butsPour - a.butsPour;
+    });
+    
+    // Trier les 2es par performance
+    secondTeams.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.differenceButs !== a.differenceButs) return b.differenceButs - a.differenceButs;
+      return b.butsPour - a.butsPour;
+    });
+    
+    const allQualified = [...best1stTeams, ...secondTeams];
+    const Q = allQualified.length;
+    if (Q < 2) {
+      console.log('   ⚠️ Pas assez d\'équipes qualifiées !');
+      return;
+    }
+    
+    const M = Math.pow(2, Math.ceil(Math.log2(Q)));
+    const B = M - Q; // exempts
+    
+    console.log(`   Nombre de qualifiés: ${Q}, Puissance de 2: ${M}, Exempts (byes): ${B}`);
+    
+    const byeTeams = best1stTeams.slice(0, B);
+    const rem1stTeams = best1stTeams.slice(B);
+    
+    const activeTeams = [];
+    const placedSecondIndices = new Set();
+    
+    for (const firstTeam of rem1stTeams) {
+      let paired = false;
+      for (let j = 0; j < secondTeams.length; j++) {
+        if (!placedSecondIndices.has(j) && secondTeams[j].pouleNom !== firstTeam.pouleNom) {
+          activeTeams.push(firstTeam.clubId, secondTeams[j].clubId);
+          placedSecondIndices.add(j);
+          paired = true;
+          break;
+        }
+      }
+      if (!paired) {
+        for (let j = 0; j < secondTeams.length; j++) {
+          if (!placedSecondIndices.has(j)) {
+            activeTeams.push(firstTeam.clubId, secondTeams[j].clubId);
+            placedSecondIndices.add(j);
+            break;
+          }
+        }
+      }
+    }
+    
+    const remainingSeconds = secondTeams.filter((_, idx) => !placedSecondIndices.has(idx));
+    for (let i = 0; i < remainingSeconds.length; i++) {
+      activeTeams.push(remainingSeconds[i].clubId);
+    }
+    
+    const heap = new Array(2 * M - 1).fill(null);
+    let activeIdx = 0;
+    
+    for (let i = 0; i < M / 2; i++) {
+      if (i < B) {
+        heap[M - 1 + 2 * i] = byeTeams[i].clubId;
+        heap[M - 1 + 2 * i + 1] = null;
+      } else {
+        heap[M - 1 + 2 * i] = activeTeams[activeIdx++] || null;
+        heap[M - 1 + 2 * i + 1] = activeTeams[activeIdx++] || null;
+      }
+    }
+    
+    competition.matchsElimination = [];
+    const matchCreatedAtIndex = new Array(M - 1).fill(false);
+    
+    const getPhaseName = (index, M) => {
+      if (index === 0) return 'Finale';
+      if (index >= 1 && index <= 2) return 'Demi';
+      if (index >= 3 && index <= 6) return 'Quart';
+      if (index >= 7 && index <= 14) return 'Huitième';
+      if (index >= 15 && index <= 30) return 'Seizième';
+      return 'Éliminatoire';
+    };
+    
+    for (let p = M - 2; p >= 0; p--) {
+      const c1 = 2 * p + 1;
+      const c2 = 2 * p + 2;
+      
+      const active1 = (heap[c1] !== null) || (c1 < M - 1 && matchCreatedAtIndex[c1]);
+      const active2 = (heap[c2] !== null) || (c2 < M - 1 && matchCreatedAtIndex[c2]);
+      
+      if (active1 && active2) {
+        matchCreatedAtIndex[p] = true;
+        const phase = getPhaseName(p, M);
+        
+        if (competition.modeMatch === 'aller_retour' && phase !== 'Finale' && phase !== 'Petite finale') {
+          competition.matchsElimination.push({
+            equipe1: heap[c1],
+            equipe2: heap[c2],
+            score1: null,
+            score2: null,
+            dateMatch: null,
+            statut: 'Programmé',
+            phase: phase,
+            tour: p,
+            type: 'aller',
+            valideParEquipe1: false,
+            valideParEquipe2: false,
+            equipe1Prete: false,
+            equipe2Prete: false,
+            dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+            dateDebutMatch: null,
+            stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+            litige: false,
+            arbitre: null
+          });
+          competition.matchsElimination.push({
+            equipe1: heap[c2],
+            equipe2: heap[c1],
+            score1: null,
+            score2: null,
+            dateMatch: null,
+            statut: 'Programmé',
+            phase: phase,
+            tour: p,
+            type: 'retour',
+            valideParEquipe1: false,
+            valideParEquipe2: false,
+            equipe1Prete: false,
+            equipe2Prete: false,
+            dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+            dateDebutMatch: null,
+            stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+            litige: false,
+            arbitre: null
+          });
+        } else {
+          competition.matchsElimination.push({
+            equipe1: heap[c1],
+            equipe2: heap[c2],
+            score1: null,
+            score2: null,
+            dateMatch: null,
+            statut: 'Programmé',
+            phase: phase,
+            tour: p,
+            type: 'simple',
+            valideParEquipe1: false,
+            valideParEquipe2: false,
+            equipe1Prete: false,
+            equipe2Prete: false,
+            dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+            dateDebutMatch: null,
+            stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+            litige: false,
+            arbitre: null
+          });
+        }
+        heap[p] = null;
+      } else if (active1) {
+        heap[p] = heap[c1];
+      } else if (active2) {
+        heap[p] = heap[c2];
+      } else {
+        heap[p] = null;
+      }
+    }
+    
+    if (M >= 4) {
+      competition.matchsElimination.push({
+        equipe1: null,
+        equipe2: null,
+        score1: null,
+        score2: null,
+        dateMatch: null,
+        statut: 'Programmé',
+        phase: 'Petite finale',
+        tour: -2,
+        valideParEquipe1: false,
+        valideParEquipe2: false,
+        stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+        litige: false,
+        arbitre: null
+      });
+    }
+
+    const DELAI_LANCEMENT = (competition.delaiLancementMatch || 10) * 60 * 1000;
+    const dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT);
+
+    competition.matchsElimination.forEach(match => {
+      if (match.equipe1 && match.equipe2) {
+        match.dateLimiteDebut = dateLimiteDebut;
+        match.dateDebutPreparation = new Date();
+      }
+    });
+
+    console.log(`   ✅ Phase finale générée avec ${competition.matchsElimination.length} matchs.`);
+  } catch (error) {
+    console.error('❌ Erreur lors de la transition Poules -> Élimination directe:', error);
+  }
+}
+
+// Fonction centrale après qu'un match est passé au statut "Terminé"
+async function afterMatchTerminated(competition, match) {
+  // 1. Mettre à jour les statistiques de l'équipe (uniquement si match de championnat ou de poule)
+  // Les matchs d'élimination ont un champ `phase`, donc si `!match.phase`, c'est un match de poules/championnat
+  if (!match.phase) {
+    await updateTeamStats(competition, match);
+  }
+
+  // 2. Gérer la progression ou transition
+  if (competition.type === 'elimination_directe') {
+    if (match.phase) {
+      await handleEliminationProgression(competition, match);
+    }
+  } else if (competition.type === 'poule_elimination') {
+    if (match.phase) {
+      await handleEliminationProgression(competition, match);
+    } else {
+      // Phase de poules : vérifier si tous les matchs de poule sont terminés
+      let allPoulesFinished = true;
+      for (const p of competition.poules) {
+        const hasUnfinished = p.matchs.some(m => m.statut !== 'Terminé');
+        if (hasUnfinished) {
+          allPoulesFinished = false;
+          break;
+        }
+      }
+      if (allPoulesFinished && (!competition.matchsElimination || competition.matchsElimination.length === 0)) {
+        console.log('🏁 Tous les matchs de poules sont terminés. Déclenchement de la transition...');
+        await transitionPoulesToElimination(competition);
+      }
+    }
+  }
+}
 
 // Exposer les fonctions utilitaires pour d'autres routeurs (ex: admin.js)
 router.updateTeamStats = updateTeamStats;
