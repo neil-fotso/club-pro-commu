@@ -649,13 +649,16 @@ router.delete('/:id/inscription', auth, async (req, res) => {
       return res.status(404).json({ message: 'Club non trouvé' });
     }
 
+    const estAdminSite = req.user.isAdmin === true;
+    const estCreateurCompetition = competition.createurId.toString() === req.user.id;
+
     const estAdmin = club.membres.some(
       membre => membre.userId.toString() === req.user.id && (membre.role === 'Admin' || membre.role === 'Capitaine')
     );
     const estCreateurClub = club.createurId && club.createurId.toString() === req.user.id;
     
-    if (!estAdmin && !estCreateurClub) {
-      return res.status(403).json({ message: 'Vous devez être admin ou créateur du club' });
+    if (!estAdmin && !estCreateurClub && !estAdminSite && !estCreateurCompetition) {
+      return res.status(403).json({ message: 'Vous devez être admin du club ou administrateur de la compétition' });
     }
 
     // Vérifier si le club est inscrit
@@ -966,16 +969,16 @@ router.put('/:id/lancer', auth, async (req, res) => {
     const DELAI_LANCEMENT = (competition.delaiLancementMatch || 10) * 60 * 1000;
     const dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT);
 
-    // Appliquer dateLimiteDebut à tous les matchs qui ont déjà leurs deux équipes connues
+    // Appliquer dateLimiteDebut à tous les matchs qui ont déjà leurs deux équipes connues (sauf retour)
     competition.matchsElimination.forEach(match => {
-      if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut) {
+      if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut && match.type !== 'retour') {
         match.dateLimiteDebut = dateLimiteDebut;
       }
     });
     if (competition.poules) {
       competition.poules.forEach(poule => {
         poule.matchs.forEach(match => {
-          if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut) {
+          if (match.equipe1 && match.equipe2 && !match.dateLimiteDebut && match.type !== 'retour') {
             match.dateLimiteDebut = dateLimiteDebut;
           }
         });
@@ -1201,6 +1204,32 @@ router.post('/:id/matchs/:matchId/pret', auth, async (req, res) => {
       return res.status(400).json({ message: 'Les deux équipes ne sont pas encore connues' });
     }
 
+    // Si c'est un match retour, vérifier que le match aller est terminé
+    if (match.type === 'retour') {
+      let matchAller = null;
+      if (competition.matchsElimination.id(matchId)) {
+        // Élimination directe
+        matchAller = competition.matchsElimination.find(m => m.tour === match.tour && m.type === 'aller');
+      } else {
+        // Poules / Championnat
+        for (const poule of competition.poules) {
+          const m = poule.matchs.id(matchId);
+          if (m) {
+            matchAller = poule.matchs.find(other => 
+              other.type === 'aller' &&
+              other.equipe1.toString() === match.equipe2.toString() &&
+              other.equipe2.toString() === match.equipe1.toString()
+            );
+            break;
+          }
+        }
+      }
+
+      if (matchAller && matchAller.statut !== 'Terminé') {
+        return res.status(400).json({ message: "Le match retour ne peut pas être lancé tant que le match aller n'est pas terminé." });
+      }
+    }
+
     // Déterminer quelle équipe est le capitaine
     const estAdminEquipe1 = await Club.findOne({ _id: match.equipe1, 'membres.userId': req.user.id, 'membres.role': 'Admin' });
     const estAdminEquipe2 = await Club.findOne({ _id: match.equipe2, 'membres.userId': req.user.id, 'membres.role': 'Admin' });
@@ -1351,15 +1380,37 @@ router.put('/:id/matchs/:matchId/score', auth, async (req, res) => {
         } else {
           // ❌ Scores divergents → Litige automatique
           match.litige = true;
+          const raisonLitige = `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${numScore1}-${numScore2}.`;
           match.litigeDetails = {
             signalePar: req.user.id,
             clubId: estAdminEquipe1 ? match.equipe1 : match.equipe2,
-            description: `Désaccord de scores : Équipe 1 propose ${prop.score1}-${prop.score2}, Équipe 2 propose ${numScore1}-${numScore2}.`,
+            description: raisonLitige,
             preuveVideo: captureEcran || null,
             dateSignalement: new Date(),
             statut: 'En attente'
           };
           match.statut = 'En cours'; // Bloqué, en attente de l'admin
+
+          // Envoyer des notifications aux capitaines des deux clubs
+          try {
+            const club1 = await Club.findById(match.equipe1);
+            const club2 = await Club.findById(match.equipe2);
+            const usersToNotify = [];
+            if (club1) club1.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+            if (club2) club2.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+            const uniqUsers = [...new Set(usersToNotify)];
+            for (const uId of uniqUsers) {
+              await Notification.create({
+                userId: uId,
+                type: 'litige',
+                titre: 'Litige automatique sur un match',
+                message: `Un litige a été automatiquement créé pour le match opposant ${club1?.nom || 'Équipe 1'} et ${club2?.nom || 'Équipe 2'}. Raison : ${raisonLitige}`
+              });
+            }
+          } catch (notifErr) {
+            console.error('Erreur lors de la création des notifications de litige:', notifErr);
+          }
+
           await competition.save();
           return res.json({
             message: `⚠️ Les scores ne correspondent pas (${prop.score1}-${prop.score2} vs ${numScore1}-${numScore2}). Le match est en litige. L'administrateur va trancher.`,
@@ -1449,14 +1500,35 @@ router.post('/:id/matchs/:matchId/litige', auth, async (req, res) => {
 
     // Mettre à jour le statut de litige
     match.litige = true;
+    const raisonLitige = description || 'Litige signalé';
     match.litigeDetails = {
       signalePar: req.user.id,
       clubId: clubSignataireId,
-      description: description || 'Litige signalé',
+      description: raisonLitige,
       preuveVideo: preuveVideo || '',
       dateSignalement: new Date(),
       statut: 'En attente'
     };
+
+    // Envoyer des notifications aux capitaines des deux clubs
+    try {
+      const club1 = await Club.findById(match.equipe1);
+      const club2 = await Club.findById(match.equipe2);
+      const usersToNotify = [];
+      if (club1) club1.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+      if (club2) club2.membres.forEach(m => { if (m.role === 'Admin' || m.role === 'Capitaine') usersToNotify.push(m.userId.toString()); });
+      const uniqUsers = [...new Set(usersToNotify)];
+      for (const uId of uniqUsers) {
+        await Notification.create({
+          userId: uId,
+          type: 'litige',
+          titre: 'Litige signalé sur un match',
+          message: `Un litige a été manuellement signalé pour le match opposant ${club1?.nom || 'Équipe 1'} et ${club2?.nom || 'Équipe 2'}. Raison : ${raisonLitige}`
+        });
+      }
+    } catch (notifErr) {
+      console.error('Erreur lors de la création des notifications de litige:', notifErr);
+    }
 
     await competition.save();
 
@@ -1900,7 +1972,7 @@ function generateEliminationBracket(competition, equipesConfirmees) {
           valideParEquipe2: false,
           equipe1Prete: false,
           equipe2Prete: false,
-          dateDebutPreparation: (heap[c1] !== null && heap[c2] !== null) ? new Date() : null,
+          dateDebutPreparation: null,
           dateDebutMatch: null,
           propositionScore: { score1: null, score2: null, proposePar: null, dateSaisie: null },
           captureEcran: null,
@@ -1983,13 +2055,19 @@ async function handleEliminationProgression(competition, completedMatch) {
   try {
     console.log('🏆 Gestion progression élimination directe...');
     
-    // Déterminer l'équipe gagnante
-    let winner = completedMatch.score1 > completedMatch.score2 ? 
-      completedMatch.equipe1 : completedMatch.equipe2;
-    let loser = completedMatch.score1 > completedMatch.score2 ? 
-      completedMatch.equipe2 : completedMatch.equipe1;
-    
-    console.log(`   Gagnant: ${winner}, Phase: ${completedMatch.phase}`);
+    let winner = null;
+    let loser = null;
+    let isConfrontationTerminee = true;
+
+    if (completedMatch.type === 'but_en_or') {
+      winner = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe1 : completedMatch.equipe2;
+      loser = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe2 : completedMatch.equipe1;
+      console.log(`   Gagnant match décisif (But en Or): ${winner}`);
+    } else {
+      winner = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe1 : completedMatch.equipe2;
+      loser = completedMatch.score1 > completedMatch.score2 ? completedMatch.equipe2 : completedMatch.equipe1;
+      console.log(`   Gagnant manche actuelle: ${winner}, Phase: ${completedMatch.phase}`);
+    }
     
     if (completedMatch.phase === 'Finale') {
       competition.gagnant = winner;
@@ -2027,11 +2105,11 @@ async function handleEliminationProgression(competition, completedMatch) {
     const currentHeapIndex = completedMatch.tour;
     const parentHeapIndex = Math.floor((currentHeapIndex - 1) / 2);
     
-    let isConfrontationTerminee = true;
+    isConfrontationTerminee = true;
     winner = null;
     loser = null;
 
-    if (competition.modeMatch === 'aller_retour' && completedMatch.phase !== 'Finale' && completedMatch.phase !== 'Petite finale') {
+    if (completedMatch.type !== 'but_en_or' && competition.modeMatch === 'aller_retour' && completedMatch.phase !== 'Finale' && completedMatch.phase !== 'Petite finale') {
       // Trouver l'autre match de la confrontation (aller ou retour)
       const autreType = completedMatch.type === 'aller' ? 'retour' : 'aller';
       const autreMatch = competition.matchsElimination.find(m => 
@@ -2070,21 +2148,57 @@ async function handleEliminationProgression(competition, completedMatch) {
           winner = clubB;
           loser = clubA;
         } else {
-          // Égalité -> départager par le match retour
-          const matchRetour = completedMatch.type === 'retour' ? completedMatch : autreMatch;
-          if (matchRetour.score1 > matchRetour.score2) {
-            winner = matchRetour.equipe1;
-            loser = matchRetour.equipe2;
+          // Égalité cumulée ! Créer un match "but en or"
+          isConfrontationTerminee = false;
+          
+          // Vérifier si le match "but en or" existe déjà
+          const matchButEnOr = competition.matchsElimination.find(m => 
+            m.tour === completedMatch.tour && m.type === 'but_en_or'
+          );
+          
+          if (!matchButEnOr) {
+            console.log(`   - Égalité cumulée (${totalScoreA}-${totalScoreB}). Génération du match "but en or"...`);
+            const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+            const dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+            
+            competition.matchsElimination.push({
+              equipe1: clubA,
+              equipe2: clubB,
+              score1: null,
+              score2: null,
+              dateMatch: null,
+              statut: 'Programmé',
+              phase: completedMatch.phase,
+              tour: completedMatch.tour,
+              type: 'but_en_or',
+              valideParEquipe1: false,
+              valideParEquipe2: false,
+              equipe1Prete: false,
+              equipe2Prete: false,
+              dateDebutPreparation: new Date(), // Lancer immédiatement le ready check
+              dateLimiteDebut: dateLimiteDebut,
+              stats: { buteurs: [], passeurs: [], cartonsJaunes: [], cartonsRouges: [] },
+              litige: false,
+              arbitre: null
+            });
           } else {
-            winner = matchRetour.equipe2;
-            loser = matchRetour.equipe1;
+            console.log(`   - Le match "but en or" existe déjà.`);
           }
-          console.log(`   - Égalité cumulée ! Le match retour départage : Vainqueur = ${winner}`);
         }
       } else {
         // L'autre match n'est pas encore terminé, on ne fait pas progresser les équipes
         isConfrontationTerminee = false;
         console.log(`   ⏳ Match ${completedMatch.type} terminé. En attente du match ${autreType} pour la progression.`);
+        
+        // Si c'est le match aller qui vient de se terminer, on débloque le match retour
+        if (completedMatch.type === 'aller' && autreMatch) {
+          autreMatch.dateDebutPreparation = new Date();
+          autreMatch.equipe1Prete = false;
+          autreMatch.equipe2Prete = false;
+          const DELAI_LANCEMENT_MS = (competition.delaiLancementMatch || 10) * 60 * 1000;
+          autreMatch.dateLimiteDebut = new Date(Date.now() + DELAI_LANCEMENT_MS);
+          console.log(`   ⏰ Match retour débloqué automatiquement suite à la fin de l'aller. Limite: ${autreMatch.dateLimiteDebut}`);
+        }
       }
     } else {
       // Aller simple ou Finale / Petite finale
@@ -2128,8 +2242,8 @@ async function handleEliminationProgression(competition, completedMatch) {
           }
         }
 
-        // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer !
-        if (nextMatch.equipe1 && nextMatch.equipe2) {
+        // Si les deux équipes du match parent sont maintenant connues, lancer le ready check timer (sauf pour le retour)
+        if (nextMatch.equipe1 && nextMatch.equipe2 && nextMatch.type !== 'retour') {
           nextMatch.dateDebutPreparation = new Date();
           nextMatch.equipe1Prete = false;
           nextMatch.equipe2Prete = false;

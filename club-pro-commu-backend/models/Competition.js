@@ -285,7 +285,7 @@ const competitionSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        enum: ['aller', 'retour', 'simple', null],
+        enum: ['aller', 'retour', 'simple', 'but_en_or', null],
         default: null
       },
       valideParEquipe1: {
@@ -401,7 +401,7 @@ const competitionSchema = new mongoose.Schema({
     },
     type: {
       type: String,
-      enum: ['aller', 'retour', 'simple', null],
+      enum: ['aller', 'retour', 'simple', 'but_en_or', null],
       default: null
     },
     phase: {

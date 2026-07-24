@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { clubAPI, competitionAPI } from '../services/api';
 import bgHeader from '../assets/bg-header.jpg';
 import logo from '../assets/logo.png';
 
@@ -60,10 +61,85 @@ const featureCardStyles = `
   .bg-gradient-success {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   }
+
+  .gaming-hover-card {
+    transition: all 0.2s ease;
+  }
+  .gaming-hover-card:hover {
+    border-color: rgba(0, 240, 255, 0.4) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.15);
+  }
 `;
 
 const HomePage = () => {
   const { user } = useAuth();
+  const [activeMatches, setActiveMatches] = useState([]);
+
+  useEffect(() => {
+    const loadActiveMatches = async () => {
+      if (!user) return;
+      try {
+        // 1. Charger mes clubs
+        const myClubs = await clubAPI.getMyClubs(user.token);
+        if (!myClubs || myClubs.length === 0) return;
+        const myClubIds = myClubs.map(c => c._id.toString());
+        
+        // 2. Charger toutes les compétitions récentes (en cours, fermées, etc.)
+        const response = await competitionAPI.getCompetitions({ limit: 100 });
+        const comps = response.competitions || [];
+        
+        // 3. Filtrer les matchs en cours ou en préparation
+        const matches = [];
+        comps.forEach(comp => {
+          const compMatches = [];
+          if (comp.poules) {
+            comp.poules.forEach(p => {
+              if (p.matchs) compMatches.push(...p.matchs);
+            });
+          }
+          if (comp.matchsElimination) {
+            compMatches.push(...comp.matchsElimination);
+          }
+          
+          compMatches.forEach(m => {
+            const isMatchActiveOrPreparing = m.statut === 'En cours' || (m.statut === 'Programmé' && m.dateDebutPreparation);
+            if (isMatchActiveOrPreparing) {
+              const t1Id = (m.equipe1?._id || m.equipe1)?.toString();
+              const t2Id = (m.equipe2?._id || m.equipe2)?.toString();
+              
+              const isMyClub1 = myClubIds.includes(t1Id);
+              const isMyClub2 = myClubIds.includes(t2Id);
+              
+              if (isMyClub1 || isMyClub2) {
+                const getClubDetails = (cId) => {
+                  const eq = comp.equipesInscrites?.find(e => (e.clubId?._id || e.clubId || '').toString() === cId);
+                  return eq?.clubId || { nom: 'Club', logo: null };
+                };
+                
+                matches.push({
+                  matchId: m._id,
+                  competitionId: comp._id,
+                  competitionNom: comp.nom,
+                  equipe1: getClubDetails(t1Id),
+                  equipe2: getClubDetails(t2Id),
+                  phase: m.phase || 'Match de poule',
+                  type: m.type,
+                  statut: m.statut
+                });
+              }
+            }
+          });
+        });
+        
+        setActiveMatches(matches);
+      } catch (err) {
+        console.error('Erreur chargement matchs actifs:', err);
+      }
+    };
+    
+    loadActiveMatches();
+  }, [user]);
 
   return (
     <div className="min-vh-100">
@@ -117,6 +193,65 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Matchs en Cours / En Préparation */}
+      {activeMatches.length > 0 && (
+        <div className="container py-4 mt-3 animate-fade-in">
+          <div className="row justify-content-center">
+            <div className="col-lg-8">
+              <div className="card border-0 mb-4 shadow-sm" style={{ background: 'rgba(255, 193, 7, 0.03)', border: '1px solid rgba(255, 193, 7, 0.15)', borderRadius: '15px' }}>
+                <div className="card-header border-0 bg-transparent pt-3 pb-0">
+                  <h5 className="text-warning fw-bold mb-0 d-flex align-items-center gap-2" style={{ fontFamily: 'Rajdhani', letterSpacing: '1px' }}>
+                    <span className="spinner-grow spinner-grow-sm text-warning" role="status"></span>
+                    🎮 MATCHS ACTIFS (EN COURS / PRÉPARATION)
+                  </h5>
+                </div>
+                <div className="card-body">
+                  {activeMatches.map((m, idx) => (
+                    <Link key={idx} to={`/competition/${m.competitionId}/match/${m.matchId}`} className="text-decoration-none d-block mb-3 p-3 rounded-lg gaming-hover-card" style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="text-muted small text-uppercase fw-semibold" style={{ fontSize: '0.75rem' }}>{m.competitionNom} · {m.phase}</span>
+                        <div className="d-flex gap-1 align-items-center">
+                          {m.type === 'but_en_or' && <span className="badge bg-warning text-dark font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>BUT EN OR</span>}
+                          {m.statut === 'Programmé' ? (
+                            <span className="badge bg-warning text-dark font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>PRÉPARATION</span>
+                          ) : (
+                            <span className="badge bg-danger text-white font-rajdhani fw-bold" style={{ fontSize: '0.7rem' }}>EN COURS</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex align-items-center gap-2 flex-1">
+                          {m.equipe1.logo ? (
+                            <img src={m.equipe1.logo} alt="" className="rounded-circle" style={{ width: '28px', height: '28px', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white text-uppercase" style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>{m.equipe1.nom?.substring(0, 2)}</div>
+                          )}
+                          <span className="text-white fw-semibold" style={{ fontSize: '0.9rem' }}>{m.equipe1.nom}</span>
+                        </div>
+                        <span className="text-warning fw-bold px-3" style={{ fontSize: '0.9rem' }}>VS</span>
+                        <div className="d-flex align-items-center gap-2 flex-1 justify-content-end">
+                          <span className="text-white fw-semibold" style={{ fontSize: '0.9rem' }}>{m.equipe2.nom}</span>
+                          {m.equipe2.logo ? (
+                            <img src={m.equipe2.logo} alt="" className="rounded-circle" style={{ width: '28px', height: '28px', objectFit: 'cover' }} />
+                          ) : (
+                            <div className="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white text-uppercase" style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>{m.equipe2.nom?.substring(0, 2)}</div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-3 text-center">
+                        <span className="btn btn-sm btn-outline-danger text-uppercase font-rajdhani fw-bold py-1 px-4 w-100" style={{ fontSize: '0.8rem', letterSpacing: '0.5px' }}>
+                          <i className="fas fa-play me-2"></i> Rejoindre le match
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contenu principal */}
       <div className="container py-5">

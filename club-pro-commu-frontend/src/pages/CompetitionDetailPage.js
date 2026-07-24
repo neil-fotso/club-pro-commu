@@ -132,32 +132,41 @@ export default function CompetitionDetailPage() {
   };
 
   const handleQuitterCompetition = async (clubId = null) => {
-    console.log('Debug - userClubs:', userClubs);
-    console.log('Debug - competition.equipesInscrites:', competition.equipesInscrites);
-    console.log('Debug - clubInscrit:', clubInscrit);
-    console.log('Debug - clubId parameter:', clubId);
-    
-    const clubToQuit = clubId ? userClubs.find(club => compareClubIds(club._id, clubId)) : clubInscrit;
-    
-    console.log('Debug - clubToQuit:', clubToQuit);
-    
-    if (!clubToQuit) {
-      alert('Aucun club inscrit trouvé');
-      return;
+    let targetClubId = clubId;
+    let targetClubNom = '';
+
+    const isAdminOfComp = isCreator || user?.isAdmin;
+
+    if (isAdminOfComp && clubId) {
+      targetClubId = clubId;
+      const foundEq = competition.equipesInscrites.find(e => compareClubIds(e.clubId, clubId));
+      targetClubNom = foundEq?.clubId?.nom || 'le club sélectionné';
+    } else {
+      const clubToQuit = clubId ? userClubs.find(club => compareClubIds(club._id, clubId)) : clubInscrit;
+      if (!clubToQuit) {
+        alert('Aucun club inscrit trouvé');
+        return;
+      }
+      targetClubId = clubToQuit._id;
+      targetClubNom = clubToQuit.nom;
     }
 
-    if (!window.confirm(`Êtes-vous sûr de vouloir quitter la compétition "${competition.nom}" avec le club "${clubToQuit.nom}" ?`)) {
+    const confirmMsg = isAdminOfComp 
+      ? `Êtes-vous sûr de vouloir RETIRER le club "${targetClubNom}" de la compétition "${competition.nom}" ?`
+      : `Êtes-vous sûr de vouloir quitter la compétition "${competition.nom}" avec le club "${targetClubNom}" ?`;
+
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
     try {
-      await competitionAPI.quitterCompetition(id, clubToQuit._id, user.token);
+      await competitionAPI.quitterCompetition(id, targetClubId, user.token);
       
       // Recharger la compétition
       const updatedCompetition = await competitionAPI.getCompetition(id);
       setCompetition(updatedCompetition);
       
-      alert('Club retiré de la compétition avec succès !');
+      alert(isAdminOfComp ? 'Le club a été retiré de la compétition avec succès !' : 'Vous avez quitté la compétition avec succès !');
     } catch (error) {
       console.error('Erreur désinscription:', error);
       alert('Erreur lors de la désinscription: ' + (error.message || 'Erreur inconnue'));
@@ -276,6 +285,42 @@ export default function CompetitionDetailPage() {
     return list;
   };
 
+  const getActiveMatch = () => {
+    if (!competition || !userClubs || userClubs.length === 0) return null;
+    const userClubIds = userClubs.map(c => c._id.toString());
+    
+    const matches = [];
+    if (competition.poules) {
+      competition.poules.forEach(p => {
+        if (p.matchs) matches.push(...p.matchs);
+      });
+    }
+    if (competition.matchsElimination) {
+      matches.push(...competition.matchsElimination);
+    }
+    
+    const activeMatch = matches.find(m => {
+      const isMatchActiveOrPreparing = m.statut === 'En cours' || (m.statut === 'Programmé' && m.dateDebutPreparation);
+      if (!isMatchActiveOrPreparing) return false;
+      const t1Id = (m.equipe1?._id || m.equipe1)?.toString();
+      const t2Id = (m.equipe2?._id || m.equipe2)?.toString();
+      return userClubIds.includes(t1Id) || userClubIds.includes(t2Id);
+    });
+    
+    if (activeMatch) {
+      const getClubDetails = (cId) => {
+        const eq = competition.equipesInscrites?.find(e => (e.clubId?._id || e.clubId || '').toString() === cId);
+        return eq?.clubId || { nom: 'Club', logo: null };
+      };
+      return {
+        ...activeMatch,
+        equipe1Details: getClubDetails((activeMatch.equipe1?._id || activeMatch.equipe1)?.toString()),
+        equipe2Details: getClubDetails((activeMatch.equipe2?._id || activeMatch.equipe2)?.toString())
+      };
+    }
+    return null;
+  };
+
   return (
     <div className="container py-4 px-4 px-md-5 animate-fade-in">
       {/* Header en style Gaming */}
@@ -378,6 +423,38 @@ export default function CompetitionDetailPage() {
           </Link>
         </div>
       )}
+
+      {/* Alerte Match en Cours / Préparation pour les membres du club */}
+      {(() => {
+        const activeMatch = getActiveMatch();
+        if (!activeMatch) return null;
+        const isPreparing = activeMatch.statut === 'Programmé';
+        return (
+          <div 
+            className={`alert border-0 d-flex justify-content-between align-items-center mb-4 text-white ${isPreparing ? 'bg-warning bg-opacity-10' : 'bg-info bg-opacity-10'}`} 
+            style={{ 
+              borderRadius: '12px', 
+              border: `1px solid ${isPreparing ? 'rgba(255, 193, 7, 0.2)' : 'rgba(0, 240, 255, 0.2)'}` 
+            }}
+          >
+            <div className="d-flex align-items-center gap-2">
+              <span className={`spinner-grow spinner-grow-sm ${isPreparing ? 'text-warning' : 'text-info'}`} role="status"></span>
+              <div>
+                <strong>{isPreparing ? 'Match en préparation !' : 'Match en cours !'}</strong> Votre club joue actuellement dans la phase <strong>{activeMatch.phase}</strong> :{' '}
+                <span className={`font-rajdhani fw-bold ${isPreparing ? 'text-warning' : 'text-info'}`}>{activeMatch.equipe1Details?.nom}</span> vs{' '}
+                <span className={`font-rajdhani fw-bold ${isPreparing ? 'text-warning' : 'text-info'}`}>{activeMatch.equipe2Details?.nom}</span>.
+              </div>
+            </div>
+            <Link 
+              to={`/competition/${competition._id}/match/${activeMatch._id}`} 
+              className={`btn fw-bold btn-sm ms-3 text-uppercase font-rajdhani ${isPreparing ? 'btn-warning text-dark' : 'btn-info text-dark'}`} 
+              style={{ letterSpacing: '0.5px' }}
+            >
+              <i className="fas fa-play me-1"></i> Rejoindre le match
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* Alerte Litiges pour l'administrateur */}
       {user && (isCreator || user.isAdmin) && getMatchsEnLitige().length > 0 && (
@@ -592,13 +669,13 @@ export default function CompetitionDetailPage() {
                                 {equipe.statutPaiement === 'Payé' ? 'Payé' : 'En attente'}
                               </span>
                             )}
-                            {isAdminDeCeClub && competition.statut === 'Ouvert' && (
+                            {((isAdminDeCeClub && competition.statut === 'Ouvert') || ((isCreator || user?.isAdmin) && (competition.statut === 'Ouvert' || competition.statut === 'Brouillon'))) && (
                               <button
                                 className="btn btn-outline-danger btn-sm"
                                 onClick={() => handleQuitterCompetition(typeof equipe.clubId === 'object' ? equipe.clubId._id : equipe.clubId)}
-                                title="Quitter cette compétition"
+                                title={isCreator || user?.isAdmin ? "Retirer ce club de la compétition" : "Quitter cette compétition"}
                               >
-                                <i className="fas fa-times"></i>
+                                <i className={isCreator || user?.isAdmin ? "fas fa-trash-alt" : "fas fa-times"}></i>
                               </button>
                             )}
                           </div>
