@@ -649,13 +649,16 @@ router.delete('/:id/inscription', auth, async (req, res) => {
       return res.status(404).json({ message: 'Club non trouvé' });
     }
 
+    const estAdminSite = req.user.isAdmin === true;
+    const estCreateurCompetition = competition.createurId.toString() === req.user.id;
+
     const estAdmin = club.membres.some(
       membre => membre.userId.toString() === req.user.id && (membre.role === 'Admin' || membre.role === 'Capitaine')
     );
     const estCreateurClub = club.createurId && club.createurId.toString() === req.user.id;
     
-    if (!estAdmin && !estCreateurClub) {
-      return res.status(403).json({ message: 'Vous devez être admin ou créateur du club' });
+    if (!estAdmin && !estCreateurClub && !estAdminSite && !estCreateurCompetition) {
+      return res.status(403).json({ message: 'Vous devez être admin du club ou administrateur de la compétition' });
     }
 
     // Vérifier si le club est inscrit

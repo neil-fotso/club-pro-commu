@@ -132,32 +132,41 @@ export default function CompetitionDetailPage() {
   };
 
   const handleQuitterCompetition = async (clubId = null) => {
-    console.log('Debug - userClubs:', userClubs);
-    console.log('Debug - competition.equipesInscrites:', competition.equipesInscrites);
-    console.log('Debug - clubInscrit:', clubInscrit);
-    console.log('Debug - clubId parameter:', clubId);
-    
-    const clubToQuit = clubId ? userClubs.find(club => compareClubIds(club._id, clubId)) : clubInscrit;
-    
-    console.log('Debug - clubToQuit:', clubToQuit);
-    
-    if (!clubToQuit) {
-      alert('Aucun club inscrit trouvé');
-      return;
+    let targetClubId = clubId;
+    let targetClubNom = '';
+
+    const isAdminOfComp = isCreator || user?.isAdmin;
+
+    if (isAdminOfComp && clubId) {
+      targetClubId = clubId;
+      const foundEq = competition.equipesInscrites.find(e => compareClubIds(e.clubId, clubId));
+      targetClubNom = foundEq?.clubId?.nom || 'le club sélectionné';
+    } else {
+      const clubToQuit = clubId ? userClubs.find(club => compareClubIds(club._id, clubId)) : clubInscrit;
+      if (!clubToQuit) {
+        alert('Aucun club inscrit trouvé');
+        return;
+      }
+      targetClubId = clubToQuit._id;
+      targetClubNom = clubToQuit.nom;
     }
 
-    if (!window.confirm(`Êtes-vous sûr de vouloir quitter la compétition "${competition.nom}" avec le club "${clubToQuit.nom}" ?`)) {
+    const confirmMsg = isAdminOfComp 
+      ? `Êtes-vous sûr de vouloir RETIRER le club "${targetClubNom}" de la compétition "${competition.nom}" ?`
+      : `Êtes-vous sûr de vouloir quitter la compétition "${competition.nom}" avec le club "${targetClubNom}" ?`;
+
+    if (!window.confirm(confirmMsg)) {
       return;
     }
 
     try {
-      await competitionAPI.quitterCompetition(id, clubToQuit._id, user.token);
+      await competitionAPI.quitterCompetition(id, targetClubId, user.token);
       
       // Recharger la compétition
       const updatedCompetition = await competitionAPI.getCompetition(id);
       setCompetition(updatedCompetition);
       
-      alert('Club retiré de la compétition avec succès !');
+      alert(isAdminOfComp ? 'Le club a été retiré de la compétition avec succès !' : 'Vous avez quitté la compétition avec succès !');
     } catch (error) {
       console.error('Erreur désinscription:', error);
       alert('Erreur lors de la désinscription: ' + (error.message || 'Erreur inconnue'));
@@ -660,13 +669,13 @@ export default function CompetitionDetailPage() {
                                 {equipe.statutPaiement === 'Payé' ? 'Payé' : 'En attente'}
                               </span>
                             )}
-                            {isAdminDeCeClub && competition.statut === 'Ouvert' && (
+                            {((isAdminDeCeClub && competition.statut === 'Ouvert') || ((isCreator || user?.isAdmin) && (competition.statut === 'Ouvert' || competition.statut === 'Brouillon'))) && (
                               <button
                                 className="btn btn-outline-danger btn-sm"
                                 onClick={() => handleQuitterCompetition(typeof equipe.clubId === 'object' ? equipe.clubId._id : equipe.clubId)}
-                                title="Quitter cette compétition"
+                                title={isCreator || user?.isAdmin ? "Retirer ce club de la compétition" : "Quitter cette compétition"}
                               >
-                                <i className="fas fa-times"></i>
+                                <i className={isCreator || user?.isAdmin ? "fas fa-trash-alt" : "fas fa-times"}></i>
                               </button>
                             )}
                           </div>
